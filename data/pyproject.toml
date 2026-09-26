@@ -42,6 +42,7 @@ omit = [
   "*/db/*",
   "*/ingest/run.py",
   "*/export/bundle.py",
+  "*/ride/run.py",
   "*/export/writers.py",
   "*/network/features.py",
   "*/network/layers.py",

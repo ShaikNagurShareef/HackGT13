@@ -25,6 +25,7 @@ MONOTONE_UP = {
     "log_len",
     "log_nbr_ped_density",
     "log_nbr_nonped_density",
+    "log_bike_activity",  # ride only: cycling activity proxy (exposure)
 }
 DEFAULT_LGB: dict[str, float | int | str] = {
     "objective": "poisson",

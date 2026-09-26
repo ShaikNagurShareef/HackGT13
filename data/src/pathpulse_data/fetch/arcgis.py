@@ -25,7 +25,7 @@ def build_params(layer: Layer, offset: int, page_size: int) -> dict[str, str]:
         "returnGeometry": "true" if layer.geometry else "false",
         "resultOffset": str(offset),
         "resultRecordCount": str(page_size),
-        "orderByFields": "OBJECTID",
+        "orderByFields": layer.order_by,
         "f": "json",
     }
     if layer.bbox is not None:

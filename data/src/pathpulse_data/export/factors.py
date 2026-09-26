@@ -77,6 +77,18 @@ FEATURE_TO_FACTOR: dict[str, str] = {
 
 
 @dataclass(frozen=True)
+class FactorSpec:
+    """Factor keys, user-facing labels, and model-feature grouping for one travel mode."""
+
+    spatial: dict[str, str]
+    temporal: dict[str, str]
+    feature_to_factor: dict[str, str]
+
+
+WALK_SPEC = FactorSpec(SPATIAL_FACTORS, TEMPORAL_FACTORS, FEATURE_TO_FACTOR)
+
+
+@dataclass(frozen=True)
 class Decomposition:
     base: float
     spatial: pd.DataFrame  # segments x SPATIAL_FACTORS (centered)
@@ -90,15 +102,16 @@ def decompose(
     log_len_per_100m: np.ndarray,
     road_base: np.ndarray,
     temporal: pd.DataFrame,
+    spec: FactorSpec = WALK_SPEC,
 ) -> Decomposition:
     """Assemble centered factors; see module docstring for the identity maintained."""
-    spatial = pd.DataFrame(0.0, index=spf_contrib.index, columns=list(SPATIAL_FACTORS))
+    spatial = pd.DataFrame(0.0, index=spf_contrib.index, columns=list(spec.spatial))
     for feature in spf_contrib.columns:
-        spatial[FEATURE_TO_FACTOR[feature]] += spf_contrib[feature].to_numpy()
+        spatial[spec.feature_to_factor[feature]] += spf_contrib[feature].to_numpy()
     spatial["history"] += eb_log_adjust
     spatial["length"] -= log_len_per_100m  # density per 100 m
     spatial["road_type"] += road_base  # temporal model's road-group level
-    temporal = temporal.loc[:, list(TEMPORAL_FACTORS)]
+    temporal = temporal.loc[:, list(spec.temporal)]
     s_mean, t_mean = spatial.mean(), temporal.mean()
     base = spf_base + float(s_mean.sum()) + float(t_mean.sum())
     return Decomposition(base=base, spatial=spatial - s_mean, temporal=temporal - t_mean)

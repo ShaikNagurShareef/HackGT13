@@ -40,6 +40,7 @@ class Layer:
     bbox: tuple[float, float, float, float] | None = CITY_BBOX
     geometry: bool = True
     out_fields: str = "*"
+    order_by: str = "OBJECTID"  # some layers (e.g. ABI BeltLine) key on FID
 
 
 LAYERS: tuple[Layer, ...] = (
@@ -68,6 +69,20 @@ LAYERS: tuple[Layer, ...] = (
     Layer("coa_marta_bus_stops", f"{COA}/MARTA_Bus_Stops_COA/FeatureServer/0"),
     Layer("coa_school_zones", f"{COA}/School_Zones_with_Schedules/FeatureServer/0"),
     Layer("coa_downtown_lights", f"{COA}/Downtown_Lights_all_WFL1/FeatureServer/0"),
+    # --- ride (bike / e-bike / scooter) infrastructure and cyclist activity proxy ---
+    Layer("coa_bike_facilities", f"{COA}/Bike_Facilities_Public_View/FeatureServer/0"),
+    Layer("coa_beltline", f"{COA}/Atlanta_BeltLine/FeatureServer/1", order_by="FID"),
+    # Strava Metro 2024 ride + e-bike trip origins/destinations per H3 res-8 hex (ARC).
+    Layer(
+        "arc_strava_bike_origins",
+        f"{ARC}/Strava_Bike_Hexagons_WFL1/FeatureServer/9",
+        geometry=False,
+    ),
+    Layer(
+        "arc_strava_bike_destinations",
+        f"{ARC}/Strava_Bike_Hexagons_WFL1/FeatureServer/4",
+        geometry=False,
+    ),
     # --- baselines only (never model features) ---
     Layer("coa_hin_2025", f"{COA}/HIN_Tiers_2025/FeatureServer/0"),
     Layer("arc_hin_severity", f"{ARC}/ARC_High_Injury_Network_Severity/FeatureServer/0"),

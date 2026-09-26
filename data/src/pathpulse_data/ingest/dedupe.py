@@ -53,6 +53,7 @@ def _merge_cluster(group: pd.DataFrame) -> dict[str, object]:
     return {
         **first.to_dict(),
         "is_ped": bool(group["is_ped"].any()),
+        "is_bike": bool(group["is_bike"].any()),
         "severity": _most_severe(group["severity"]),
         "light_report": group["light_report"].dropna().iloc[0]
         if group["light_report"].notna().any()

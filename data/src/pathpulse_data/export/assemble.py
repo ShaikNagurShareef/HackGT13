@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 from pathpulse_data.config import TZ
-from pathpulse_data.export.factors import Decomposition, decompose
+from pathpulse_data.export.factors import WALK_SPEC, Decomposition, FactorSpec, decompose
 from pathpulse_data.export.frames import build_quantiles, pack_frames, score_from_log_density
 from pathpulse_data.model.dataset import SegmentData, design_matrix, effective_length
 from pathpulse_data.model.spatial import SpatialFit
@@ -69,6 +69,7 @@ def assemble(
     t_reference: pd.DataFrame,
     data: SegmentData,
     today: date,
+    spec: FactorSpec = WALK_SPEC,
 ) -> Assembled:
     expected = fit.expected(data)
     x = design_matrix(data, fit.train_years)
@@ -77,7 +78,7 @@ def assemble(
     log_len = np.log(effective_length(data.features).to_numpy() / 100.0)
     table, road_base = temporal_table(tmodel, t_reference)
     seg_road_base = data.features["road_group"].map(road_base).to_numpy()
-    dec = decompose(contrib, spf_base, eb_adj, log_len, seg_road_base, table)
+    dec = decompose(contrib, spf_base, eb_adj, log_len, seg_road_base, table, spec=spec)
     spatial_sum = dec.base + dec.spatial.sum(axis=1).to_numpy()
 
     refs = reference_dates(today)

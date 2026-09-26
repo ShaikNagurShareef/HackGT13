@@ -23,6 +23,7 @@ CANONICAL_COLUMNS: tuple[str, ...] = (
     "lat",
     "lon",
     "is_ped",
+    "is_bike",
     "severity",
     "light_report",
     "surface_report",
@@ -99,6 +100,7 @@ def _frame(
     is_ped: pd.Series,
     cols: dict[str, str],
     year: pd.Series | None = None,
+    is_bike: pd.Series | None = None,
 ) -> pd.DataFrame:
     years = year if year is not None else ts.dt.year
     out = pd.DataFrame(
@@ -112,6 +114,7 @@ def _frame(
             "lat": pd.to_numeric(raw["lat"], errors="coerce"),
             "lon": pd.to_numeric(raw["lon"], errors="coerce"),
             "is_ped": is_ped.astype(bool).to_numpy(),
+            "is_bike": (is_bike.astype(bool).to_numpy() if is_bike is not None else False),
             "severity": _col(raw, cols["severity"]).map(severity_letter),
             "light_report": _col(raw, cols.get("light", "")),
             "surface_report": _col(raw, cols.get("surface", "")),
@@ -146,13 +149,18 @@ def _arc_yearly(raw: pd.DataFrame) -> pd.DataFrame:
         "road": "Roadway__From_Crash_Report_",
         "cross": "Intersecting_Roadway",
     }
-    return _frame(raw, "arc_crashes_2020_2024", ts, is_ped, cols, year=raw["Crash_Year"])
+    is_bike = _truthy(_col(raw, "Bicycle_Related__T_F_"))
+    return _frame(
+        raw, "arc_crashes_2020_2024", ts, is_ped, cols, year=raw["Crash_Year"], is_bike=is_bike
+    )
 
 
 def _coa_pedbike(raw: pd.DataFrame) -> pd.DataFrame:
-    is_ped = _col(raw, "Mode").astype("string").str.contains("Ped", na=False)
+    mode = _col(raw, "Mode").astype("string")
+    is_ped = mode.str.contains("Ped", na=False)
+    is_bike = mode.str.contains("Bicycl", na=False)
     ts = parse_epoch_ms(raw["Date_and_Time"], wall_clock=True)
-    return _frame(raw, "coa_pedbike_2022", ts, is_ped, _CRASH_LEVEL)
+    return _frame(raw, "coa_pedbike_2022", ts, is_ped, _CRASH_LEVEL, is_bike=is_bike)
 
 
 def _coa_all(raw: pd.DataFrame) -> pd.DataFrame:
@@ -169,35 +177,61 @@ def _cap(raw: pd.DataFrame) -> pd.DataFrame:
 
 def _midtown(raw: pd.DataFrame) -> pd.DataFrame:
     ts = parse_local_string(raw["Date_and_Time"])
-    return _frame(raw, "coa_midtown_2019_2023", ts, _truthy(raw["Pedestrian_Related"]), _COA_DETAIL)
+    is_bike = _truthy(_col(raw, "Bicycle_Related"))
+    return _frame(
+        raw.drop(columns=list(PII_COLUMNS), errors="ignore"),
+        "coa_midtown_2019_2023",
+        ts,
+        _truthy(raw["Pedestrian_Related"]),
+        _COA_DETAIL,
+        is_bike=is_bike,
+    )
 
 
 def _ka(raw: pd.DataFrame) -> pd.DataFrame:
-    mode = _col(raw, "TravelMode").astype("string").str.contains("Ped", na=False)
-    is_ped = _truthy(raw["Pedestrian_Related"]) | mode
-    return _frame(raw, "coa_ka_since_2013", parse_epoch_ms(raw["Date_W_Time"]), is_ped, _COA_DETAIL)
+    travel = _col(raw, "TravelMode").astype("string")
+    is_ped = _truthy(raw["Pedestrian_Related"]) | travel.str.contains("Ped", na=False)
+    # Scooter riders are a separate TravelMode here and are not counted as cyclists.
+    is_bike = _truthy(_col(raw, "Bicycle_Related")) | travel.str.contains("Bicycl", na=False)
+    ts = parse_epoch_ms(raw["Date_W_Time"])
+    return _frame(
+        raw.drop(columns=list(PII_COLUMNS), errors="ignore"),
+        "coa_ka_since_2013",
+        ts,
+        is_ped,
+        _COA_DETAIL,
+        is_bike=is_bike,
+    )
 
 
 def _gt(raw: pd.DataFrame) -> pd.DataFrame:
     most = _col(raw, "Most_Harmful_Event__Crash_Level_").astype("string")
     first = _col(raw, "First_Harmful_Event__Unit_Order_").astype("string")
     is_ped = most.str.contains("Pedestrian", na=False) | first.str.contains("Pedestrian", na=False)
+    is_bike = most.str.contains("Pedal", na=False) | first.str.contains("Pedal", na=False)
     ts = parse_date_time(raw["Date"], raw["Time"])
     cols = {
         **_CRASH_LEVEL,
         "light": "Light_Conditions__Crash_Level_",
         "cross": "Intersection_Name__from_Crash_Report_",
     }
-    return _frame(raw, "gt_pedcyc_2021_2025", ts, is_ped, cols)
+    return _frame(raw, "gt_pedcyc_2021_2025", ts, is_ped, cols, is_bike=is_bike)
 
 
 def _marta(raw: pd.DataFrame) -> pd.DataFrame:
     peds = pd.to_numeric(_col(raw, "F__of_Pedestrians_per_crash"), errors="coerce").fillna(0)
-    is_ped = _col(raw, "Crash_Mode").astype("string").eq("Pedestrian").fillna(False) | (peds > 0)
+    crash_mode = _col(raw, "Crash_Mode").astype("string")
+    is_ped = crash_mode.eq("Pedestrian").fillna(False) | (peds > 0)
+    is_bike = crash_mode.eq("Bicycle").fillna(False)
     ts = parse_date_time(raw["Date"], raw["Time"])
     cols = {**_CRASH_LEVEL, "cross": "Intersecting_Roadway"}
     return _frame(
-        raw.drop(columns=list(PII_COLUMNS), errors="ignore"), "marta_all_2023", ts, is_ped, cols
+        raw.drop(columns=list(PII_COLUMNS), errors="ignore"),
+        "marta_all_2023",
+        ts,
+        is_ped,
+        cols,
+        is_bike=is_bike,
     )
 
 

@@ -14,7 +14,7 @@ import shapely
 
 from pathpulse_data.config import INTERIM_DIR, THRESHOLDS
 from pathpulse_data.export.assemble import Assembled
-from pathpulse_data.export.factors import SPATIAL_FACTORS, TEMPORAL_FACTORS
+from pathpulse_data.export.factors import WALK_SPEC, FactorSpec
 from pathpulse_data.network.inherit import inherit_segments
 from pathpulse_data.network.layers import UTM
 
@@ -77,9 +77,20 @@ def segment_history(n_segments: int) -> pd.DataFrame:
     )
 
 
-def write_segments(out: Path, asm: Assembled) -> pd.DataFrame:
+def write_segments(
+    out: Path,
+    asm: Assembled,
+    prefix: str = "",
+    extra_meta: pd.DataFrame | None = None,
+    extra_props: dict[str, np.ndarray] | None = None,
+) -> pd.DataFrame:
+    """`segments.geojson` + `seg_meta.json` (or `<prefix>...`), optionally with extra columns
+    (appended to seg_meta) and extra per-feature properties (appended to the GeoJSON)."""
     segs = gpd.read_parquet(INTERIM_DIR / "road_segments.parquet").sort_values("seg_id")
     history = segment_history(len(segs))
+    if extra_meta is not None:
+        history = history.join(extra_meta.set_axis(history.index))
+    props = extra_props or {}
     names = segs["name"].astype("string").str.split(";").str[0].fillna("Unnamed street")
     meta = pd.DataFrame(
         {
@@ -100,18 +111,21 @@ def write_segments(out: Path, asm: Assembled) -> pd.DataFrame:
                 "n": meta.at[i, "name"],
                 "g": meta.at[i, "road_group"][0],
                 "c": meta.at[i, "confidence"][0],
+                **{k: v[i].item() for k, v in props.items()},
             },
         }
         for i, g in enumerate(segs.geometry)
     ]
-    _dump(out / "segments.geojson", {"type": "FeatureCollection", "features": features})
-    _dump(out / "seg_meta.json", {col: meta[col].tolist() for col in meta.columns})
+    _dump(out / f"{prefix}segments.geojson", {"type": "FeatureCollection", "features": features})
+    _dump(out / f"{prefix}seg_meta.json", {col: meta[col].tolist() for col in meta.columns})
     return meta
 
 
-def write_factors(out: Path, asm: Assembled) -> None:
+def write_factors(
+    out: Path, asm: Assembled, spec: FactorSpec = WALK_SPEC, prefix: str = ""
+) -> None:
     dec = asm.decomposition
-    np.save(out / "spatial_factors.npy", dec.spatial.to_numpy(np.float32))
+    np.save(out / f"{prefix}spatial_factors.npy", dec.spatial.to_numpy(np.float32))
     rows = [
         {
             "day_group": dg,
@@ -125,33 +139,38 @@ def write_factors(out: Path, asm: Assembled) -> None:
         )
     ]
     _dump(
-        out / "factors.json",
+        out / f"{prefix}factors.json",
         {
             "base": dec.base,
-            "spatial": [{"key": k, "label": v} for k, v in SPATIAL_FACTORS.items()],
-            "temporal": [{"key": k, "label": v} for k, v in TEMPORAL_FACTORS.items()],
+            "spatial": [{"key": k, "label": v} for k, v in spec.spatial.items()],
+            "temporal": [{"key": k, "label": v} for k, v in spec.temporal.items()],
             "temporal_rows": rows,
             "quantiles": asm.quantiles.tolist(),
         },
     )
 
 
-def write_frames(out: Path, asm: Assembled) -> None:
+def write_frames(out: Path, asm: Assembled, prefix: str = "") -> None:
     for key, buf in asm.frames.items():
-        (out / f"frames_{key}.bin").write_bytes(buf.tobytes())
+        (out / f"{prefix}frames_{key}.bin").write_bytes(buf.tobytes())
 
 
 def write_walk_graph(out: Path) -> dict[str, int]:
-    """Routing graph (both directions) with the road segment each edge inherits risk from."""
-    nodes = gpd.read_parquet(INTERIM_DIR / "walk_nodes.parquet")
-    edges = gpd.read_parquet(INTERIM_DIR / "walk_edges.parquet")
+    """Walk routing graph (both directions) with the road segment each edge inherits risk from."""
+    return write_graph(out, "walk", "walk_graph.npz")
+
+
+def write_graph(out: Path, network: str, filename: str) -> dict[str, int]:
+    """Routing graph from `<network>_nodes/edges.parquet` in the walk_graph.npz layout."""
+    nodes = gpd.read_parquet(INTERIM_DIR / f"{network}_nodes.parquet")
+    edges = gpd.read_parquet(INTERIM_DIR / f"{network}_edges.parquet")
     roads = gpd.read_parquet(INTERIM_DIR / "road_segments.parquet").to_crs(UTM)
     seg = inherit_segments(edges.to_crs(UTM), roads[["seg_id", "geometry"]]).to_numpy()
     index = {osmid: i for i, osmid in enumerate(nodes["osmid"])}
     coords = [_round_coords(g) for g in edges.geometry]
     offsets = np.cumsum([0] + [len(c) for c in coords])
     np.savez_compressed(
-        out / "walk_graph.npz",
+        out / filename,
         node_lon=nodes.geometry.x.to_numpy(),
         node_lat=nodes.geometry.y.to_numpy(),
         edge_u=edges["u"].map(index).to_numpy(np.int32),
@@ -165,7 +184,7 @@ def write_walk_graph(out: Path) -> dict[str, int]:
     return {"nodes": len(nodes), "edges": len(edges), "edges_with_road": int((seg >= 0).sum())}
 
 
-def write_hotspot_nodes(out: Path) -> int:
+def write_hotspot_nodes(out: Path, prefix: str = "") -> int:
     nodes = gpd.read_parquet(INTERIM_DIR / "road_nodes.parquet")
     segs = pd.read_parquet(INTERIM_DIR / "road_segments.parquet", columns=["seg_id", "u", "v"])
     incident = pd.concat(
@@ -181,7 +200,7 @@ def write_hotspot_nodes(out: Path) -> int:
         [round(pos[n].x, COORD_DECIMALS), round(pos[n].y, COORD_DECIMALS), ids]
         for n, ids in by_node.items()
     ]
-    _dump(out / "hotspot_nodes.json", rows)
+    _dump(out / f"{prefix}hotspot_nodes.json", rows)
     return len(rows)
 
 

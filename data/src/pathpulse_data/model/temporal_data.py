@@ -29,10 +29,19 @@ def hour_start(ts: pd.Series) -> pd.Series:
     return ts.dt.tz_convert("UTC").dt.floor("h").dt.tz_convert(TZ)
 
 
-def crash_cells(hours: pd.DataFrame) -> pd.DataFrame:
+def as_target(frame: pd.DataFrame, target_col: str) -> pd.DataFrame:
+    """Copy of `frame` whose task column `is_ped` holds `target_col` (e.g. cyclist crashes).
+
+    The temporal design calls the second task "ped"; for the ride model that task is the
+    cyclist flag, so every "ped:" term reads as "cyclist-specific".
+    """
+    return frame.assign(is_ped=frame[target_col].astype(bool))
+
+
+def crash_cells(hours: pd.DataFrame, target_col: str = "is_ped") -> pd.DataFrame:
     """Snapped timed crashes annotated with the *same* cell definitions as exposure."""
     snaps = pd.read_parquet(INTERIM_DIR / "crash_segments.parquet")
-    timed = snaps.loc[snaps["stream"] == "timed"].copy()
+    timed = as_target(snaps.loc[snaps["stream"] == "timed"], target_col)
     segs = pd.read_parquet(
         INTERIM_DIR / "segment_features.parquet", columns=["seg_id", "road_group"]
     )

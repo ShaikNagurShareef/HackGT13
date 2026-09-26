@@ -58,7 +58,7 @@ def build_road_index() -> RoadIndex:
 def snap_stream(index: RoadIndex, crashes: pd.DataFrame, stream: str) -> pd.DataFrame:
     core = crashes.loc[in_core(crashes)].reset_index(drop=True)
     snapped = snap_points(index, to_utm_xy(core["lon"], core["lat"]))
-    attrs = core[["crash_id", "is_ped", "year", "ts", "severity"]]
+    attrs = core[["crash_id", "is_ped", "is_bike", "year", "ts", "severity"]]
     return snapped.merge(attrs, left_on="point_idx", right_index=True).assign(stream=stream)
 
 
@@ -92,6 +92,24 @@ def _by_year(df: pd.DataFrame) -> dict[int, int]:
     return {int(y): int(n) for y, n in df.groupby("year").size().items()}
 
 
+def _bike_stats(
+    timed: pd.DataFrame, yearly: pd.DataFrame, snaps: pd.DataFrame
+) -> dict[str, object]:
+    """Cyclist crash counts in coverage: per source (before dedupe merges) and snapped."""
+    out: dict[str, object] = {}
+    for stream, df in (("timed", timed), ("yearly", yearly)):
+        core = df.loc[in_core(df) & df["is_bike"]]
+        snapped = snaps.loc[(snaps["stream"] == stream) & snaps["is_bike"], "crash_id"].nunique()
+        sources = core["sources"] if "sources" in core.columns else core["source"]
+        per_source = sources.str.split(";").explode().value_counts()
+        out[stream] = {
+            "core_bike": len(core),
+            "snapped_bike": int(snapped),
+            "by_source": {str(k): int(v) for k, v in per_source.items()},
+        }
+    return out
+
+
 def _summary(timed: pd.DataFrame, yearly: pd.DataFrame, snaps: pd.DataFrame) -> dict[str, object]:
     def core_stats(df: pd.DataFrame, stream: str) -> dict[str, int]:
         core = df.loc[in_core(df)]
@@ -109,6 +127,9 @@ def _summary(timed: pd.DataFrame, yearly: pd.DataFrame, snaps: pd.DataFrame) -> 
         "yearly": core_stats(yearly, "yearly"),
         "timed_ped_by_year": _by_year(timed.loc[in_core(timed) & timed["is_ped"]]),
         "yearly_ped_by_year": _by_year(yearly.loc[in_core(yearly) & yearly["is_ped"]]),
+        "timed_bike_by_year": _by_year(timed.loc[in_core(timed) & timed["is_bike"]]),
+        "yearly_bike_by_year": _by_year(yearly.loc[in_core(yearly) & yearly["is_bike"]]),
+        "bike": _bike_stats(timed, yearly, snaps),
         "data_through": str(timed["ts"].max().date()),
     }
 
