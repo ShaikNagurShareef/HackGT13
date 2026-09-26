@@ -53,7 +53,8 @@ describe('useNavigation', () => {
     expect(result.current.instruction?.headline).toBe('High traffic risk ahead')
     expect(result.current.instruction?.detail).toMatch(/^Spring Street in \d+ m$/)
 
-    act(() => void vi.advanceTimersByTime(60_000))
+    // Advance tick by tick so every position renders, as it does on a phone.
+    for (let i = 0; i < 120; i++) act(() => void vi.advanceTimersByTime(500))
     expect(result.current.arrived).toBe(true)
     const texts = speak.mock.calls.map(([u]) => (u as { text: string }).text)
     expect(texts.filter((t) => t.includes('Spring Street'))).toHaveLength(1)
