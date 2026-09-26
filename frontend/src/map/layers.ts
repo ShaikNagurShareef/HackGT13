@@ -188,7 +188,7 @@ function headingWedge(position: [number, number], heading: number): [number, num
 }
 
 /** Blue "you are here" dot with an accuracy halo (metres) and a heading wedge when known. */
-function meLayers(me: MeMarker | null | undefined): Layer[] {
+export function meLayers(me: MeMarker | null | undefined): Layer[] {
   if (!me) return []
   const out: Layer[] = []
   if (me.accuracy != null) {

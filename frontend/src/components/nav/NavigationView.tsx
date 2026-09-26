@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { NavMode } from '../../hooks/useNavigation'
 import { formatDistance, type NavInstruction } from '../../lib/navigation'
 import { Icon } from '../ui/Icon'
@@ -12,6 +13,8 @@ export interface NavigationViewProps {
   destination: string
   onEnd: () => void
   onDone: () => void
+  /** Share my walk + check-in (optional slot above the bottom bar). */
+  share?: ReactNode
 }
 
 const SECONDS_PER_MIN = 60
@@ -39,6 +42,7 @@ export function NavigationView(props: NavigationViewProps) {
         </div>
         {props.mode === 'preview' && <span className="nav-badge">Preview walk</span>}
       </div>
+      {props.share && <div className={props.arrived ? 'nav-share nav-share-arrived' : 'nav-share'}>{props.share}</div>}
       {props.arrived ? (
         <section className="nav-arrived panel" aria-label="You've arrived">
           <p className="nav-arrived-title">You've arrived</p>

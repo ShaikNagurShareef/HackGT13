@@ -4,6 +4,7 @@ import { isDemoMode } from '../api/demo'
 import type { Area } from '../api/schemas'
 import { MapControls } from '../components/home/MapControls'
 import { NavigationView } from '../components/nav/NavigationView'
+import { ShareWalkPanel } from '../components/share/ShareWalkPanel'
 import { StatusScreen } from '../components/StatusScreen'
 import type { BundleData } from '../hooks/useBundle'
 import { useDemoMode } from '../hooks/useDemoMode'
@@ -305,6 +306,18 @@ export function PathPro({ data, loadError }: PathProProps) {
           destination={view.to?.label ?? 'your destination'}
           onEnd={nav.end}
           onDone={actions.finishTrip}
+          share={
+            <ShareWalkPanel
+              demo={demo}
+              mode={nav.mode}
+              destination={view.to}
+              route={selectedRoute?.coords ?? null}
+              position={nav.position}
+              accuracy={nav.mode === 'gps' ? (fix?.accuracy ?? null) : null}
+              remainingS={nav.remainingS}
+              arrived={nav.arrived}
+            />
+          }
         />
       )}
       {screen !== 'nav' && (

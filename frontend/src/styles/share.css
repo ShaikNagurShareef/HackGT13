@@ -1,0 +1,268 @@
+/* Share my walk (navigation), the check-in dialog, and the /follow/<id> page. */
+
+:root {
+  --share-live: #4da3ff; /* live-sharing pulse: the walker's own blue, outside the risk ramp */
+  --nav-bar-h: 80px;
+  --nav-arrived-h: 150px;
+}
+
+/* ---------- Navigation: Share my walk ---------- */
+.nav-share {
+  position: absolute;
+  left: calc(var(--safe-left) + 12px);
+  right: calc(var(--safe-right) + 12px);
+  bottom: calc(var(--safe-bottom) + 12px + var(--nav-bar-h) + 10px);
+  z-index: var(--z-nav);
+  pointer-events: none;
+}
+.nav-share-arrived {
+  bottom: calc(var(--safe-bottom) + 12px + var(--nav-arrived-h) + 10px);
+}
+.share-walk {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 8px;
+}
+.share-walk > * {
+  pointer-events: auto;
+}
+.share-notice-slot:empty {
+  display: none;
+}
+
+.share-btn {
+  min-height: var(--tap);
+  border-radius: var(--radius-pill);
+  padding: 10px 18px 10px 14px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface-glass);
+  box-shadow: var(--shadow-soft);
+}
+.share-btn:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.share-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--tap);
+  padding: 4px 6px 4px 14px;
+  border-radius: var(--radius-pill);
+  border-color: rgba(77, 163, 255, 0.45);
+  box-shadow: var(--shadow-soft);
+}
+.share-live-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--share-live);
+  box-shadow: 0 0 0 0 rgba(77, 163, 255, 0.6);
+  animation: share-pulse 1.8s var(--ease-out) infinite;
+}
+.share-live-text {
+  font-weight: 600;
+  margin-right: 4px;
+}
+.share-sep {
+  color: var(--text-faint);
+}
+.share-chip {
+  min-height: 36px;
+  min-width: var(--tap);
+  padding: 6px 12px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--teal);
+  font-weight: 600;
+}
+.share-chip:hover {
+  background: var(--teal-tint);
+}
+.share-stop {
+  color: var(--danger);
+}
+.share-stop:hover {
+  background: rgba(255, 143, 168, 0.14);
+}
+
+.share-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 6px 8px 6px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  max-width: min(420px, 100%);
+}
+.share-notice .link-btn {
+  flex: none;
+  min-height: 36px;
+}
+
+@keyframes share-pulse {
+  70% {
+    box-shadow: 0 0 0 10px rgba(77, 163, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(77, 163, 255, 0);
+  }
+}
+
+/* ---------- Check-in dialog ---------- */
+.checkin-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: grid;
+  place-items: end center;
+  padding: 16px 16px calc(var(--safe-bottom) + 16px);
+  background: rgba(3, 9, 15, 0.62);
+}
+.checkin {
+  width: min(420px, 100%);
+  padding: 22px 20px 20px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-lift);
+}
+.checkin-title {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+}
+.checkin-detail {
+  margin: 0 0 18px;
+  color: var(--text-muted);
+}
+.checkin-actions {
+  display: grid;
+  gap: 10px;
+}
+.checkin-actions .btn {
+  width: 100%;
+  min-height: 52px;
+  font-size: 16px;
+  text-decoration: none;
+  color: var(--text);
+}
+.checkin-actions .btn.primary {
+  color: var(--on-teal);
+}
+.checkin-call {
+  background: var(--danger);
+  border-color: transparent;
+  font-weight: 700;
+}
+.checkin-actions .checkin-call {
+  color: #2a0710;
+}
+.checkin-call:hover {
+  background: #ffa5b9;
+}
+
+@media (min-width: 761px) {
+  .nav-share {
+    left: 50%;
+    right: auto;
+    width: min(560px, calc(100% - 32px));
+    transform: translateX(-50%);
+  }
+  .checkin-backdrop {
+    place-items: center;
+  }
+}
+
+/* ---------- Follow page ---------- */
+.follow-card {
+  position: absolute;
+  top: calc(var(--safe-top) + 12px);
+  left: calc(var(--safe-left) + 12px);
+  right: calc(var(--safe-right) + 12px);
+  z-index: var(--z-chrome);
+  padding: 16px 18px 8px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-glass);
+  box-shadow: var(--shadow-lift);
+}
+.follow-kicker {
+  margin: 0 0 4px;
+  color: var(--teal);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.follow-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  line-height: 1.2;
+}
+.follow-eta {
+  margin: 8px 0 0;
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--text);
+}
+.follow-fresh {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+.follow-reconnect {
+  margin: 6px 0 0;
+  color: var(--amber);
+  font-size: 13px;
+}
+.follow-banner {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--text-faint);
+  background: var(--surface-sunk);
+}
+.follow-banner.follow-done {
+  border-left-color: var(--teal);
+  background: var(--teal-tint);
+}
+.follow-banner-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+}
+.follow-done .follow-banner-title {
+  color: var(--teal);
+}
+.follow-banner-detail {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.follow-open {
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+@media (min-width: 761px) {
+  .follow-card {
+    right: auto;
+    width: 400px;
+    top: 20px;
+    left: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .share-live-dot {
+    animation: none;
+  }
+}

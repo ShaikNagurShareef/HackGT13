@@ -39,7 +39,8 @@ describe('FollowPage', () => {
     expect(screen.getByRole('heading', { name: 'Walking to Midtown MARTA' })).toBeInTheDocument()
     expect(screen.getByText('Arrives ~10:54 PM')).toBeInTheDocument()
     expect(screen.getByText('Updated 12 s ago')).toBeInTheDocument()
-    const map = await screen.findByTestId('follow-map')
+    await flush()
+    const map = screen.getByTestId('follow-map')
     expect(map).toHaveAttribute('data-walker', '-84.395,33.7775')
     expect(map).toHaveAttribute('data-route', 'yes')
 
