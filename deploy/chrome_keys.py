@@ -1,11 +1,11 @@
 """Drive dedicated Chrome tabs (user-authorized) to create sponsor keys; never print secrets.
 
 Commands:
-  open <url>                      open a new tab, print its id
-  look <tab_id>                   print visible buttons/inputs/text (key-like strings masked)
-  click <tab_id> <text>           click the first button/link whose text contains <text>
-  js <tab_id> <code>              run JS, print the result (masked)
-  save <tab_id> <ENV_NAME> <js>   run JS that returns a secret; write it to backend/.env only
+  open <url>                      open a new window, print its id
+  look <window_id>                   print visible buttons/inputs/text (key-like strings masked)
+  click <window_id> <text>           click the first button/link whose text contains <text>
+  js <window_id> <code>              run JS, print the result (masked)
+  save <window_id> <ENV_NAME> <js>   run JS that returns a secret; write it to backend/.env only
 """
 
 from __future__ import annotations
@@ -37,25 +37,23 @@ def osa(script: str) -> str:
     return out.stdout.strip()
 
 
-def run_js(tab_id: str, code: str) -> str:
+def run_js(window_id: str, code: str) -> str:
     escaped = json.dumps(code)[1:-1].replace("\\n", " ")
-    tid = int(tab_id)
-    script = (
-        'tell application "Google Chrome" to return (execute (first tab of '
-        f"(first window whose (id of tabs) contains {tid}) whose id is {tid}) "
-        f'javascript "{escaped}")'
+    # Tab ids overflow AppleScript integers; window ids stay small and compare reliably.
+    return osa(
+        f'tell application "Google Chrome" to return (execute active tab of window id '
+        f'{int(window_id)} javascript "{escaped}")'
     )
-    return osa(script)
 
 
 def open_tab(url: str) -> str:
     # A separate window keeps the user's own tabs untouched.
-    tab_id = osa(
+    window_id = osa(
         'tell application "Google Chrome"\nset w to make new window\n'
-        f'set URL of active tab of w to "{url}"\nreturn id of active tab of w\nend tell'
+        f'set URL of active tab of w to "{url}"\nreturn id of w\nend tell'
     )
     time.sleep(4)
-    return tab_id
+    return window_id
 
 
 LOOK = """(() => {
