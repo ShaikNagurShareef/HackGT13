@@ -93,3 +93,46 @@ def test_falls_back_to_full_graph_when_search_area_cuts_the_route(
     plan = router.plan(node_id(HOT_ROW, 0), node_id(HOT_ROW, COLS - 1), NIGHT, wet=False)
 
     assert plan.fastest.nodes[0] == node_id(HOT_ROW, 0)
+
+
+def _with_parallel_edge(bundle: Bundle, edge: int, length_ratio: float) -> Bundle:
+    """Add a second, reversed copy of `edge` (same street) with a scaled length."""
+    import dataclasses
+
+    import numpy as np
+
+    g = bundle.graph
+    pts = g.edge_coords(edge)[::-1]
+    graph = dataclasses.replace(
+        g,
+        edge_u=np.append(g.edge_u, g.edge_v[edge]),
+        edge_v=np.append(g.edge_v, g.edge_u[edge]),
+        edge_len=np.append(g.edge_len, g.edge_len[edge] * length_ratio),
+        edge_seg=np.append(g.edge_seg, g.edge_seg[edge]),
+        edge_kind=np.append(g.edge_kind, g.edge_kind[edge]),
+        coords=np.vstack([g.coords, pts]),
+        coord_offsets=np.append(g.coord_offsets, g.coord_offsets[-1] + len(pts)),
+    )
+    return dataclasses.replace(bundle, graph=graph)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(("ratio", "saved"), [(3.0, False), (0.5, True)])
+def test_parallel_edges_resolve_to_the_cheaper_one(
+    bundle: Bundle, ratio: float, saved: bool
+) -> None:
+    origin, dest = node_id(HOT_ROW, 0), node_id(HOT_ROW, COLS - 1)
+    first_hot = next(
+        e
+        for e in range(len(bundle.graph.edge_u))
+        if {int(bundle.graph.edge_u[e]), int(bundle.graph.edge_v[e])} == {origin, origin + 1}
+    )
+    base = Router(bundle).plan(origin, dest, NIGHT, wet=False).fastest
+
+    plan = Router(_with_parallel_edge(bundle, first_hot, ratio)).plan(
+        origin, dest, NIGHT, wet=False
+    )
+
+    expected = base.distance_m - (0.5 * bundle.graph.edge_len[first_hot] if saved else 0.0)
+    assert plan.fastest.distance_m == pytest.approx(expected, rel=1e-4)
+    assert plan.fastest.nodes == base.nodes
