@@ -10,10 +10,12 @@ from app.domain.safety import (
     BUSY,
     DAY_PART_KEYS,
     LIT,
+    MODERATE,
     QUIET,
     UNKNOWN,
     UNLIT,
     EdgeSignals,
+    busier_share,
     day_part_for_hour,
     densify,
     is_after_dark,
@@ -83,3 +85,13 @@ def test_densify_samples_long_edges() -> None:
 @pytest.mark.unit
 def test_densify_handles_single_point() -> None:
     assert len(densify([[-84.4, 33.77]], step_m=20.0)) == 1
+
+
+@pytest.mark.unit
+def test_busier_share_counts_moderate_and_busy_as_busier() -> None:
+    lengths = np.array([100.0, 100.0, 100.0, 100.0])
+
+    share = busier_share(lengths, np.array([QUIET, MODERATE, BUSY, UNKNOWN]))
+
+    assert share == pytest.approx(2 / 3)
+    assert busier_share(lengths, np.array([UNKNOWN, UNKNOWN, UNKNOWN, QUIET])) is None
