@@ -83,7 +83,8 @@ Job: community street reports. Tiger Data stays the system of record for crashes
 
 ## Submission
 - [ ] Devpost: every category above, the AI-tool disclosure (Claude Code + ECC) and data credits (already in `docs/devpost.md`)
-- [ ] Demo video v2 (3–5 min, narration + captions + music, sponsor section) — in progress; v1 at media/pathpro_demo.mp4.
+- [x] Demo video v2 (6:12): media/pathpro_demo_v2.mp4 + captions media/pathpro_demo_v2.srt/.vtt + thumbnail media/thumbnail_v2.png — CodingClaws intro, motivation, risks (traffic, reported crimes, lighting, weather, hazards), who it's for, usability, ROI, one scene per sponsor
+- [ ] Upload the video to YouTube (attach the .srt), paste the link into Devpost
 - [ ] (old) Demo video (2–3 min): live route, Risk Tides, "Why?" sheet with Tiger history, Listen (ElevenLabs), pathpro.tech in the address bar
 - [ ] Submit the Devpost link at expo.hexlabs.org
 - [ ] Expo kit: laptop on `?demo=1`, phone on pathpro.tech, QR code, model card, judge Q&A (`docs/judge_qa.md`)
