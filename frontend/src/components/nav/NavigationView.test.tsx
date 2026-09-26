@@ -34,6 +34,28 @@ describe('NavigationView', () => {
     expect(p.onEnd).toHaveBeenCalled()
   })
 
+  it('renders the share-my-walk slot while navigating and after arrival', () => {
+    const { unmount } = render(
+      <NavigationView
+        instruction={null}
+        mode="gps"
+        remainingS={600}
+        remainingM={700}
+        arrival="10:54 PM"
+        arrived={false}
+        destination="Midtown MARTA"
+        onEnd={vi.fn()}
+        onDone={vi.fn()}
+        share={<button type="button">Share my walk</button>}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Share my walk' })).toBeInTheDocument()
+    unmount()
+
+    setup({ arrived: true, share: <span>Sharing live</span> })
+    expect(screen.getByText('Sharing live')).toBeInTheDocument()
+  })
+
   it('labels a preview walk', () => {
     setup({ mode: 'preview' })
     expect(screen.getByText('Preview walk')).toBeInTheDocument()
