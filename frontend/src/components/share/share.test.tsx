@@ -50,6 +50,20 @@ describe('ShareWalkControl', () => {
 })
 
 describe('CheckInDialog', () => {
+  it('renders above the navigation chrome, as a direct child of <body>', () => {
+    // A nav container with its own stacking context must not trap the dialog below the bottom bar.
+    render(
+      <div data-testid="nav-host" style={{ position: 'fixed', zIndex: 5 }}>
+        <CheckInDialog onFine={() => {}} onShareLocation={() => {}} />
+      </div>,
+    )
+
+    const dialog = screen.getByRole('alertdialog', { name: 'Everything OK?' })
+    expect(screen.getByTestId('nav-host')).not.toContainElement(dialog)
+    expect(dialog.closest('.checkin-backdrop')?.parentElement).toBe(document.body)
+    expect(screen.getByRole('button', { name: 'Share my location' })).toBeVisible()
+  })
+
   it('asks "Everything OK?" with three clear choices, focusing "I\'m fine"', async () => {
     const onFine = vi.fn()
     const onShare = vi.fn()
