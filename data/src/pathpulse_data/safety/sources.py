@@ -63,7 +63,7 @@ def crime_layer(start_iso: str) -> Layer:
 CALLBOX_LAYER = Layer("safety_gt_callboxes", GT_CALLBOX_URL, out_fields=CALLBOX_FIELDS)
 
 # OpenStreetMap tags pulled for help points and street lamps.
-OSM_TAGS: dict[str, list[str]] = {
+OSM_TAGS: dict[str, bool | str | list[str]] = {
     "amenity": ["police", "fire_station", "hospital"],
     "railway": ["station"],
     "highway": ["street_lamp"],

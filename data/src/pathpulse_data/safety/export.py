@@ -95,7 +95,7 @@ def _streetlight_rates() -> pd.DataFrame:
 def _segment_activity(n_seg: int, thresholds: tuple[float, float]) -> np.ndarray:
     vol = pd.read_parquet(INTERIM_DIR / "segment_ped_volume.parquet")
     wide = vol.pivot_table(index="seg_id", columns=["day_type", "day_part"], values="volume")
-    parts = sorted({p for _, p in wide.columns})
+    parts = sorted(set(wide.columns.get_level_values("day_part")))
     blended = {}
     for p in parts:
         wd, we = wide.get((WEEKDAY, p)), wide.get((WEEKEND, p))

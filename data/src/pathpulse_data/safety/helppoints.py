@@ -49,10 +49,10 @@ def _kind(row: pd.Series) -> str | None:
 
 
 def osm_help_points(raw: pd.DataFrame) -> pd.DataFrame:
-    kinds = raw.apply(_kind, axis=1)
+    kinds = pd.Series([_kind(r) for _, r in raw.iterrows()], index=raw.index, dtype=object)
     rows = raw.assign(kind=kinds).loc[kinds.notna()]
     names = [_clean_name(n, k) for n, k in zip(rows["name"], rows["kind"], strict=True)]
-    return rows.assign(name=names)[COLUMNS].reset_index(drop=True)
+    return pd.DataFrame(rows.assign(name=names)[COLUMNS]).reset_index(drop=True)
 
 
 def callbox_points(raw: pd.DataFrame) -> pd.DataFrame:

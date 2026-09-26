@@ -50,7 +50,8 @@ def clean_crimes(raw: pd.DataFrame) -> pd.DataFrame:
 def in_window(crimes: pd.DataFrame, end: date, days: int) -> pd.DataFrame:
     """Crimes that occurred in the `days` days up to and including `end` (Atlanta dates)."""
     local_day = crimes["occurred"].dt.date
-    return crimes.loc[(local_day > end - timedelta(days=days)) & (local_day <= end)]
+    keep = (local_day > end - timedelta(days=days)) & (local_day <= end)
+    return pd.DataFrame(crimes.loc[keep])
 
 
 def hex_counts(crimes: pd.DataFrame, cells: pd.Index) -> pd.DataFrame:

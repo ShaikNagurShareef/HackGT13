@@ -46,7 +46,7 @@ def eb_relative_rate(counts: np.ndarray, exposure: np.ndarray) -> np.ndarray:
     if y.sum() <= 0:
         return np.ones_like(y)
     shape, rate, _ = _posterior(y, exposure)
-    return shape / rate
+    return np.asarray(shape / rate, dtype=float)
 
 
 def posterior_bands(
