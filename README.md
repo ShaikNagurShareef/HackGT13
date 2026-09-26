@@ -49,7 +49,7 @@ The data runs 2020–2024 across the whole City of Atlanta (2,228 pedestrian cra
 - **Second holdout (train 2020–22, test 2023):** 68.1% vs 45.5% for past-crash ranking and 54.2% for the HIN.
 - **City Pulse (2024, 3,537 hexes):** the top 10% of hexes held **74.5%** of pedestrian crashes, vs 66.1% for past-crash ranking and 13% at random. ROC-AUC is 0.92.
 - **What these numbers do and do not show:**
-  - The confidence interval resamples 47 spatial blocks, so nearby streets are not treated as independent.
+  - The confidence interval comes from 400 resamples of 614 H3 res-8 spatial blocks, so nearby streets are not treated as independent.
   - The gain over past-crash ranking in 2024 is +24.5 points (95% CI +20.4 to +28.8), and it repeats on 2023 (+22.6).
   - Citywide ranking includes many quiet residential streets, which makes it easier than ranking within dense Downtown alone.
   - We report ranking, not calibrated counts, because 2024 recorded more pedestrian crashes than earlier years.
