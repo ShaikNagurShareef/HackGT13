@@ -594,7 +594,7 @@
   white-space: normal;
   text-align: left;
 }
-.street-reports-chips .chip:disabled {
+.street-reports-chips .chip[aria-disabled='true'] {
   opacity: 0.6;
   cursor: progress;
 }

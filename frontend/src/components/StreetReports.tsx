@@ -37,6 +37,8 @@ export function StreetReports({ segId, onReported }: { segId: number; onReported
   const reports = load.reports
 
   const submit = (category: ReportCategory) => {
+    // aria-disabled (not disabled) keeps focus on the chip; guard the click here instead.
+    if (busy || sent === category) return
     setBusy(true)
     setStatus('')
     api
@@ -75,7 +77,7 @@ export function StreetReports({ segId, onReported }: { segId: number; onReported
             type="button"
             className="chip"
             aria-pressed={sent === c}
-            disabled={busy}
+            aria-disabled={busy || undefined}
             onClick={() => submit(c)}
           >
             {CATEGORY_LABELS[c]}

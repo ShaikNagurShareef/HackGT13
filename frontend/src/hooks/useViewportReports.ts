@@ -32,8 +32,8 @@ export function useViewportReports(enabled: boolean) {
       .then((found) => id === seq.current && setReports(found))
       .catch((e: unknown) => {
         if (id !== seq.current) return
-        setReports([])
         if (e instanceof ApiError && OFF_CODES.has(e.code)) setServiceOn(false)
+        // Otherwise a transient blip: keep the last good markers rather than flicker.
       })
   }, [])
 
@@ -52,6 +52,9 @@ export function useViewportReports(enabled: boolean) {
     if (lastBbox.current) schedule(lastBbox.current, 0)
   }, [schedule])
 
+  useEffect(() => {
+    if (!active) window.clearTimeout(timer.current) // e.g. switched to City Pulse mid-debounce
+  }, [active])
   useEffect(() => () => window.clearTimeout(timer.current), [])
 
   return { reports: active ? reports : [], available: active, onViewport, refresh }
