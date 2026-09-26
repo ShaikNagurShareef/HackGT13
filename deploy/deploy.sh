@@ -12,23 +12,27 @@ echo "==> building frontend"
 (cd "$ROOT/frontend" && npm ci --no-audit --no-fund && npm run build)
 
 echo "==> shipping code, artifacts ($VERSION), and web build"
-rsync -az --delete \
+rsync -az --delete -e "${RSYNC_RSH:-ssh}" \
   --exclude '.git' --exclude 'node_modules' --exclude '.venv' --exclude 'cache' \
   --exclude 'data/raw' --exclude 'data/interim' --exclude 'artifacts' --exclude 'frontend' \
   --exclude 'backend/.env' --exclude '__pycache__' \
   "$ROOT/" "$HOST:/srv/pathpulse/app/"
-rsync -az "$ROOT/artifacts/$VERSION" "$HOST:/srv/pathpulse/artifacts/"
-rsync -az --delete "$ROOT/frontend/dist/" "$HOST:/srv/pathpulse/web/"
+rsync -az -e "${RSYNC_RSH:-ssh}" "$ROOT/artifacts/$VERSION" "$HOST:/srv/pathpulse/artifacts/"
+rsync -az --delete -e "${RSYNC_RSH:-ssh}" "$ROOT/frontend/dist/" "$HOST:/srv/pathpulse/web/"
 if [ -f "$ROOT/backend/.env" ]; then
-  rsync -az --chmod=F600 "$ROOT/backend/.env" "$HOST:/srv/pathpulse/app/backend/.env"
+  rsync -az -e "${RSYNC_RSH:-ssh}" --chmod=F600 "$ROOT/backend/.env" "$HOST:/srv/pathpulse/app/backend/.env"
 fi
 
 echo "==> installing and restarting"
-ssh "$HOST" bash -s <<EOF
+${RSYNC_RSH:-ssh} "$HOST" bash -s <<EOF
 set -euo pipefail
 cd /srv/pathpulse/app
 ln -sfn "/srv/pathpulse/artifacts/$VERSION" /srv/pathpulse/artifacts/current
-grep -q '^ALLOWED_ORIGINS=' backend/.env 2>/dev/null || echo "ALLOWED_ORIGINS=https://$DOMAIN" >>backend/.env
+touch backend/.env
+# Production values always win over whatever the laptop .env had for these.
+sed -i -E '/^(ALLOWED_ORIGINS|ARTIFACTS_DIR|APP_ENV)=/d' backend/.env
+printf 'ALLOWED_ORIGINS=https://%s\nARTIFACTS_DIR=/srv/pathpulse/artifacts/current\nAPP_ENV=production\n' "$DOMAIN" >>backend/.env
+chmod 600 backend/.env
 chown -R pathpulse:pathpulse /srv/pathpulse
 sudo -u pathpulse /home/pathpulse/.local/bin/uv sync --package pathpulse-backend --frozen --no-dev
 cp deploy/pathpulse.service /etc/systemd/system/pathpulse.service

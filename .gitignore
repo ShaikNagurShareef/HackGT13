@@ -45,3 +45,6 @@ artifacts/*
 # OSMnx HTTP cache and reproducible intermediates
 cache/
 data/interim/
+
+# Deploy state
+deploy/.host
