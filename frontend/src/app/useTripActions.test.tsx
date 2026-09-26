@@ -111,6 +111,15 @@ describe('useTripActions', () => {
     expect(nav.start).toHaveBeenCalledWith('preview')
   })
 
+  it('Start clears stale notices and never records a start as "Your location"', () => {
+    const here = { lat: 33.7766, lon: -84.3963, label: 'Your location' }
+    const { result, routines, onNotice } = setup({ view: { from: here, to: MIDTOWN }, withRoute: true })
+    act(() => result.current.start())
+
+    expect(onNotice).toHaveBeenCalledWith(null)
+    expect(routines.record).toHaveBeenCalledWith(expect.objectContaining({ from: { ...here, label: 'Klaus Building' } }))
+  })
+
   it('Start does nothing without a route', () => {
     const { result, nav } = setup()
     act(() => result.current.start())

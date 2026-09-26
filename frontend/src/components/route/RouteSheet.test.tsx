@@ -34,6 +34,8 @@ describe('RouteSheet (RTE-04, mobile route sheet)', () => {
     expect(pp).toHaveTextContent('23 min · 49% less traffic risk')
     expect(pp).toHaveTextContent('+4 min vs fastest · arrive 10:52 PM')
     expect(pp).toHaveAttribute('aria-pressed', 'true')
+    expect(pp).toHaveTextContent('83')
+    expect(pp).not.toHaveTextContent('High') // both routes are often "High"; the risk cut leads instead
     expect(screen.getByTestId('route-fast')).toHaveTextContent('18 min')
     expect(screen.getByRole('region', { name: 'Route comparison' })).toHaveTextContent('Both routes use Fifth Street Northwest')
     expect(screen.getByRole('note')).toHaveTextContent('Always stay alert')

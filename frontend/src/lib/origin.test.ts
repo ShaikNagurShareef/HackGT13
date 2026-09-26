@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { YOUR_LOCATION, originMessage, resolveOrigin } from './origin'
+import { YOUR_LOCATION, describeStart, originMessage, resolveOrigin } from './origin'
 
 const BBOX = [-84.55, 33.64, -84.28, 33.88]
 const GT = { lat: 33.7766, lon: -84.3963, accuracy: 12, heading: null, at: 0 }
@@ -36,5 +36,21 @@ describe('originMessage', () => {
     expect(originMessage('locating')).toBe('Finding your location…')
     expect(originMessage('ready')).toBeNull()
     expect(originMessage('ask')).toMatch(/Pick a starting point/)
+  })
+})
+
+describe('describeStart (what a GPS start is called in trip history)', () => {
+  it('names a GPS start after the nearest known place, or a neutral label', () => {
+    expect(describeStart({ lat: 33.7766, lon: -84.3963, label: YOUR_LOCATION })).toEqual({
+      lat: 33.7766,
+      lon: -84.3963,
+      label: 'Klaus Building',
+    })
+    expect(describeStart({ lat: 33.9, lon: -84.2, label: YOUR_LOCATION }).label).toBe('Start point')
+  })
+
+  it('keeps chosen places as they are', () => {
+    const tech = { lat: 33.7765, lon: -84.3893, label: 'Tech Square' }
+    expect(describeStart(tech)).toBe(tech)
   })
 })

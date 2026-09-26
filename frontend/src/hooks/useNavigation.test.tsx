@@ -17,10 +17,13 @@ interface Props {
   gps: GeoFix | null
 }
 
+const DEPART = '2026-09-25T22:30:00-04:00'
+
 function setup(initial: Props) {
-  return renderHook(({ r, gps }: Props) => useNavigation({ route: r, gps, streets: STREETS, destination: DEST }), {
-    initialProps: initial,
-  })
+  return renderHook(
+    ({ r, gps }: Props) => useNavigation({ route: r, gps, streets: STREETS, destination: DEST, departAt: DEPART }),
+    { initialProps: initial },
+  )
 }
 
 describe('useNavigation', () => {
@@ -96,6 +99,26 @@ describe('useNavigation', () => {
 
     act(() => result.current.start('gps'))
     expect(result.current.instruction?.headline).toBe('Continue on Ferst Drive Northwest')
+  })
+
+  it('measures progress in route metres even when the drawn geometry runs longer', () => {
+    // Geometry is ~1 km; the router says the walk is 500 m with an alert at 200-260 m.
+    const r = route({ distance_m: 500, alerts: [{ start_m: 200, end_m: 260, names: ['Spring Street'], score: 95, stretches: 1 }] })
+    const halfway = { lat: (START.lat + END.lat) / 2, lon: (START.lon + END.lon) / 2 }
+    const { result } = setup({ r, gps: gpsAt(halfway) })
+
+    act(() => result.current.start('gps'))
+    expect(result.current.alongM).toBeCloseTo(250, -1)
+    expect(result.current.remainingM).toBeCloseTo(250, -1)
+    expect(result.current.instruction?.headline).toBe('High traffic risk here')
+  })
+
+  it('a preview walk arrives at the planned time; live GPS uses now', () => {
+    vi.useFakeTimers()
+    const { result } = setup({ r: route(), gps: null })
+
+    act(() => result.current.start('preview'))
+    expect(result.current.arrivalAt.toISOString()).toBe('2026-09-26T02:48:24.000Z')
   })
 
   it('stays idle without a route', () => {
