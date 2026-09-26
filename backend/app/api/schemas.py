@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.domain.reports import ReportCategory
 
 Condition = Literal["live", "dry", "wet"]
+Preference = Literal["lower_traffic_risk", "lit_and_busy"]
 
 
 class LatLon(BaseModel):
@@ -22,6 +23,7 @@ class RouteRequest(BaseModel):
     destination: LatLon
     depart_at: str = Field(default="now", max_length=40)
     cond: Condition = "live"
+    prefer: Preference = "lower_traffic_risk"  # lit_and_busy only changes routes after dark
 
 
 class ConditionUsed(BaseModel):
@@ -44,6 +46,16 @@ class AlertOut(BaseModel):
     stretches: int
 
 
+class RouteSafetyOut(BaseModel):
+    """Signals along a route (~100 m corridor for help points). Crime is context only."""
+
+    lit_share: float | None = Field(ge=0, le=1)
+    busy_share: float | None = Field(ge=0, le=1)
+    help_points_within_100m: int = Field(ge=0)
+    crimes_persons_nearby: int = Field(ge=0)
+    day_part: str
+
+
 class RouteOut(BaseModel):
     coords: list[list[float]]
     duration_s: float
@@ -56,6 +68,7 @@ class RouteOut(BaseModel):
     segment_ids: list[int]
     top_segments: list[NamedSegmentOut]
     alerts: list[AlertOut] = []
+    safety: RouteSafetyOut | None = None  # None when the bundle has no safety layer
 
 
 class ReportRequest(BaseModel):
@@ -152,3 +165,4 @@ class HealthData(BaseModel):
     graph_nodes: int
     database: Literal["ok", "unavailable", "not_configured"]
     reports: Literal["ok", "unavailable", "not_configured"] = "not_configured"
+    safety: Literal["ok", "unavailable"] = "unavailable"

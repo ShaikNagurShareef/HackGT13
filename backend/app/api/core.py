@@ -40,6 +40,7 @@ async def healthz(request: Request, bundle: BundleDep) -> Envelope[HealthData]:
         graph_nodes=len(bundle.graph.node_lon),
         database=database,
         reports=reports,
+        safety="ok" if getattr(request.app.state, "safety", None) is not None else "unavailable",
     )
     return ok(data, bundle.model_version)
 
@@ -76,7 +77,9 @@ async def routes(
     router: Annotated[Router, Depends(get_router)],
     weather: Annotated[WeatherService, Depends(get_weather)],
 ) -> Envelope[RoutesData]:
-    planned = await plan_routes(bundle, router, weather, req, request.app.state.hexes)
+    planned = await plan_routes(
+        bundle, router, weather, req, request.app.state.hexes, request.app.state.safety
+    )
     # Community reports are display-only context; the explanation evidence ignores them.
     reports = await route_reports(request.app.state.reports, planned)
     data = planned.model_copy(update={"reports": reports})

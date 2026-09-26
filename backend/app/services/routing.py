@@ -17,11 +17,13 @@ from app.api.schemas import (
 )
 from app.domain.alerts import avoided_segments, walk_alerts
 from app.domain.route_metrics import RouteMetrics
-from app.domain.router import RoutePlan, Router, RoutingError
+from app.domain.router import DEFAULT_PREFERENCE, RoutePlan, Router, RoutingError
 from app.domain.scoring import band_for
 from app.domain.timeutil import parse_departure
 from app.repositories.artifacts import Bundle
 from app.repositories.hexes import HexBundle
+from app.repositories.safety import SafetyBundle
+from app.services.safety import route_safety
 from app.services.weather import WeatherService
 
 SNAP_LIMIT_M = 150.0
@@ -57,7 +59,12 @@ def _snap(router: Router, lat: float, lon: float) -> tuple[int, float]:
     return node, dist
 
 
-def route_out(bundle: Bundle, r: RouteMetrics) -> RouteOut:
+def route_out(
+    bundle: Bundle,
+    r: RouteMetrics,
+    safety: SafetyBundle | None = None,
+    depart: datetime | None = None,
+) -> RouteOut:
     alerts = [
         AlertOut(
             start_m=round(a.start_m),
@@ -82,6 +89,7 @@ def route_out(bundle: Bundle, r: RouteMetrics) -> RouteOut:
         top_segments=[
             NamedSegmentOut(seg_id=s.seg_id, name=s.name, score=s.score) for s in r.top_segments
         ],
+        safety=route_safety(safety, r, depart) if safety and depart else None,
     )
 
 
@@ -104,6 +112,8 @@ def _message(plan: RoutePlan) -> str | None:
 def _route_key(req: RouteRequest, depart: datetime, cond: str) -> str:
     o, d = req.origin, req.destination
     raw = f"{o.lat:.5f},{o.lon:.5f}|{d.lat:.5f},{d.lon:.5f}|{depart:%Y-%m-%dT%H}|{cond}"
+    if req.prefer != DEFAULT_PREFERENCE:
+        raw += f"|{req.prefer}"  # default keys are unchanged
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
 
@@ -113,6 +123,7 @@ async def plan_routes(
     weather: WeatherService,
     req: RouteRequest,
     hexes: HexBundle | None = None,
+    safety: SafetyBundle | None = None,
 ) -> RoutesData:
     try:
         depart = parse_departure(req.depart_at)
@@ -124,13 +135,15 @@ async def plan_routes(
     resolved = await weather.resolve(req.cond, depart)
     try:
         # ~120 ms of CPU: keep the event loop free for other requests and LLM calls.
-        plan = await asyncio.to_thread(router.plan, origin, dest, depart, resolved.wet)
+        plan = await asyncio.to_thread(router.plan, origin, dest, depart, resolved.wet, req.prefer)
     except RoutingError as exc:
         raise AppError(exc.code, str(exc), status=422) from exc
     fastest, pp = plan.fastest, plan.pathpro
     reduction = (
         round((1 - pp.exposure / fastest.exposure) * 100) if pp and fastest.exposure else None
     )
+    if reduction is not None and reduction <= 0:
+        reduction = None  # a lit-and-busy pick may not cut traffic exposure; never show < 0
     cond = "wet" if resolved.wet else "dry"
     avoided = []
     if pp is not None:
@@ -143,8 +156,8 @@ async def plan_routes(
         avoided=avoided,
         condition_used=ConditionUsed(cond=cond, source=resolved.source, label=resolved.label),  # type: ignore[arg-type]
         depart_at=depart.isoformat(),
-        fastest=route_out(bundle, fastest),
-        pathpro=route_out(bundle, pp) if pp else None,
+        fastest=route_out(bundle, fastest, safety, depart),
+        pathpro=route_out(bundle, pp, safety, depart) if pp else None,
         message_code=plan.message_code,
         message=_message(plan),
         time_cost_min=round((pp.duration_s - fastest.duration_s) / 60, 1) if pp else None,

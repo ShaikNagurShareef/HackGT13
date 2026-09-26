@@ -81,7 +81,8 @@ def measure_route(
 ) -> RouteMetrics:
     g, meta = bundle.graph, bundle.seg_meta
     away = float(bundle.quantiles[500])
-    elapsed, steps, coords, log_ds = 0.0, [], [], []
+    elapsed, steps, log_ds = 0.0, [], []
+    coords: list[list[float]] = []
     nodes = [int(g.edge_v[edge_of[path[0]]] if reversed_[path[0]] else g.edge_u[edge_of[path[0]]])]
     for d in path:
         e = int(edge_of[d])

@@ -23,6 +23,7 @@ from app.api.envelope import (
 )
 from app.api.extras import extras
 from app.api.reports import reports
+from app.api.safety import safety as safety_routes
 from app.api.walks import walks
 from app.config import Settings, get_settings
 from app.domain.router import Router
@@ -31,6 +32,7 @@ from app.repositories.artifacts import load_bundle
 from app.repositories.hexes import load_hexes
 from app.repositories.history import HistoryRepository
 from app.repositories.reports import ReportsRepository
+from app.repositories.safety import load_safety
 from app.repositories.walks import WalksRepository
 from app.services.explain.providers import GeminiProvider, GroqProvider, Provider
 from app.services.explain.service import ExplainService
@@ -93,7 +95,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title="PathPro API", version=bundle.model_version, lifespan=lifespan)
     app.state.bundle = bundle
-    app.state.router = Router(bundle)
+    # Personal-safety layer is optional; only lighting/foot-traffic signals reach the router.
+    app.state.safety = load_safety(bundle.root, bundle.n_segments, len(bundle.graph.edge_u))
+    app.state.router = Router(bundle, app.state.safety.edges if app.state.safety else None)
     app.state.hexes = load_hexes(bundle.root)  # City Pulse is optional (P1)
     app.state.settings = cfg
     app.state.routes_cache = LRUCache(maxsize=ROUTES_CACHE_SIZE)
@@ -122,6 +126,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(areas)
     app.include_router(reports)
     app.include_router(walks)
+    app.include_router(safety_routes)
     app.mount(
         f"/static/{bundle.model_version}",
         StaticFiles(directory=bundle.root),
