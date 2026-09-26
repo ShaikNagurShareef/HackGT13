@@ -44,9 +44,20 @@ export interface ComparisonCardProps {
   explanation: string | null
   onClear: () => void
   onSelectSegment: (id: number) => void
+  onFocusSegment?: (id: number) => void
+  onListen?: () => void
+  walk?: { active: boolean; progress: number; banner: string | null; onStart: () => void; onStop: () => void }
 }
 
-export function ComparisonCard({ routes, explanation, onClear, onSelectSegment }: ComparisonCardProps) {
+export function ComparisonCard({
+  routes,
+  explanation,
+  onClear,
+  onSelectSegment,
+  onFocusSegment,
+  onListen,
+  walk,
+}: ComparisonCardProps) {
   const { fastest, pathpulse } = routes
   const depart = new Date(routes.depart_at)
   return (
@@ -76,6 +87,40 @@ export function ComparisonCard({ routes, explanation, onClear, onSelectSegment }
       <p className="explanation" data-testid="route-explanation">
         {explanation ?? templateSummary(routes)}
       </p>
+      <div className="card-actions">
+        {onListen && (
+          <button type="button" className="chip" onClick={onListen}>
+            🔊 Listen
+          </button>
+        )}
+        {walk && pathpulse && (
+          <button
+            type="button"
+            className="chip"
+            aria-pressed={walk.active}
+            onClick={walk.active ? walk.onStop : walk.onStart}
+          >
+            {walk.active ? `■ Stop preview (${Math.round(walk.progress * 100)}%)` : '▶ Preview walk'}
+          </button>
+        )}
+      </div>
+      {walk?.banner && (
+        <p className="walk-banner" role="status" aria-live="assertive">
+          {walk.banner}
+        </p>
+      )}
+      {pathpulse && routes.avoided.length > 0 && (
+        <div className="avoided" aria-label="High-risk stretches the PathPulse route avoids">
+          <span className="faint">
+            Avoids {routes.avoided.length} high-risk stretch{routes.avoided.length === 1 ? '' : 'es'}:
+          </span>
+          {routes.avoided.slice(0, 4).map((a) => (
+            <button key={a.seg_id} type="button" className="chip" onClick={() => onFocusSegment?.(a.seg_id)}>
+              {a.name} <span className="num">{a.score}</span>
+            </button>
+          ))}
+        </div>
+      )}
       {routes.message && pathpulse && <p className="faint">{routes.message}</p>}
       {routes.unavoidable.length > 0 && (
         <p className="faint">Both routes use {routes.unavoidable.join(', ')} — take extra care there.</p>

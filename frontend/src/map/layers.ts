@@ -29,6 +29,7 @@ interface LayerInput {
   reducedMotion: boolean
   onSegment: (id: number) => void
   hex?: HexInput | null
+  walker?: [number, number] | null
 }
 
 const FAST_GREY: [number, number, number, number] = [154, 166, 178, 235]
@@ -40,7 +41,7 @@ export function buildLayers(input: LayerInput): Layer[] {
   if (input.hex) {
     const h = input.hex
     const hexLayer = buildHexLayer(h.cells, h.frame, h.frameKey, reducedMotion, h.onPick)
-    return [hexLayer, ...routeLayers(input.fastest, input.pathpulse)]
+    return [hexLayer, ...routeLayers(input.fastest, input.pathpulse), ...walkerLayer(input.walker)]
   }
   const routing = input.fastest != null
   const alpha = routing ? 110 : 230
@@ -114,7 +115,25 @@ export function buildLayers(input: LayerInput): Layer[] {
       )
     }
   }
-  return [...layers, ...routeLayers(input.fastest, input.pathpulse)]
+  return [...layers, ...routeLayers(input.fastest, input.pathpulse), ...walkerLayer(input.walker)]
+}
+
+function walkerLayer(position: [number, number] | null | undefined): Layer[] {
+  if (!position) return []
+  return [
+    new ScatterplotLayer<[number, number]>({
+      id: 'walker',
+      data: [position],
+      getPosition: (d) => d,
+      getRadius: 7,
+      radiusUnits: 'pixels',
+      getFillColor: [255, 255, 255, 255],
+      stroked: true,
+      getLineColor: [63, 209, 198, 255],
+      lineWidthMinPixels: 3,
+      updateTriggers: { getPosition: position },
+    }),
+  ]
 }
 
 function routeLayers(fastest: Route | null, pathpulse: Route | null): Layer[] {

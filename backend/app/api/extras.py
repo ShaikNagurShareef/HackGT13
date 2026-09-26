@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import BaseModel, Field
 
 from app.api.deps import get_bundle, get_weather
@@ -17,6 +17,7 @@ from app.services.explain.evidence import route_evidence, segment_evidence
 from app.services.explain.service import ExplainService
 from app.services.geocode import GeocodeService
 from app.services.segments import segment_detail
+from app.services.tts import TtsService
 from app.services.weather import WeatherService
 
 extras = APIRouter()
@@ -55,13 +56,9 @@ def _routes_cache(request: Request) -> dict[str, RoutesData]:
     return cache
 
 
-@extras.post("/explain", response_model=Envelope[ExplainData])
-async def explain(
-    req: ExplainRequest,
-    request: Request,
-    bundle: BundleDep,
-    weather: WeatherDep,
-) -> Envelope[ExplainData]:
+async def _explanation(
+    req: ExplainRequest, request: Request, bundle: Bundle, weather: WeatherService
+) -> ExplainData:
     service = _explainer(request)
     if req.kind == "route":
         routes = _routes_cache(request).get(req.route_key or "")
@@ -69,7 +66,7 @@ async def explain(
             raise AppError("ROUTE_EXPIRED", "Route details expired. Request the route again.", 404)
         key = f"route:{req.route_key}:{bundle.model_version}"
         result = await service.explain(key, route_evidence(routes))
-        return ok(ExplainData(text=result.text, source=result.source), bundle.model_version)
+        return ExplainData(text=result.text, source=result.source)
     if req.seg_id is None:
         raise AppError("BAD_REQUEST", "seg_id is required for segment explanations.", 422)
     try:
@@ -81,7 +78,27 @@ async def explain(
     cell = cell_at(at, resolved.wet)
     key = f"seg:{req.seg_id}:{'|'.join(map(str, cell.key))}:{bundle.model_version}"
     result = await service.explain(key, segment_evidence(detail))
-    return ok(ExplainData(text=result.text, source=result.source), bundle.model_version)
+    return ExplainData(text=result.text, source=result.source)
+
+
+@extras.post("/explain", response_model=Envelope[ExplainData])
+async def explain(
+    req: ExplainRequest, request: Request, bundle: BundleDep, weather: WeatherDep
+) -> Envelope[ExplainData]:
+    return ok(await _explanation(req, request, bundle, weather), bundle.model_version)
+
+
+@extras.post("/tts", response_class=Response)
+async def tts(
+    req: ExplainRequest, request: Request, bundle: BundleDep, weather: WeatherDep
+) -> Response:
+    """Speak an explanation the server itself produced; clients cannot supply text."""
+    text = (await _explanation(req, request, bundle, weather)).text
+    service: TtsService = request.app.state.tts
+    audio = await service.speak(text)
+    if audio is None:
+        raise AppError("TTS_UNAVAILABLE", "Voice is unavailable; using the device voice.", 503)
+    return Response(content=audio, media_type="audio/mpeg", headers={"Cache-Control": "no-store"})
 
 
 @extras.get("/conditions/live", response_model=Envelope[ConditionUsed])

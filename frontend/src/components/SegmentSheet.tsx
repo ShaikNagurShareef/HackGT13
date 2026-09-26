@@ -78,9 +78,10 @@ export interface SegmentSheetProps {
   explanation: string | null
   onClose: () => void
   onAbout: () => void
+  onListen?: () => void
 }
 
-export function SegmentSheet({ detail, explanation, onClose, onAbout }: SegmentSheetProps) {
+export function SegmentSheet({ detail, explanation, onClose, onAbout, onListen }: SegmentSheetProps) {
   const h = detail.history
   const pct = (x: number) => `${Math.round(x * 100)}%`
   return (
@@ -103,6 +104,11 @@ export function SegmentSheet({ detail, explanation, onClose, onAbout }: SegmentS
       <p className="explanation" data-testid="segment-explanation">
         {explanation ?? 'Loading explanation…'}
       </p>
+      {onListen && explanation && (
+        <button type="button" className="chip" onClick={onListen}>
+          🔊 Listen
+        </button>
+      )}
       <FactorBars detail={detail} />
       <dl className="history">
         <div>

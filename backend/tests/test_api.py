@@ -220,3 +220,28 @@ def test_client_key_groups_ipv6_by_64() -> None:
     assert client_key("203.0.113.7") == "203.0.113.7"
     assert client_key(None) == "unknown"
     assert client_key("testclient") == "testclient"
+
+
+@pytest.mark.integration
+def test_routes_include_alerts_and_avoided_segments(client: TestClient) -> None:
+    body = {
+        "origin": _node_latlon(client, node_id(HOT_ROW, 0)),
+        "destination": _node_latlon(client, node_id(HOT_ROW, COLS - 1)),
+        "depart_at": "2026-09-25T22:30",
+        "cond": "wet",
+    }
+    data = client.post("/routes", json=body).json()["data"]
+
+    assert data["avoided"], "the hot corridor should be listed as avoided"
+    assert all(a["score"] >= 75 for a in data["avoided"])
+    assert isinstance(data["fastest"]["alerts"], list)
+
+
+@pytest.mark.integration
+def test_tts_unavailable_without_key_uses_device_voice(client: TestClient) -> None:
+    resp = client.post(
+        "/tts", json={"kind": "segment", "seg_id": 2, "t": "2026-09-25T22:30", "cond": "dry"}
+    )
+
+    assert resp.status_code == 503
+    assert resp.json()["error"]["code"] == "TTS_UNAVAILABLE"

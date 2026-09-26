@@ -44,6 +44,17 @@ export const routeSchema = z.object({
   limited_data_m: z.number(),
   segment_ids: z.array(z.number().int()),
   top_segments: z.array(z.object({ seg_id: z.number(), name: z.string(), score: z.number() })),
+  alerts: z
+    .array(
+      z.object({
+        start_m: z.number(),
+        end_m: z.number(),
+        names: z.array(z.string()),
+        score: z.number(),
+        stretches: z.number(),
+      }),
+    )
+    .default([]),
 })
 
 export const routesSchema = z.object({
@@ -56,6 +67,7 @@ export const routesSchema = z.object({
   time_cost_min: z.number().nullable(),
   exposure_reduction_pct: z.number().nullable(),
   unavoidable: z.array(z.string()),
+  avoided: z.array(z.object({ seg_id: z.number(), name: z.string(), score: z.number() })).default([]),
   route_key: z.string(),
 })
 

@@ -518,3 +518,25 @@
   justify-content: space-between;
   margin-top: 2px;
 }
+
+.card-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 4px 0 8px;
+}
+.walk-banner {
+  margin: 6px 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 212, 121, 0.14);
+  border: 1px solid rgba(255, 212, 121, 0.45);
+  color: var(--text);
+}
+.avoided {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 6px 0;
+}

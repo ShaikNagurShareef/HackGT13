@@ -13,6 +13,8 @@ import { Timeline } from './components/Timeline'
 import type { FrameSet } from './frames/frameStore'
 import { useBundle } from './hooks/useBundle'
 import { useExplanation } from './hooks/useExplanation'
+import { usePreviewWalk } from './hooks/usePreviewWalk'
+import { speak } from './lib/voice'
 import { useTypewriter } from './hooks/useTypewriter'
 import { useViewState } from './hooks/useViewState'
 import { hotspotsFor } from './lib/hotspots'
@@ -55,6 +57,7 @@ export default function App() {
   const [cityMode, setCityMode] = useState(false)
   const [hexFrames, setHexFrames] = useState<FrameSet | null>(null)
   const [area, setArea] = useState<Area | null>(null)
+  const [focus, setFocus] = useState<{ path: [number, number][]; key: number } | null>(null)
 
   const now = useMemo(() => new Date(), [])
 
@@ -104,6 +107,7 @@ export default function App() {
   const segExplain = useExplanation(segKey, () =>
     api.explainSegment(detail?.seg_id ?? 0, detail?.at ?? 'now', view.cond),
   )
+  const walk = usePreviewWalk(routes?.pathpulse ?? null, true)
   const routeText = useTypewriter(routeExplain.result?.text ?? null)
   const segText = useTypewriter(segExplain.result?.text ?? (segExplain.failed && detail ? segmentSummary(detail) : null))
 
@@ -225,6 +229,8 @@ export default function App() {
         selectedSeg={view.seg}
         onSegment={onSegment}
         onMapPick={onMapPick}
+        walker={walk.position}
+        focus={focus}
         hex={
           cityMode && data.hexCells
             ? {
@@ -279,6 +285,12 @@ export default function App() {
           <SegmentSheet
             detail={detail}
             explanation={segText}
+            onListen={() =>
+              void speak(
+                { kind: 'segment', seg_id: detail.seg_id, t: detail.at, cond: view.cond },
+                segText ?? segmentSummary(detail),
+              )
+            }
             onClose={() => update({ seg: null })}
             onAbout={() => setAboutOpen(true)}
           />
@@ -286,6 +298,13 @@ export default function App() {
           <ComparisonCard
             routes={routes}
             explanation={routeText}
+            onListen={() => void speak({ kind: 'route', route_key: routes.route_key }, routeText ?? '')}
+            onFocusSegment={(id) => {
+              const seg = data.segments.find((s) => s.id === id)
+              if (seg) setFocus({ path: seg.path, key: Date.now() })
+              update({ seg: id })
+            }}
+            walk={{ active: walk.active, progress: walk.progress, banner: walk.banner, onStart: walk.start, onStop: walk.stop }}
             onClear={() => update({ from: null, to: null })}
             onSelectSegment={onSegment}
           />

@@ -33,6 +33,14 @@ class NamedSegmentOut(BaseModel):
     score: int
 
 
+class AlertOut(BaseModel):
+    start_m: float
+    end_m: float
+    names: list[str]
+    score: int
+    stretches: int
+
+
 class RouteOut(BaseModel):
     coords: list[list[float]]
     duration_s: float
@@ -44,6 +52,7 @@ class RouteOut(BaseModel):
     limited_data_m: float
     segment_ids: list[int]
     top_segments: list[NamedSegmentOut]
+    alerts: list[AlertOut] = []
 
 
 class RoutesData(BaseModel):
@@ -56,6 +65,7 @@ class RoutesData(BaseModel):
     time_cost_min: float | None
     exposure_reduction_pct: int | None
     unavoidable: list[str]
+    avoided: list[NamedSegmentOut] = []
     route_key: str
 
 

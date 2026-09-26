@@ -21,6 +21,8 @@ export interface MapViewProps {
   onSegment: (id: number) => void
   onMapPick: (lat: number, lon: number) => void
   hex?: HexInput | null
+  walker?: [number, number] | null
+  focus?: { path: [number, number][]; key: number } | null
 }
 
 function prefersReducedMotion(): boolean {
@@ -99,6 +101,21 @@ export function MapView(props: MapViewProps) {
       layers: buildLayers({ ...props, reducedMotion: prefersReducedMotion(), onSegment: props.onSegment }),
     })
   }, [props])
+
+  useEffect(() => {
+    const map = mapRef.current
+    const path = props.focus?.path
+    if (!map || !path?.length) return
+    const lons = path.map((c) => c[0])
+    const lats = path.map((c) => c[1])
+    map.fitBounds(
+      [
+        [Math.min(...lons), Math.min(...lats)],
+        [Math.max(...lons), Math.max(...lats)],
+      ],
+      { padding: 160, maxZoom: 17, duration: prefersReducedMotion() ? 0 : 700 },
+    )
+  }, [props.focus])
 
   const cityMode = Boolean(props.hex)
   useEffect(() => {

@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-3.8-flash"
     elevenlabs_api_key: SecretStr | None = None
     elevenlabs_voice_id: str | None = None
+    elevenlabs_model: str = "eleven_flash_v2_5"
+    tts_daily_budget: int = Field(default=500, ge=0)
     geoapify_api_key: SecretStr | None = None
     database_url: SecretStr | None = None
 

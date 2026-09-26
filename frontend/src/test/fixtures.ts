@@ -13,6 +13,7 @@ export const route = (over: Partial<Route> = {}): Route => ({
   high_risk_m: 1262,
   limited_data_m: 0,
   segment_ids: [1, 2],
+  alerts: [{ start_m: 300, end_m: 360, names: ['Spring Street'], score: 95, stretches: 1 }],
   top_segments: [
     { seg_id: 11, name: 'Fifth Street Northwest', score: 96 },
     { seg_id: 12, name: 'Peachtree Place Northwest', score: 98 },
@@ -35,6 +36,7 @@ export const routes = (over: Partial<Routes> = {}): Routes => ({
   time_cost_min: 4.3,
   exposure_reduction_pct: 49,
   unavoidable: ['Fifth Street Northwest'],
+  avoided: [{ seg_id: 12, name: 'Peachtree Place Northwest', score: 98 }],
   route_key: 'aaaaaaaaaaaaaaaa',
   ...over,
 })

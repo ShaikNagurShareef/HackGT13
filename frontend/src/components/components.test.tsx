@@ -44,11 +44,40 @@ describe('ComparisonCard (RTE-04)', () => {
     const onClear = vi.fn()
     render(<ComparisonCard routes={routes()} explanation={null} onClear={onClear} onSelectSegment={onSelect} />)
 
-    await userEvent.click(screen.getByRole('button', { name: /Peachtree Place Northwest/ }))
+    const hotList = screen.getByLabelText('Highest-risk stretches on the fastest route')
+    await userEvent.click(within(hotList).getByRole('button', { name: /Peachtree Place Northwest/ }))
     await userEvent.click(screen.getByRole('button', { name: 'Clear route' }))
 
     expect(onSelect).toHaveBeenCalledWith(12)
     expect(onClear).toHaveBeenCalled()
+  })
+
+  it('lists avoided stretches, listen, and preview-walk controls (RTE-06, VOX-01/05)', async () => {
+    const onFocus = vi.fn()
+    const onListen = vi.fn()
+    const onStart = vi.fn()
+    render(
+      <ComparisonCard
+        routes={routes()}
+        explanation={null}
+        onClear={vi.fn()}
+        onSelectSegment={vi.fn()}
+        onFocusSegment={onFocus}
+        onListen={onListen}
+        walk={{ active: false, progress: 0, banner: 'In 60 meters, Spring Street has high traffic risk.', onStart, onStop: vi.fn() }}
+      />,
+    )
+
+    const avoided = screen.getByLabelText('High-risk stretches the PathPulse route avoids')
+    expect(avoided).toHaveTextContent('Avoids 1 high-risk stretch')
+    await userEvent.click(within(avoided).getByRole('button', { name: /Peachtree Place Northwest/ }))
+    await userEvent.click(screen.getByRole('button', { name: /Listen/ }))
+    await userEvent.click(screen.getByRole('button', { name: /Preview walk/ }))
+
+    expect(onFocus).toHaveBeenCalledWith(12)
+    expect(onListen).toHaveBeenCalled()
+    expect(onStart).toHaveBeenCalled()
+    expect(screen.getByRole('status')).toHaveTextContent('Spring Street')
   })
 })
 

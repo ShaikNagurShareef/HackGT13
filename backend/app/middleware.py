@@ -22,7 +22,7 @@ from starlette.types import ASGIApp
 WINDOW_S = 60.0
 MAX_CLIENTS = 50_000
 EXEMPT_PREFIXES = ("/healthz", "/static")
-PAID_PREFIXES = ("/explain", "/geocode")
+PAID_PREFIXES = ("/explain", "/geocode", "/tts")
 IPV6_PREFIX = 64
 
 

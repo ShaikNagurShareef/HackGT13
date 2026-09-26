@@ -7,7 +7,15 @@ import hashlib
 from datetime import datetime
 
 from app.api.envelope import AppError
-from app.api.schemas import ConditionUsed, NamedSegmentOut, RouteOut, RouteRequest, RoutesData
+from app.api.schemas import (
+    AlertOut,
+    ConditionUsed,
+    NamedSegmentOut,
+    RouteOut,
+    RouteRequest,
+    RoutesData,
+)
+from app.domain.alerts import avoided_segments, walk_alerts
 from app.domain.route_metrics import RouteMetrics
 from app.domain.router import RoutePlan, Router, RoutingError
 from app.domain.scoring import band_for
@@ -43,7 +51,18 @@ def _snap(router: Router, lat: float, lon: float) -> tuple[int, float]:
 
 
 def route_out(bundle: Bundle, r: RouteMetrics) -> RouteOut:
+    alerts = [
+        AlertOut(
+            start_m=round(a.start_m),
+            end_m=round(a.end_m),
+            names=list(a.names),
+            score=a.score,
+            stretches=a.stretches,
+        )
+        for a in walk_alerts(r.edges, bundle.seg_meta["name"])
+    ]
     return RouteOut(
+        alerts=alerts,
         coords=[[round(x, 6), round(y, 6)] for x, y in r.coords],
         duration_s=round(r.duration_s, 1),
         distance_m=round(r.distance_m, 1),
@@ -102,7 +121,15 @@ async def plan_routes(
         round((1 - pp.exposure / fastest.exposure) * 100) if pp and fastest.exposure else None
     )
     cond = "wet" if resolved.wet else "dry"
+    avoided = []
+    if pp is not None:
+        scores = {s.seg_id: round(s.score) for s in fastest.edges}
+        avoided = [
+            NamedSegmentOut(seg_id=i, name=bundle.seg_meta["name"][i], score=scores[i])
+            for i in avoided_segments(fastest.edges, pp.edges, bundle.seg_meta["name"])
+        ]
     return RoutesData(
+        avoided=avoided,
         condition_used=ConditionUsed(cond=cond, source=resolved.source, label=resolved.label),  # type: ignore[arg-type]
         depart_at=depart.isoformat(),
         fastest=route_out(bundle, fastest),

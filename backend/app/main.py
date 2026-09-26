@@ -31,6 +31,7 @@ from app.repositories.history import HistoryRepository
 from app.services.explain.providers import GeminiProvider, GroqProvider, Provider
 from app.services.explain.service import ExplainService
 from app.services.geocode import GeocodeService
+from app.services.tts import TtsService
 from app.services.weather import WeatherService
 
 ROUTES_CACHE_SIZE = 512
@@ -72,6 +73,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
             geo_key = cfg.geoapify_api_key.get_secret_value() if cfg.geoapify_api_key else None
             app.state.geocoder = GeocodeService(client, geo_key, cfg.geocode_daily_budget)
+            eleven = cfg.elevenlabs_api_key.get_secret_value() if cfg.elevenlabs_api_key else None
+            app.state.tts = TtsService(
+                client, eleven, cfg.elevenlabs_voice_id, cfg.elevenlabs_model, cfg.tts_daily_budget
+            )
             yield
 
     app = FastAPI(title="PathPulse API", version=bundle.model_version, lifespan=lifespan)
