@@ -15,6 +15,15 @@
 
 Both videos have ElevenLabs narration and burned-in captions, and are stored with Git LFS. Clone with `git lfs install` first, or open a file on GitHub and choose "View raw" to play it. The timestamped narration and the source of every number are in [media/pathpro_demo_script.md](media/pathpro_demo_script.md).
 
+## Documentation
+
+Start at **[docs/README.md](docs/README.md)**:
+
+- [User guide](docs/guide/user_guide.md) ([PDF](docs/guide/user_guide.pdf))
+- [Technical documentation](docs/technical/README.md) ([PDF](docs/technical/pathpro_technical_docs.pdf)): architecture diagrams, data and models, API, deployment, security, testing
+- [Decision log](docs/decisions.md)
+- [Model card](docs/model_card.md)
+
 - **Modes:** Walk · Bike · E-bike · Scooter (a separate cyclist-risk model on OpenStreetMap's bike network), plus a MARTA hand-off for long walks. No car routing, by design.
 - **Offline demo:** add `?demo=1` for the scripted Klaus → Midtown MARTA scenario (walk and ride).
 - **Deploy:** `deploy/go.sh pathpro.tech` provisions the Vultr VM, installs Caddy + systemd, ships the app, and smoke-tests it.
