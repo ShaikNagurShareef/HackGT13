@@ -16,9 +16,10 @@ Source of truth for scope: `Requirements (PRD).md`. Build plan: see `docs/archit
 - Run API: `cd backend && uv run uvicorn app.main:create_app --factory --reload`
 
 ## Non-negotiables (from PRD)
-- Say "traffic risk", "lower-risk". Never "safe", "safest", "dangerous area", "crime", "guaranteed".
-- The LLM never produces a risk number; explanation text is validated against the evidence payload.
-- No demographic, income, or crime features in any model.
+- Say "traffic risk", "lower-risk", "well-lit", "busier streets", "help points", "reported crimes against persons". Never "safe", "safest", "unsafe", "dangerous area/neighborhood", "bad area", "guaranteed".
+- The LLM never produces a risk number; explanation text is validated against the evidence payload. LLM explanations stay about traffic risk (the validator still rejects crime framing).
+- No demographic or income features anywhere. No crime features in the traffic-risk model or in routing cost.
+- Personal-safety layer (user decision, 2026-09-26): safety signals (lighting, foot traffic, help points) may shape the optional "Well-lit & busier" route preference after dark; APD crimes against persons are informational only, aggregated to H3 hexes by day-part, always shown with the fairness note, never used to route.
 - Demo path (`?demo=1`) must work offline; the DB is never on the hot path.
 - API keys live only in `backend/.env`; never in the frontend or git.
 

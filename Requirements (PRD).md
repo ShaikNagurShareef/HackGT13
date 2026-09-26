@@ -18,7 +18,13 @@ Navigation apps optimize one number: travel time. They are silent about the fact
 
 PathPro turns public crash records into a street-level, time-varying risk surface, lets people *see* how that surface changes through the day and weather (Risk Tides), and offers a route that trades a small amount of time for a large reduction in exposure. Every score is explainable: a trained model produces it, SHAP decomposes it, and an LLM translates that evidence into plain language. The LLM never produces a risk number.
 
-**Scope of "risk":** PathPro models *traffic* risk to pedestrians — the historical and predicted likelihood of vehicle–pedestrian crashes. It does not model crime or personal security, and the product must say so wherever a user might assume otherwise (see §7 copy rules).
+**Scope of "risk":** PathPro models *traffic* risk to pedestrians — the historical and predicted likelihood of vehicle–pedestrian crashes. The traffic-risk model never uses crime data (see §7 copy rules).
+
+**Amendment (2026-09-26) — personal-safety extension.** At the team's decision, PathPro adds a *personal-safety layer* alongside traffic risk:
+- **Signals (may inform routing):** street lighting, foot traffic, and help points (GT blue-light emergency phones, police, fire, hospitals, MARTA). They power an optional "Well-lit & busier (after dark)" route preference; the default stays "Lower traffic risk".
+- **Crime (informational only):** Atlanta Police open data, crimes against persons only, aggregated to H3 res-9 hexes by day-part and banded relative to pedestrian exposure. Never used in routing cost or in the traffic-risk model; always shown with a fairness note ("Reports reflect where police record incidents… PathPro never routes around neighborhoods based on crime").
+- **Tools:** "Share my walk" (a live link a friend can follow; expires 6 h after the last update) and a check-in prompt if the walker is late.
+- Copy rules still forbid "safe", "safest", "unsafe", "dangerous area/neighborhood", "guaranteed"; LLM explanations stay traffic-only.
 
 ### 1.3 Goals
 
