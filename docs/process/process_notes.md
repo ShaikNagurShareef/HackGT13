@@ -134,6 +134,8 @@ Some tests guard product rules rather than code paths:
 | Sat 13:08 | `7170083` | Scope amended for a personal-safety layer |
 | Sat 13:12–13:54 | `4b6680c` … `0637711` | Safety signals, Share my walk, route geometry fix, safety review |
 | Sat 14:11 | `51a30ef` | Share my walk survives a page reload |
+| Sat 14:31–15:22 | `964cd1c` … `2831b31` | Ride mode: Walk · Bike · E-bike · Scooter on a separate ride model, a MARTA hand-off, and route planning p95 from 1.95 s to 0.26 s; recorded into the offline demo |
+| Sat 15:45–17:03 | `f00536f` … `04c5167` | Tagline becomes "See the risks on your way, before you go." (15:50). Demo video v2 (full and 35 s cuts), decision log, user guide, and technical docs. The access log stops recording coordinates and search text |
 
 ### Pivot 1: PathPulse became PathPro
 
@@ -207,6 +209,7 @@ Our original scope said "no crime data anywhere". At 13:08 Saturday the team dec
 Feedback: "Just walking for long distances is unrealistic; it can be driving, cycling, e-bike." We agreed on bikes, e-bikes, and scooters, and deliberately left out driving. Car routing is a crowded space, and risk-aware driving routes push traffic onto the neighborhood streets where people walk.
 
 What we built:
+
 - OpenStreetMap's bike network, with City bike facilities and BeltLine features.
 - A ride model that captures 69.9% [64.0–76.1] of 2024 cyclist crashes in its top 10% of street length, against 30.4% for past bike crashes.
 - Walk · Bike · E-bike · Scooter tabs in the app.
