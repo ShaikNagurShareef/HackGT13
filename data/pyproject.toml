@@ -34,11 +34,17 @@ packages = ["src/pathpulse_data"]
 
 [tool.coverage.run]
 source = ["pathpulse_data"]
+# Declared scope: pure pipeline and model logic. IO-only CLIs that just read/write
+# snapshots and artifacts are excluded (they are exercised by running the pipeline).
 omit = [
-  "*/fetch/*",
+  "*/fetch/snapshot.py",
+  "*/fetch/weather.py",
   "*/db/*",
-  "*/__main__.py",
-  "*/cli.py",
+  "*/ingest/run.py",
+  "*/export/bundle.py",
+  "*/export/writers.py",
+  "*/network/features.py",
+  "*/network/layers.py",
 ]
 
 [tool.coverage.report]
