@@ -1,6 +1,6 @@
 /** Turn-by-turn helpers for navigation mode: where the walker is on the route and what comes next. */
 
-import { haversine, type WalkAlert } from './walk'
+import { cumulativeDistances, haversine, type WalkAlert } from './walk'
 
 export interface LatLon {
   lat: number
@@ -135,4 +135,17 @@ export function nearestStreet(p: LatLon, streets: ReadonlyArray<NamedPath>): str
     }
   }
   return best?.name ?? null
+}
+
+export interface StartChoice {
+  mode: 'gps' | 'preview'
+  note: string | null
+}
+
+/** Start follows GPS on or near the route; otherwise (GPS off, or at the expo) it previews the walk. */
+export function startMode(coords: ReadonlyArray<[number, number]>, gps: LatLon | null): StartChoice {
+  if (!gps) return { mode: 'preview', note: 'Location is off, so Start previews the walk.' }
+  const { offsetM } = projectOnRoute(coords, cumulativeDistances(coords), gps)
+  if (offsetM <= NEAR_ROUTE_M) return { mode: 'gps', note: null }
+  return { mode: 'preview', note: `You're ${formatDistance(offsetM)} from this route, so Start previews the walk.` }
 }
