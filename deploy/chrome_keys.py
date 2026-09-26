@@ -38,11 +38,15 @@ def osa(script: str) -> str:
 
 
 def run_js(window_id: str, code: str) -> str:
-    escaped = json.dumps(code)[1:-1].replace("\\n", " ")
-    # Tab ids overflow AppleScript integers; window ids stay small and compare reliably.
+    # AppleScript string literals accept JSON's \" \\ \n escapes, but not \uXXXX.
+    escaped = json.dumps(code, ensure_ascii=False)[1:-1]
+    # Chrome ids exceed AppleScript's integer range and become reals, so `window id N` and
+    # `whose id is N` lookups are unreliable; compare numerically with a tolerance instead.
     return osa(
-        f'tell application "Google Chrome" to return (execute active tab of window id '
-        f'{int(window_id)} javascript "{escaped}")'
+        'tell application "Google Chrome"\n'
+        f"repeat with w in windows\nset d to (id of w) - {int(window_id)}\n"
+        f'if d < 1 and d > -1 then return (execute active tab of w javascript "{escaped}")\n'
+        'end repeat\nerror "window not found"\nend tell'
     )
 
 

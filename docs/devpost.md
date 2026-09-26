@@ -48,7 +48,7 @@ Walking from Klaus to Midtown MARTA at night, two routes look identical on a map
   - **Vultr** hosts the FastAPI backend and site behind Caddy.
   - The **.tech** domain: **pathpro.tech**, read as "path protect" (the .tech finishes the word).
 - **App:** React + MapLibre + deck.gl, with FastAPI and scipy Dijkstra for routing (p95 about 120 ms).
-- **Engineering:** test-first throughout. 252 automated tests (98 data, 72 API, 71 web, 11 end-to-end), 85–95% coverage per package, and Playwright end-to-end tests including an offline demo.
+- **Engineering:** test-first throughout. 368 automated tests (99 data, 148 API, 110 web, 11 end-to-end), 85%+ coverage per package, and Playwright end-to-end tests including an offline demo.
 - **AI tools (disclosed):**
   - Built with Claude Code following the ECC workflow: plan, test first, implement, independent ML/security review, verify.
   - Scope, product decisions, and review were ours.
