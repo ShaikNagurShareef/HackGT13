@@ -93,7 +93,7 @@ describe('useGeolocation', () => {
     expect(geo.watchPosition).not.toHaveBeenCalled()
   })
 
-  it('maps watch errors to states and keeps looking after a timeout', async () => {
+  it('keeps watching through timeouts and signal loss, and stops only when denied', async () => {
     const { geo, calls } = fakeGeolocation()
     install(geo, 'throws')
     const { result } = renderHook(() => useGeolocation())
@@ -105,10 +105,18 @@ describe('useGeolocation', () => {
 
     act(() => calls[0].failure(failure(2)))
     expect(result.current.status).toBe('unavailable')
+    expect(geo.clearWatch).not.toHaveBeenCalled()
 
-    act(() => result.current.request())
-    act(() => calls[1].failure(failure(1)))
+    act(() => calls[0].success(fix(33.78, -84.39)))
+    expect(result.current.status).toBe('granted')
+    act(() => calls[0].failure(failure(2)))
+    expect(result.current.status).toBe('granted')
+    expect(result.current.position).toMatchObject({ lat: 33.78 })
+
+    act(() => calls[0].failure(failure(1)))
     expect(result.current.status).toBe('denied')
     expect(geo.clearWatch).toHaveBeenCalled()
+    act(() => result.current.request())
+    expect(geo.watchPosition).toHaveBeenCalledTimes(2)
   })
 })
