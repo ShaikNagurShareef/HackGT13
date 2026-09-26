@@ -5,7 +5,7 @@
 **Intended use:** compare walking routes and understand where and when pedestrian traffic crashes concentrate.
 **Not intended for:**
 - a guarantee about any individual walk
-- judging personal safety or crime
+- judging whether a place or a person is safe (see the separate personal-safety layer below)
 - enforcement
 - insurance
 - property decisions
@@ -54,7 +54,7 @@
   - restaurants and nightlife
   - vehicle-crash density
   - pedestrian and vehicle crashes on nearby streets within 200 m, from the training years only
-- **No demographic, income, race, or crime features.** ARC's income, race, and environmental-justice flags were removed.
+- **No demographic, income, race, or crime features.** ARC's income, race, and environmental-justice flags were removed. The personal-safety layer below is separate and never feeds this model.
 - **Ensemble:** Poisson GLM + monotone LightGBM, combined in log space. Blend weight and boosting rounds are chosen by spatial-block cross-validation on H3 res-7 blocks.
 - **Empirical Bayes:** blends the model with each segment's own pedestrian crash history. The weight k is chosen by predicting the last training year from the earlier ones.
 
@@ -117,3 +117,15 @@
 - **Post-crash changes:** streets change after crashes (road diets, new signals).
 - **Coverage:** street-level scores and routing cover the whole City of Atlanta (49,915 road segments). City Pulse adds area-level scores for the same area.
 - **Pedestrian activity data:** StreetLight activity is from 2021.
+
+## Personal-safety layer (separate from this model)
+
+Added 2026-09-26. It sits beside the traffic-risk model and never changes its scores. Sources and coverage: [safety_sources.md](safety_sources.md).
+
+- **Signals:** street lighting (OSM `lit` tags, OSM street lamps, the City's downtown lights layer; known for only ~4.4% of walkable length, so unknown lighting stays unknown and is never treated as unlit), foot traffic (StreetLight activity by day part), and help points (Georgia Tech emergency call boxes, police, fire, hospitals, MARTA).
+- **Optional route preference:** "Well-lit & busier (after dark)". Only after sunset: known-unlit edges cost ×2 and known-quiet edges ×1.5. The traffic-exposure increase over the fastest route is capped at 10%, and the default plan is kept unless unlit-or-quiet length drops by at least 15%. The default preference stays "lower traffic risk".
+- **Reported crimes against persons (informational only):** Atlanta Police open data (homicide, robbery, aggravated assault, simple assault), excluding residences, jails, and shelters. Only date, offense, and location type are fetched. Reports are aggregated to H3 res-9 hexes by day part.
+  - Bands come from an Empirical-Bayes posterior of reports per unit of pedestrian activity. "Higher" needs at least 90% posterior probability above the citywide rate and at least one report, so a hex with no reports is never "higher".
+  - Never used in routing cost, the traffic model, or LLM explanations. A test scales crime counts by 1,000 and asserts routes are unchanged.
+  - Always shown with a fairness note: reports reflect where police record incidents, not how people should feel about a neighborhood.
+- **Limits:** police reports undercount some incidents and overcount heavily patrolled areas. The foot-traffic data is from 2021. Lighting coverage is sparse.
