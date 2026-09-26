@@ -19,9 +19,22 @@
 
 ## Inspiration
 
-Walking from Klaus to Midtown MARTA at night, two routes look identical on a map, but they aren't. Atlanta's pedestrian deaths concentrate on a small share of streets, and that risk rises and falls with the hour and the weather. Navigation apps optimize time and say nothing about it. We wanted to make that invisible, time-dependent traffic risk visible, and offer a route that trades a few minutes for a lot less exposure.
+Many of us walk between Klaus, Tech Square, and Midtown MARTA late at night. Our friends, especially women, already plan routes around well-lit, busier streets and text each other when they get home. Yet every navigation app we open answers only one question: what's fastest?
 
-A mentor tried our first version on his phone and told us it wasn't intuitive: GPS should be a must-have, and the app should learn your patterns the way his car learned his morning drive. We rebuilt the experience around that feedback. We also added a personal-safety layer, with safeguards against the neighborhood stigma that crime maps are known for.
+Atlanta's pedestrian deaths concentrate on a small share of streets, and that risk rises and falls with the hour and the weather. We wanted a map that shows where and when traffic risk is highest, a route that trades a few minutes for much less exposure, and better tools for anyone walking or riding alone at night.
+
+A mentor tried our first version on his phone and told us it wasn't intuitive: GPS should be a must-have, and the app should learn your patterns the way his car learned his morning drive. We rebuilt the experience around that feedback. We added bikes, e-bikes, and scooters, because walking across a city isn't realistic. We also added a personal-safety layer, with safeguards against the neighborhood stigma that crime maps are known for.
+
+## Who it's for
+
+- **Anyone walking alone at night**, including women and girls who already plan around lighting and foot traffic:
+  - a "Well-lit & busier (after dark)" route preference
+  - help points on the map, including 100 Georgia Tech blue-light phones
+  - **Share my walk**, so a friend can follow along live
+  - a late check-in ("Everything OK?", with Call 911 and Share location)
+- **Students and people without a car:** a MARTA hand-off for long walks, and Bike, E-bike, and Scooter modes.
+- **Older adults and anyone who wants their eyes up, not on a screen:** spoken "high traffic risk ahead" alerts, large touch targets, and keyboard and screen-reader support.
+- **Cities and campuses:** a ranked list of where fixes reach the most future crashes.
 
 ## What it does
 
@@ -76,6 +89,12 @@ A mentor tried our first version on his phone and told us it wasn't intuitive: G
   - Built with Claude Code following the ECC workflow: plan, test first, implement, independent review, verify.
   - Scope, product decisions (including the safety layer and its safeguards), and review were ours.
   - Frameworks and datasets are credited in the README and in docs/safety_sources.md.
+
+## Impact and ROI
+
+- **For cities:** with the same budget spent on 10% of street length, PathPro's ranking reaches **74.3%** of the next year's pedestrian crashes, against **53.8%** for the City's High Injury Network. That is **about 38% more crashes reached for the same spend**. For cyclists it is 69.9% against 43.6%, about 60% more.
+- **For people:** on the Klaus → Midtown MARTA night walk, **+4 minutes buys 54% less traffic-risk exposure**. By bike from Georgia Tech to Inman Park, +4 minutes buys 72% less.
+- **For scale:** a new city needs one coverage polygon plus its public crash layers. The pipeline, models, and app carry over.
 
 ## Challenges we ran into
 
