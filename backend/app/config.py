@@ -1,0 +1,42 @@
+"""Runtime settings from environment / backend/.env (keys never leave the server, NFR-11)."""
+
+from __future__ import annotations
+
+from functools import lru_cache
+from pathlib import Path
+
+from pydantic import Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=BACKEND_DIR / ".env", extra="ignore")
+
+    app_env: str = "development"
+    artifacts_dir: Path = BACKEND_DIR.parent / "artifacts" / "current"
+    allowed_origins: str = "http://localhost:5173"
+    rate_limit_per_minute: int = Field(default=60, ge=1)
+
+    groq_api_key: SecretStr | None = None
+    groq_model: str = "openai/gpt-oss-120b"
+    groq_fallback_model: str = "openai/gpt-oss-20b"
+    gemini_api_key: SecretStr | None = None
+    gemini_model: str = "gemini-3.8-flash"
+    elevenlabs_api_key: SecretStr | None = None
+    elevenlabs_voice_id: str | None = None
+    geoapify_api_key: SecretStr | None = None
+    database_url: SecretStr | None = None
+
+    explain_budget_s: float = 3.0
+    groq_budget_s: float = 1.6
+
+    @property
+    def origins(self) -> list[str]:
+        return [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
