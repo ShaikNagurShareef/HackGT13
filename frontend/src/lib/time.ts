@@ -31,13 +31,15 @@ export function hourLabel(hour: number): string {
   return `${twelve} ${suffix}`
 }
 
+const clockFmt = new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit' })
+
+/** Atlanta wall-clock time without a zone suffix, e.g. "10:54 PM" (arrival lines). */
+export function formatTime(d: Date): string {
+  return clockFmt.format(d)
+}
+
 export function formatClock(d: Date): string {
-  const time = new Intl.DateTimeFormat('en-US', {
-    timeZone: TZ,
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(d)
-  return `${time} ET`
+  return `${formatTime(d)} ET`
 }
 
 export function formatMinutes(seconds: number): string {

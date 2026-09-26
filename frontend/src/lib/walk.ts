@@ -14,7 +14,8 @@ export const WALK_SPEED_MPS = 1.3
 
 const R = 6_371_000
 
-function haversine([lon1, lat1]: [number, number], [lon2, lat2]: [number, number]): number {
+/** Great-circle distance in metres between two [lon, lat] points. */
+export function haversine([lon1, lat1]: [number, number], [lon2, lat2]: [number, number]): number {
   const toRad = (d: number) => (d * Math.PI) / 180
   const dLat = toRad(lat2 - lat1)
   const dLon = toRad(lon2 - lon1)
