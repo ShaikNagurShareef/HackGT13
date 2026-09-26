@@ -7,9 +7,10 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import BaseModel, Field
 
-from app.api.deps import get_bundle, get_weather
+from app.api.deps import get_bundle, get_weather, mode_context
 from app.api.envelope import AppError, Envelope, ok
 from app.api.schemas import Condition, ConditionUsed, RoutesData
+from app.domain.modes import ModeKey
 from app.domain.timeutil import cell_at, now_atlanta, parse_departure
 from app.repositories.artifacts import Bundle
 from app.repositories.history import HistoryRepository
@@ -31,6 +32,7 @@ class ExplainRequest(BaseModel):
     route_key: str | None = Field(default=None, pattern=r"^[0-9a-f]{16}$")
     t: str = Field(default="now", max_length=40)
     cond: Condition = "live"
+    mode: ModeKey = "walk"  # segment explanations: which model seg_id belongs to
 
 
 class ExplainData(BaseModel):
@@ -73,10 +75,13 @@ async def _explanation(
         at = parse_departure(req.t)
     except ValueError as exc:
         raise AppError("BAD_TIME", "Pick a valid time.", 422) from exc
+    model = mode_context(request, req.mode).bundle
     resolved = await weather.resolve(req.cond, at)
-    detail = segment_detail(bundle, req.seg_id, at, resolved)
+    detail = segment_detail(model, req.seg_id, at, resolved, req.mode)
     cell = cell_at(at, resolved.wet)
     key = f"seg:{req.seg_id}:{'|'.join(map(str, cell.key))}:{bundle.model_version}"
+    if req.mode != "walk":
+        key += f":{req.mode}"  # walk cache keys are unchanged
     result = await service.explain(key, segment_evidence(detail))
     return ExplainData(text=result.text, source=result.source)
 
@@ -141,9 +146,14 @@ class HourlyOut(BaseModel):
 
 
 @extras.get("/segments/{seg_id}/hourly", response_model=Envelope[HourlyOut])
-async def segment_hourly(seg_id: int, request: Request, bundle: BundleDep) -> Envelope[HourlyOut]:
-    """When crashes happened on this street, by hour (Tiger Data continuous aggregate)."""
-    if not 0 <= seg_id < bundle.n_segments:
+async def segment_hourly(
+    seg_id: int, request: Request, bundle: BundleDep, mode: ModeKey = "walk"
+) -> Envelope[HourlyOut]:
+    """When crashes happened on this street, by hour (Tiger Data continuous aggregate).
+
+    Walk segments only: the hourly history is keyed by walk segment ids.
+    """
+    if mode != "walk" or not 0 <= seg_id < bundle.n_segments:
         raise AppError("NOT_FOUND", "That street segment is not in PathPro coverage.", 404)
     history: HistoryRepository = request.app.state.history
     profile = await history.hourly(seg_id)

@@ -53,7 +53,13 @@ def _time_label(iso: str) -> str:
 def segment_evidence(detail: SegmentDetail) -> Evidence:
     ups = [f for f in detail.factors if f.points > 0][:MAX_FACTORS]
     downs = [f for f in detail.factors if f.points < 0][:1]
+    # Walker crash counts do not describe riding, so ride evidence carries only the total.
+    walker = (
+        {"pedestrian_crashes": round(detail.history.ped_crashes)} if detail.mode == "walk" else {}
+    )
+    history = {"crashes": round(detail.history.crashes), **walker, "period": detail.history.period}
     payload = {
+        "mode": detail.mode,
         "street": detail.name,
         "score": detail.score,
         "band": detail.band,
@@ -62,11 +68,7 @@ def segment_evidence(detail: SegmentDetail) -> Evidence:
         "confidence": detail.confidence,
         "raises_risk": [{"factor": f.label, "points": f.points} for f in ups],
         "lowers_risk": [{"factor": f.label, "points": abs(f.points)} for f in downs],
-        "history": {
-            "crashes": round(detail.history.crashes),
-            "pedestrian_crashes": round(detail.history.ped_crashes),
-            "period": detail.history.period,
-        },
+        "history": history,
     }
     return _with_numbers("segment", payload)
 
@@ -75,6 +77,7 @@ def route_evidence(routes: RoutesData) -> Evidence:
     fastest, pp = routes.fastest, routes.pathpro
     fast_names = [s.name for s in fastest.top_segments]
     payload: dict[str, Any] = {
+        "mode": routes.mode,
         "time": _time_label(routes.depart_at),
         "conditions": routes.condition_used.cond,
         "fastest": {

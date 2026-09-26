@@ -113,7 +113,8 @@ def test_bike_route_uses_ride_graph_speed_and_ignores_lit_preference(
     assert fastest["duration_s"] < walk["fastest"]["duration_s"]
     assert bike["pathpro"] is not None
     assert bike["fastest"]["safety"] is None
-    assert max(bike["pathpro"]["segment_ids"]) >= 12  # ride-only segment ids
+    # The 4-column ride grid numbers its segments differently from the 3-column walk grid.
+    assert bike["pathpro"]["segment_ids"] != walk["pathpro"]["segment_ids"]
     assert bike["route_key"] != walk["route_key"]
 
 

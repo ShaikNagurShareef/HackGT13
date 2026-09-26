@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 import numpy as np
 
 from app.api.envelope import AppError
 from app.api.schemas import ConditionUsed, FactorOut, HistoryOut, SegmentDetail
+from app.domain.modes import ModeKey
 from app.domain.scoring import attribute, band_for
 from app.domain.timeutil import cell_at
 from app.repositories.artifacts import Bundle
@@ -23,7 +25,15 @@ def factor_values(bundle: Bundle, seg_id: int, key: tuple[str, int, str, bool]) 
     return {k: float(v) for k, v in {**spatial, **temporal}.items()}
 
 
-def segment_detail(bundle: Bundle, seg_id: int, at: datetime, resolved: Resolved) -> SegmentDetail:
+def _meta_float(meta: dict[str, list[Any]], key: str, seg_id: int) -> float:
+    """History columns the ride model may not carry read as 0 rather than failing."""
+    column = meta.get(key)
+    return float(column[seg_id]) if column is not None else 0.0
+
+
+def segment_detail(
+    bundle: Bundle, seg_id: int, at: datetime, resolved: Resolved, mode: ModeKey = "walk"
+) -> SegmentDetail:
     if not 0 <= seg_id < bundle.n_segments:
         raise AppError("NOT_FOUND", "That street segment is not in PathPro coverage.", status=404)
     cell = cell_at(at, resolved.wet)
@@ -46,10 +56,10 @@ def segment_detail(bundle: Bundle, seg_id: int, at: datetime, resolved: Resolved
         ],
         remainder_points=result.remainder_points,
         history=HistoryOut(
-            crashes=meta["crashes"][seg_id],
-            ped_crashes=meta["ped_crashes"][seg_id],
-            dark_share=meta["dark_share"][seg_id],
-            wet_share=meta["wet_share"][seg_id],
+            crashes=_meta_float(meta, "crashes", seg_id),
+            ped_crashes=_meta_float(meta, "ped_crashes", seg_id),
+            dark_share=_meta_float(meta, "dark_share", seg_id),
+            wet_share=_meta_float(meta, "wet_share", seg_id),
             period=HISTORY_PERIOD,
         ),
         condition_used=ConditionUsed(
@@ -58,4 +68,5 @@ def segment_detail(bundle: Bundle, seg_id: int, at: datetime, resolved: Resolved
             label=resolved.label,  # type: ignore[arg-type]
         ),
         at=at.isoformat(),
+        mode=mode,
     )

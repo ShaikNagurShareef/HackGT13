@@ -7,6 +7,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.domain.modes import ModeKey, Network
 from app.domain.reports import ReportCategory
 
 Condition = Literal["live", "dry", "wet"]
@@ -23,7 +24,8 @@ class RouteRequest(BaseModel):
     destination: LatLon
     depart_at: str = Field(default="now", max_length=40)
     cond: Condition = "live"
-    prefer: Preference = "lower_traffic_risk"  # lit_and_busy only changes routes after dark
+    prefer: Preference = "lower_traffic_risk"  # lit_and_busy only changes walks after dark
+    mode: ModeKey = "walk"  # bike / ebike / scooter plan on the ride network
 
 
 class ConditionUsed(BaseModel):
@@ -69,7 +71,7 @@ class RouteOut(BaseModel):
     segment_ids: list[int]
     top_segments: list[NamedSegmentOut]
     alerts: list[AlertOut] = []
-    safety: RouteSafetyOut | None = None  # None when the bundle has no safety layer
+    safety: RouteSafetyOut | None = None  # None without a safety layer, and for ride modes
 
 
 class ReportRequest(BaseModel):
@@ -113,6 +115,8 @@ class RoutesData(BaseModel):
     avoided: list[NamedSegmentOut] = []
     route_key: str
     reports: list[ReportOut] = []  # community context only; never part of scores or evidence
+    mode: ModeKey = "walk"
+    prefer: Preference = "lower_traffic_risk"  # the preference actually used (walk only)
 
 
 class FactorOut(BaseModel):
@@ -142,6 +146,16 @@ class SegmentDetail(BaseModel):
     history: HistoryOut
     condition_used: ConditionUsed
     at: str
+    mode: ModeKey = "walk"  # ride-mode segment ids index the ride model
+
+
+class ModeOut(BaseModel):
+    key: ModeKey
+    label: str
+    available: bool
+    speed_kmh: float
+    network: Network
+    static_prefix: Literal["", "ride_"]
 
 
 class MetaData(BaseModel):
@@ -157,6 +171,13 @@ class MetaData(BaseModel):
     headline: dict[str, object]
     spatial_factors: list[FactorOut]
     temporal_factors: list[FactorOut]
+    modes: list[ModeOut] = []
+    ride_model: dict[str, object] | None = None  # the ride model's headline metrics
+
+
+class ModesHealth(BaseModel):
+    walk: Literal["ok"] = "ok"
+    ride: Literal["ok", "unavailable"] = "unavailable"
 
 
 class HealthData(BaseModel):
@@ -167,3 +188,11 @@ class HealthData(BaseModel):
     database: Literal["ok", "unavailable", "not_configured"]
     reports: Literal["ok", "unavailable", "not_configured"] = "not_configured"
     safety: Literal["ok", "unavailable"] = "unavailable"
+    modes: ModesHealth = Field(default_factory=ModesHealth)
+
+
+class StationOut(BaseModel):
+    name: str
+    lat: float
+    lon: float
+    lines: list[str] = []

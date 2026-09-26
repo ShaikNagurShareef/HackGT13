@@ -13,9 +13,12 @@ from app.services.explain.evidence import Evidence
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
-SYSTEM_PROMPT = """You explain pedestrian TRAFFIC risk scores for a walking map of Atlanta.
+SYSTEM_PROMPT = """You explain TRAFFIC risk scores for a walking and riding map of Atlanta.
 Rules:
 - Use ONLY the facts in the JSON evidence. Every number you write must appear in it.
+- The evidence "mode" is walk, bike, ebike, or scooter. For walk, it is traffic risk to people
+  walking. For bike, ebike, or scooter, say "riding" or "ride" (never "walk") and describe it
+  as traffic risk to people on bikes and scooters.
 - 1 to 3 short sentences, plain English, calm tone.
 - Say "traffic risk", "lower-risk", "historical crashes". Never say safe, safest, guaranteed,
   crime, or dangerous area/neighborhood. Never mention people, neighborhoods, or demographics.

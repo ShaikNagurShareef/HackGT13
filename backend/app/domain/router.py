@@ -11,6 +11,9 @@ edge's time also multiplied by a lighting / foot-traffic penalty (domain/safety.
 the candidate with the least unlit-or-quiet length wins, under the same detour budget and
 without adding more than 10% traffic exposure over the fastest route. Reported crime is
 never an input here.
+
+The same router serves the ride network (bike / e-bike / scooter): a TravelProfile sets the
+speed used for durations, the detour budget, and traversal-hour re-scoring.
 """
 
 from __future__ import annotations
@@ -42,6 +45,16 @@ M_PER_DEG = 111_320.0
 DEFAULT_PREFERENCE, LIT_AND_BUSY = "lower_traffic_risk", "lit_and_busy"
 MIN_SIGNAL_GAIN = 0.15  # the lit route must cut unlit/quiet length by 15%...
 MAX_EXTRA_EXPOSURE = 0.10  # ...without more than 10% extra traffic exposure
+
+
+@dataclass(frozen=True)
+class TravelProfile:
+    speed_mps: float = WALK_SPEED_MPS
+    long_trip_m: float = LONG_TRIP_M
+    long_trip_s: float = LONG_TRIP_S
+
+
+WALKING = TravelProfile()
 
 
 class RoutingError(Exception):
@@ -77,8 +90,8 @@ def _meaningfully_lower(fastest: RouteMetrics, best: RouteMetrics) -> bool:
     return score_gain or exposure_gain
 
 
-def _is_long(fastest: RouteMetrics) -> bool:
-    return fastest.distance_m > LONG_TRIP_M or fastest.duration_s > LONG_TRIP_S
+def _is_long(fastest: RouteMetrics, profile: TravelProfile = WALKING) -> bool:
+    return fastest.distance_m > profile.long_trip_m or fastest.duration_s > profile.long_trip_s
 
 
 def _signal_length(route: RouteMetrics, penalty: np.ndarray) -> float:
@@ -87,7 +100,11 @@ def _signal_length(route: RouteMetrics, penalty: np.ndarray) -> float:
 
 
 def choose_lit_plan(
-    default: RoutePlan, candidates: list[RouteMetrics], penalty: np.ndarray, budget: float
+    default: RoutePlan,
+    candidates: list[RouteMetrics],
+    penalty: np.ndarray,
+    budget: float,
+    profile: TravelProfile = WALKING,
 ) -> RoutePlan:
     """The lit-and-busy pick, or `default` unless it is meaningfully better lit or busier.
 
@@ -108,7 +125,7 @@ def choose_lit_plan(
     if base <= 0 or _signal_length(best, penalty) > base * (1 - MIN_SIGNAL_GAIN):
         return default
     unavoidable = tuple(sorted(fastest.high_risk_names & best.high_risk_names))
-    code = "long_trip" if _is_long(fastest) else "ok"
+    code = "long_trip" if _is_long(fastest, profile) else "ok"
     return RoutePlan(fastest, best, code, None, unavoidable)
 
 
@@ -124,7 +141,8 @@ class Router:
         self.dst = np.concatenate([g.edge_v, g.edge_u]).astype(np.int64)
         self.edge_of = np.concatenate([np.arange(n_edges), np.arange(n_edges)])
         self.reversed = np.concatenate([np.zeros(n_edges, bool), np.ones(n_edges, bool)])
-        self.time_s = np.concatenate([g.edge_len, g.edge_len]).astype(float) / WALK_SPEED_MPS
+        self.length_m = np.concatenate([g.edge_len, g.edge_len]).astype(float)
+        self.time_s = self.length_m / WALK_SPEED_MPS
         self.n_nodes = len(g.node_lon)
         lat0 = float(np.mean(g.node_lat))
         self._kx = M_PER_DEG * np.cos(np.radians(lat0))
@@ -166,9 +184,7 @@ class Router:
         ids = csr_matrix((keep + 1, (self.src[keep], self.dst[keep])), shape=shape)
         _, pred = dijkstra(weights, indices=origin, return_predecessors=True)
         if pred[dest] < 0:
-            raise RoutingError(
-                "NO_CONNECTION", "No walkable connection found between these points."
-            )
+            raise RoutingError("NO_CONNECTION", "No connection found between these points.")
         path, node = [], dest
         while node != origin:
             prev = int(pred[node])
@@ -185,9 +201,11 @@ class Router:
         log_d[has] = self.bundle.log_density(seg[has], cell)
         return np.exp(log_d - self.bundle.quantiles[HIGH_SCORE_QUANTILE])
 
-    def _measure(self, path: list[int], depart: datetime, wet: bool) -> RouteMetrics:
+    def _measure(
+        self, path: list[int], depart: datetime, wet: bool, time_s: np.ndarray
+    ) -> RouteMetrics:
         return measure_route(
-            self.bundle, path, self.edge_of, self.reversed, self.time_s, self.dst, depart, wet
+            self.bundle, path, self.edge_of, self.reversed, time_s, self.dst, depart, wet
         )
 
     def plan(
@@ -197,31 +215,33 @@ class Router:
         depart: datetime,
         wet: bool,
         prefer: str = DEFAULT_PREFERENCE,
+        profile: TravelProfile = WALKING,
     ) -> RoutePlan:
         if origin == dest or self.node_distance_m(origin, dest) < MIN_TRIP_M:
             raise RoutingError("TOO_CLOSE", "You're already there — here's the risk on this block.")
+        time_s = self.length_m / profile.speed_mps
         area = self._search_area(origin, dest)
         try:
-            fast_path = self._shortest(origin, dest, self.time_s, area)
+            fast_path = self._shortest(origin, dest, time_s, area)
         except RoutingError:
             area = None  # the box cut the only connection; search everything
-            fast_path = self._shortest(origin, dest, self.time_s)
-        fastest = self._measure(fast_path, depart, wet)
+            fast_path = self._shortest(origin, dest, time_s)
+        fastest = self._measure(fast_path, depart, wet, time_s)
         budget = min(fastest.duration_s * DETOUR_RATIO, fastest.duration_s + DETOUR_EXTRA_S)
         density = self._relative_density(depart, wet)
         candidates = []
         for lam in LAMBDA_LADDER:
-            path = self._shortest(origin, dest, self.time_s * (1 + lam * density), area)
-            candidates.append(self._measure(path, depart, wet))
+            path = self._shortest(origin, dest, time_s * (1 + lam * density), area)
+            candidates.append(self._measure(path, depart, wet, time_s))
         within = [c for c in candidates if c.duration_s <= budget + 1e-6]
         best = min(within, key=lambda c: (c.exposure, c.duration_s), default=fastest)
         overall = min(candidates, key=lambda c: (c.exposure, c.duration_s))
-        default = self._decide(fastest, best, overall)
+        default = self._decide(fastest, best, overall, profile)
         penalty = self._penalty(depart, prefer)
         if penalty is None:
             return default
-        lit = self._lit_candidates(origin, dest, area, density, penalty, depart, wet)
-        return choose_lit_plan(default, lit, penalty, budget)
+        lit = self._lit_candidates(origin, dest, area, density, penalty, depart, wet, time_s)
+        return choose_lit_plan(default, lit, penalty, budget, profile)
 
     def _penalty(self, depart: datetime, prefer: str) -> np.ndarray | None:
         """Per undirected edge penalty, only for the lit-and-busy preference after dark."""
@@ -238,21 +258,27 @@ class Router:
         penalty: np.ndarray,
         depart: datetime,
         wet: bool,
+        time_s: np.ndarray,
     ) -> list[RouteMetrics]:
         directed = penalty[self.edge_of]
         return [
             self._measure(
-                self._shortest(origin, dest, self.time_s * (1 + lam * density) * directed, area),
+                self._shortest(origin, dest, time_s * (1 + lam * density) * directed, area),
                 depart,
                 wet,
+                time_s,
             )
             for lam in (0.0, *LAMBDA_LADDER)
         ]
 
     def _decide(
-        self, fastest: RouteMetrics, best: RouteMetrics, overall: RouteMetrics
+        self,
+        fastest: RouteMetrics,
+        best: RouteMetrics,
+        overall: RouteMetrics,
+        profile: TravelProfile = WALKING,
     ) -> RoutePlan:
-        long_trip = _is_long(fastest)
+        long_trip = _is_long(fastest, profile)
         tradeoff = None
         if overall.exposure <= best.exposure * (1 - MIN_EXPOSURE_GAIN):
             tradeoff = overall.duration_s - fastest.duration_s

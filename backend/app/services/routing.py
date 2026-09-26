@@ -1,4 +1,8 @@
-"""Route requests: coverage checks, snapping, condition resolution, and user-facing copy."""
+"""Route requests: coverage checks, snapping, condition resolution, and user-facing copy.
+
+Ride modes (bike / e-bike / scooter) plan on the ride model at the mode's speed; the
+lit-and-busy preference and the personal-safety summary are walk-only.
+"""
 
 from __future__ import annotations
 
@@ -16,6 +20,7 @@ from app.api.schemas import (
     RoutesData,
 )
 from app.domain.alerts import avoided_segments, walk_alerts
+from app.domain.modes import TravelMode, mode_for
 from app.domain.route_metrics import RouteMetrics
 from app.domain.router import DEFAULT_PREFERENCE, RoutePlan, Router, RoutingError
 from app.domain.scoring import band_for
@@ -52,10 +57,11 @@ def _check_coverage(bundle: Bundle, req: RouteRequest, hexes: HexBundle | None) 
             )
 
 
-def _snap(router: Router, lat: float, lon: float) -> tuple[int, float]:
+def _snap(router: Router, lat: float, lon: float, mode: TravelMode) -> tuple[int, float]:
     node, dist = router.snap(lon, lat)
     if dist > SNAP_LIMIT_M:
-        raise AppError("SNAP_TOO_FAR", "Move the pin closer to a sidewalk or street.", status=422)
+        target = "street or bike path" if mode.is_ride else "sidewalk or street"
+        raise AppError("SNAP_TOO_FAR", f"Move the pin closer to a {target}.", status=422)
     return node, dist
 
 
@@ -93,11 +99,12 @@ def route_out(
     )
 
 
-def _message(plan: RoutePlan) -> str | None:
+def _message(plan: RoutePlan, mode: TravelMode) -> str | None:
     if plan.message_code == "fastest_is_lower_risk":
         return "The fastest route is already the lower-risk option."
     if plan.message_code == "long_trip":
-        return "This is a long walk. Consider MARTA for part of it."
+        trip = "ride" if mode.is_ride else "walk"
+        return f"This is a long {trip}. Consider MARTA for part of it."
     if plan.message_code == "tradeoff_exists" and plan.tradeoff_extra_s is not None:
         extra = round(plan.tradeoff_extra_s / 60)
         return (
@@ -109,12 +116,34 @@ def _message(plan: RoutePlan) -> str | None:
     return None
 
 
-def _route_key(req: RouteRequest, depart: datetime, cond: str) -> str:
+def _route_key(req: RouteRequest, depart: datetime, cond: str, prefer: str) -> str:
     o, d = req.origin, req.destination
     raw = f"{o.lat:.5f},{o.lon:.5f}|{d.lat:.5f},{d.lon:.5f}|{depart:%Y-%m-%dT%H}|{cond}"
-    if req.prefer != DEFAULT_PREFERENCE:
-        raw += f"|{req.prefer}"  # default keys are unchanged
+    if prefer != DEFAULT_PREFERENCE:
+        raw += f"|{prefer}"  # default keys are unchanged
+    if req.mode != "walk":
+        raw += f"|mode={req.mode}"  # walk keys are unchanged
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
+
+
+def _avoided(
+    bundle: Bundle, fastest: RouteMetrics, pp: RouteMetrics | None
+) -> list[NamedSegmentOut]:
+    if pp is None:
+        return []
+    scores = {s.seg_id: round(s.score) for s in fastest.edges}
+    names = bundle.seg_meta["name"]
+    return [
+        NamedSegmentOut(seg_id=i, name=names[i], score=scores[i])
+        for i in avoided_segments(fastest.edges, pp.edges, names)
+    ]
+
+
+def _no_route_message(exc: RoutingError, mode: TravelMode) -> str:
+    if exc.code == "NO_CONNECTION":
+        kind = "rideable" if mode.is_ride else "walkable"
+        return f"No {kind} connection found between these points."
+    return str(exc)
 
 
 async def plan_routes(
@@ -129,15 +158,20 @@ async def plan_routes(
         depart = parse_departure(req.depart_at)
     except ValueError as exc:
         raise AppError("BAD_DEPARTURE", "Pick a valid departure time.", status=422) from exc
+    mode = mode_for(req.mode)
+    prefer = DEFAULT_PREFERENCE if mode.is_ride else req.prefer
+    safety = None if mode.is_ride else safety
     _check_coverage(bundle, req, hexes)
-    origin, _ = _snap(router, req.origin.lat, req.origin.lon)
-    dest, _ = _snap(router, req.destination.lat, req.destination.lon)
+    origin, _ = _snap(router, req.origin.lat, req.origin.lon, mode)
+    dest, _ = _snap(router, req.destination.lat, req.destination.lon, mode)
     resolved = await weather.resolve(req.cond, depart)
     try:
         # ~120 ms of CPU: keep the event loop free for other requests and LLM calls.
-        plan = await asyncio.to_thread(router.plan, origin, dest, depart, resolved.wet, req.prefer)
+        plan = await asyncio.to_thread(
+            router.plan, origin, dest, depart, resolved.wet, prefer, mode.profile
+        )
     except RoutingError as exc:
-        raise AppError(exc.code, str(exc), status=422) from exc
+        raise AppError(exc.code, _no_route_message(exc, mode), status=422) from exc
     fastest, pp = plan.fastest, plan.pathpro
     reduction = (
         round((1 - pp.exposure / fastest.exposure) * 100) if pp and fastest.exposure else None
@@ -145,23 +179,18 @@ async def plan_routes(
     if reduction is not None and reduction <= 0:
         reduction = None  # a lit-and-busy pick may not cut traffic exposure; never show < 0
     cond = "wet" if resolved.wet else "dry"
-    avoided = []
-    if pp is not None:
-        scores = {s.seg_id: round(s.score) for s in fastest.edges}
-        avoided = [
-            NamedSegmentOut(seg_id=i, name=bundle.seg_meta["name"][i], score=scores[i])
-            for i in avoided_segments(fastest.edges, pp.edges, bundle.seg_meta["name"])
-        ]
     return RoutesData(
-        avoided=avoided,
+        avoided=_avoided(bundle, fastest, pp),
         condition_used=ConditionUsed(cond=cond, source=resolved.source, label=resolved.label),  # type: ignore[arg-type]
         depart_at=depart.isoformat(),
         fastest=route_out(bundle, fastest, safety, depart),
         pathpro=route_out(bundle, pp, safety, depart) if pp else None,
         message_code=plan.message_code,
-        message=_message(plan),
+        message=_message(plan, mode),
         time_cost_min=round((pp.duration_s - fastest.duration_s) / 60, 1) if pp else None,
         exposure_reduction_pct=reduction,
         unavoidable=list(plan.unavoidable),
-        route_key=_route_key(req, depart, cond),
+        route_key=_route_key(req, depart, cond, prefer),
+        mode=req.mode,
+        prefer=prefer,  # type: ignore[arg-type]
     )

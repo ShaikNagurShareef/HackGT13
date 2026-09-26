@@ -24,11 +24,12 @@ from app.api.envelope import (
 from app.api.extras import extras
 from app.api.reports import reports
 from app.api.safety import safety as safety_routes
+from app.api.transit import transit
 from app.api.walks import walks
 from app.config import Settings, get_settings
 from app.domain.router import Router
 from app.middleware import RateLimitMiddleware
-from app.repositories.artifacts import load_bundle
+from app.repositories.artifacts import load_bundle, load_ride_bundle
 from app.repositories.hexes import load_hexes
 from app.repositories.history import HistoryRepository
 from app.repositories.reports import ReportsRepository
@@ -99,6 +100,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Personal-safety layer is optional; only lighting/foot-traffic signals reach the router.
     app.state.safety = load_safety(bundle.root, bundle.n_segments, len(bundle.graph.edge_u))
     app.state.router = Router(bundle, app.state.safety.edges if app.state.safety else None)
+    # Ride model (bike / e-bike / scooter) is optional: None disables ride modes, never walk.
+    app.state.ride_bundle = load_ride_bundle(bundle.root)
+    app.state.ride_router = Router(app.state.ride_bundle) if app.state.ride_bundle else None
     app.state.hexes = load_hexes(bundle.root)  # City Pulse is optional (P1)
     app.state.settings = cfg
     app.state.routes_cache = LRUCache(maxsize=ROUTES_CACHE_SIZE)
@@ -129,10 +133,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(reports)
     app.include_router(walks)
     app.include_router(safety_routes)
+    app.include_router(transit)
     app.mount(
         f"/static/{bundle.model_version}",
         StaticFiles(directory=bundle.root),
         name="static",
     )
-    log.info("PathPro API ready: model %s, %d segments", bundle.model_version, bundle.n_segments)
+    log.info(
+        "PathPro API ready: model %s, %d walk segments, ride %s",
+        bundle.model_version,
+        bundle.n_segments,
+        app.state.ride_bundle.n_segments if app.state.ride_bundle else "unavailable",
+    )
     return app
