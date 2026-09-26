@@ -60,13 +60,16 @@ export function useGeolocation(): Geolocation {
     watchId.current = geo.watchPosition(
       (p) => setState({ status: 'granted', position: toFix(p), error: null }),
       (e) => {
-        if (e.code === PERMISSION_DENIED || e.code === POSITION_UNAVAILABLE) {
+        if (e.code === PERMISSION_DENIED) {
           stopWatching()
-          const status: GeoStatus = e.code === PERMISSION_DENIED ? 'denied' : 'unavailable'
-          setState((s) => ({ ...s, status, error: status === 'unavailable' ? UNAVAILABLE_MESSAGE : null }))
+          setState((s) => ({ ...s, status: 'denied', error: null }))
           return
         }
-        setState((s) => ({ ...s, error: TIMEOUT_MESSAGE }))
+        // Signal loss and timeouts are transient (tunnels, trees, emulator jumps): keep watching,
+        // keep the last fix, and say what's happening.
+        const message = e.code === POSITION_UNAVAILABLE ? UNAVAILABLE_MESSAGE : TIMEOUT_MESSAGE
+        const lost = e.code === POSITION_UNAVAILABLE
+        setState((s) => ({ ...s, status: s.position || !lost ? s.status : 'unavailable', error: message }))
       },
       WATCH_OPTIONS,
     )
