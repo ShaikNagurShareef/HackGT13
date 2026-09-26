@@ -2,6 +2,8 @@
 
 **Tagline:** See traffic risk before you walk into it.
 
+**Team CodingClaws (HackGT 13):** Nagur Shareef Shaik, Sahith Reddy Thummala, Pranav Nagothu, and Geethanjali Nagaboina.
+
 **Live:** https://pathpro.tech (Vultr, Atlanta) · offline demo: https://pathpro.tech/?demo=1 · code: https://github.com/ShaikNagurShareef/PathPro · video: <YouTube link>
 
 **Tracks and prizes to select:**

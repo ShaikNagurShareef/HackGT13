@@ -12,7 +12,7 @@ PathPro is a pedestrian traffic-risk forecaster for Atlanta. It learns from publ
 
 Every score is explainable: a trained model produces it, the score is split exactly into the factors that drive it, and an LLM turns that evidence into one plain-English sentence. The LLM never produces a number.
 
-> Built at **HackGT 13** (Sep 25–27, 2026) for the **Oracle of the Deep** (ML/AI + visualization) track and the **Aramco "A Marina's Mission"** social-good track.
+> Built by team **CodingClaws** (Nagur Shareef Shaik, Sahith Reddy Thummala, Pranav Nagothu, and Geethanjali Nagaboina) at **HackGT 13** (Sep 25–27, 2026) for the **Oracle of the Deep** (ML/AI + visualization) track and the **Aramco "A Marina's Mission"** social-good track.
 > Scope: **traffic** risk to pedestrians, plus a **personal-safety layer**: street lighting, foot traffic, help points (GT blue-light phones, police, fire, hospitals, MARTA), and an informational layer of reported crimes against persons. Crime is never used to choose routes or in the traffic model. See [model card](docs/model_card.md) and [safety sources](docs/safety_sources.md).
 
 | Risk Tides (Friday 10 PM, wet) | Fastest vs PathPro route |

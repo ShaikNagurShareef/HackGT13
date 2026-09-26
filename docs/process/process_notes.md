@@ -1,5 +1,7 @@
 # PathPro: process notes
 
+**Team CodingClaws, HackGT 13:** Nagur Shareef Shaik, Sahith Reddy Thummala, Pranav Nagothu, and Geethanjali Nagaboina.
+
 *How we built a pedestrian traffic-risk forecaster and walking router for Atlanta at HackGT 13, Sep 25–27, 2026.*
 Live: [pathpro.tech](https://pathpro.tech) · offline demo: [pathpro.tech/?demo=1](https://pathpro.tech/?demo=1) · code: `ShaikNagurShareef/PathPro`
 
