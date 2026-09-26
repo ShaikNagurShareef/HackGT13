@@ -379,7 +379,7 @@ Each sponsor technology must do a job the product genuinely needs, and each must
 | **ElevenLabs** (MLH) | Speaks "Listen" and Walk-mode alerts (VOX-01…05) | Browser speech-synthesis fallback; pre-generated demo clips | "Listen"; Preview walk |
 | **Tiger Data** (MLH) | System of record: crash hypertable, hourly continuous aggregates, PostGIS geometry, precomputed risk grid | Crash history stats in EXP-03 come from continuous aggregates; Risk Tides sparkline (TIDE-05) queries them | Say it while scrubbing the timeline |
 | **Vultr** (MLH) | Hosts the FastAPI backend and static frontend (Caddy + systemd) | Backend URL on Vultr | Architecture slide |
-| **.Tech domain** (MLH) | App served at pathpulse.tech | Domain live before video recording | Demo URL |
+| **.Tech domain** (MLH) | App served at pathpro.tech | Domain live before video recording | Demo URL |
 | **Notability** | Team planning notes, pitch rehearsal transcription, judge Q&A flashcards | ≥ 2 screenshots + note on Devpost; "Notability" tag | Devpost only |
 | **Create-X** | Startup interest | Tick interest box at submission | — |
 | **Auth0** (optional) | Saved places (ACCT-02) | Only if P0/P1 complete by Saturday 10 PM; never in demo path | Brief mention |

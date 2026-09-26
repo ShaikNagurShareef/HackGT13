@@ -2,7 +2,7 @@
 
 **See traffic risk before you walk into it.**
 
-**Live app:** [pathpulse.tech](https://pathpulse.tech), hosted on Vultr (deployment in progress; see [docs/sponsor_checklist.md](docs/sponsor_checklist.md)).
+**Live app:** [pathpro.tech](https://pathpro.tech), hosted on Vultr (deployment in progress; see [docs/sponsor_checklist.md](docs/sponsor_checklist.md)).
 
 - Until the Vultr server is up, the full app runs from the dev laptop through a Cloudflare tunnel: `deploy/run_live.sh` starts it, `deploy/tunnel_watchdog.sh` keeps it up, and the current URL is in `deploy/.tunnel_url`.
 - **Offline demo:** add `?demo=1` for the scripted Klaus → Midtown MARTA scenario.
@@ -77,7 +77,7 @@ flowchart LR
     V[ElevenLabs voice]
     T[(Tiger Data<br/>Timescale + PostGIS)]
   end
-  UI[frontend/ React + MapLibre + deck.gl<br/>pathpulse.tech]
+  UI[frontend/ React + MapLibre + deck.gl<br/>pathpro.tech]
   A & B & C & W --> I --> F --> M1 & M2 --> X --> R & UI
   R --> UI
   E --> UI
@@ -135,7 +135,7 @@ These integrations are implemented and tested. Each one switches on when its key
   - The crash hypertable and hourly continuous aggregate power "when crashes happened here".
   - PostGIS stores street geometry, and a versioned risk grid stores the scores.
 - **Vultr:** hosts the API and the site (Caddy + systemd).
-- **.tech:** [pathpulse.tech](https://pathpulse.tech).
+- **.tech:** [pathpro.tech](https://pathpro.tech), read as "path protect": the `.tech` completes the word.
 
 ## Built with AI tools, and credits
 

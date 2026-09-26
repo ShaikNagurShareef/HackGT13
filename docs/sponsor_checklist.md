@@ -16,17 +16,17 @@ Status as of Sat Sep 26, 2026, 7:00 AM ET. Submit on Devpost by **Sun 07:30** (h
 
 ### Vultr: Best Use of Vultr
 - [x] Account created and logged in
-- [ ] **Apply the MLH gift code** at Vultr → Billing → Gift Code (code from the opening ceremony or your MLH coach). Blocking: Vultr won't enable the API on an unfunded account.
+- [ ] **Apply the MLH gift code** at Vultr → Billing → Gift Code (code in the MLH email "Everything you'll need to know from MLH at HackGT 13", or ask the MLH coach). Blocking: Vultr won't enable the API on an unfunded account.
 - [ ] Enable API access, create the key, save `VULTR_API_KEY`
-- [ ] `deploy/go.sh pathpulse.tech`: create the VM (Atlanta region), bootstrap, deploy with Caddy and systemd, load Tiger, smoke-test
+- [ ] `deploy/go.sh pathpro.tech`: create the VM (Atlanta region), bootstrap, deploy with Caddy and systemd, load Tiger, smoke-test
 - [ ] Stop the laptop tunnel (`deploy/tunnel_watchdog.sh`) once Vultr serves the app
 - [ ] If Vultr isn't live by submission, remove the "Vultr hosts…" claim from `docs/devpost.md` and the README
 
 ### .tech domains: Best .tech Domain
-- [ ] Claim the MLH code (mlh.com → HackGT 13 prizes → Claim Code)
-- [ ] Register **pathpulse.tech** at get.tech (checked Sep 26: still available)
+- [ ] Get the .tech code from the same MLH email
+- [ ] Register **pathpro.tech** ("path protect", a pun as the MLH coach asked) at get.tech with the code from the MLH email. Checked Sep 26: available; backups `walkpro.tech`, `pathde.tech` ("path detect")
 - [ ] Add an A record pointing to the Vultr VM IP; Caddy issues HTTPS automatically
-- [ ] Confirm https://pathpulse.tech loads the app
+- [ ] Confirm https://pathpro.tech loads the app
 
 ### ElevenLabs: Best Use of ElevenLabs
 - [x] Free-tier key, restricted to text-to-speech, voices (read), models and user
@@ -58,9 +58,9 @@ Status as of Sat Sep 26, 2026, 7:00 AM ET. Submit on Devpost by **Sun 07:30** (h
 
 ## Submission
 - [ ] Devpost: every category above, the AI-tool disclosure (Claude Code + ECC) and data credits (already in `docs/devpost.md`)
-- [ ] Demo video (2–3 min): live route, Risk Tides, "Why?" sheet with Tiger history, Listen (ElevenLabs), pathpulse.tech in the address bar
+- [ ] Demo video (2–3 min): live route, Risk Tides, "Why?" sheet with Tiger history, Listen (ElevenLabs), pathpro.tech in the address bar
 - [ ] Submit the Devpost link at expo.hexlabs.org
-- [ ] Expo kit: laptop on `?demo=1`, phone on pathpulse.tech, QR code, model card, judge Q&A (`docs/judge_qa.md`)
+- [ ] Expo kit: laptop on `?demo=1`, phone on pathpro.tech, QR code, model card, judge Q&A (`docs/judge_qa.md`)
 - [ ] Afterwards: turn off Chrome's View → Developer → "Allow JavaScript from Apple Events"
 
 Groq (`openai/gpt-oss-120b`) runs the main explanations but has no HackGT prize category. It's listed under "Built with" only.

@@ -1,6 +1,6 @@
 # PathPulse demo script
 
-**Setup:** laptop on the app with `?demo=1` (scripted demo, works offline). Phone on the live app at https://pathpulse.tech (Vultr). Printed QR code and model card on the table.
+**Setup:** laptop on the app with `?demo=1` (scripted demo, works offline). Phone on the live app at https://pathpro.tech (Vultr). Printed QR code and model card on the table.
 **Demo shortcuts:** `D` reload the scripted route · `T` jump to 10 PM · `R` toggle rain.
 
 ## 30-second version (for judges walking by)

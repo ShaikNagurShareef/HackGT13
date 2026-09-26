@@ -3,7 +3,7 @@
 #   ssh root@<ip> 'bash -s' < deploy/bootstrap.sh <domain>
 set -euo pipefail
 
-DOMAIN="${1:?usage: bootstrap.sh <domain e.g. pathpulse.tech>}"
+DOMAIN="${1:?usage: bootstrap.sh <domain e.g. pathpro.tech>}"
 
 apt-get update -y
 apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl rsync ufw

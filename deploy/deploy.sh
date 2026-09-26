@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build locally and ship to the VM. Usage: deploy/deploy.sh <ssh-host> <domain>
-#   e.g. deploy/deploy.sh root@203.0.113.7 pathpulse.tech
+#   e.g. deploy/deploy.sh root@203.0.113.7 pathpro.tech
 set -euo pipefail
 
 HOST="${1:?usage: deploy.sh <ssh-host> <domain>}"

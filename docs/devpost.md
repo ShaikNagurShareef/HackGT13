@@ -43,7 +43,7 @@ Walking from Klaus to Midtown MARTA at night, two routes look identical on a map
   - **ElevenLabs** speaks explanations and walk alerts.
   - **Tiger Data** (TimescaleDB + PostGIS) holds the crash hypertable, hourly continuous aggregates, geometry, and versioned risk grid.
   - **Vultr** hosts the FastAPI backend and site behind Caddy.
-  - The **.tech** domain: pathpulse.tech.
+  - The **.tech** domain: **pathpro.tech**, read as "path protect" (the .tech finishes the word).
 - **App:** React + MapLibre + deck.gl, with FastAPI and scipy Dijkstra for routing (p95 about 120 ms).
 - **Engineering:** test-first throughout. 252 automated tests (98 data, 72 API, 71 web, 11 end-to-end), 85–95% coverage per package, and Playwright end-to-end tests including an offline demo.
 - **AI tools (disclosed):**

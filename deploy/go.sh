@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One command from keys to a live site: deploy/go.sh <domain>   (e.g. pathpulse.tech)
+# One command from keys to a live site: deploy/go.sh <domain>   (e.g. pathpro.tech)
 # Steps: verify keys -> provision Vultr VM -> bootstrap -> deploy -> load Tiger Data -> smoke test.
 set -euo pipefail
 
