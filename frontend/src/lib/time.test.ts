@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { atlantaParts, dayGroupOf, formatClock, formatMinutes, hourLabel } from './time'
+import { atlantaParts, dayGroupOf, formatClock, formatMinutes, formatTime, hourLabel } from './time'
 
 // 2026-09-26T02:30Z is Friday 10:30 PM EDT in Atlanta.
 const FRI_NIGHT = new Date('2026-09-26T02:30:00Z')
@@ -28,5 +28,9 @@ describe('Atlanta time', () => {
     expect(formatClock(FRI_NIGHT)).toBe('10:30 PM ET')
     expect(formatMinutes(1284)).toBe('21 min')
     expect(formatMinutes(10)).toBe('1 min')
+  })
+
+  it('formats a bare Atlanta time for arrival lines', () => {
+    expect(formatTime(FRI_NIGHT)).toBe('10:30 PM')
   })
 })
