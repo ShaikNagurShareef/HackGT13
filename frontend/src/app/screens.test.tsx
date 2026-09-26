@@ -4,7 +4,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../api/client'
 import type { Area } from '../api/schemas'
 import type { Routines } from '../hooks/useRoutines'
-import { meta, routes, segment } from '../test/fixtures'
+import { DEFAULT_SAFETY_LAYERS, FAIRNESS_NOTE } from '../lib/safety'
+import { meta, routes, safetyMeta, segment } from '../test/fixtures'
 import { DesktopLayer, type DesktopLayerProps } from './DesktopLayer'
 import { DetailLayer } from './DetailLayer'
 import { HomeScreen } from './HomeScreen'
@@ -58,6 +59,28 @@ describe('HomeScreen', () => {
   })
 })
 
+describe('HomeScreen in personal safety mode', () => {
+  it('swaps the traffic legend chip for the safety legend, open with its fairness note', () => {
+    render(
+      <HomeScreen
+        suggestion={null}
+        etaMin={null}
+        onGo={noop}
+        onDismissSuggestion={noop}
+        onOpenSearch={noop}
+        statusLabel="Personal safety"
+        onOpenOptions={noop}
+        welcomeDataThrough={null}
+        onDismissWelcome={noop}
+        reportsLegend={false}
+        safetyLegend={{ meta: safetyMeta(), hour: 21, layers: DEFAULT_SAFETY_LAYERS, tooWide: false }}
+      />,
+    )
+    expect(screen.getByRole('region', { name: 'Personal safety legend' })).toHaveTextContent(FAIRNESS_NOTE)
+    expect(screen.queryByRole('button', { name: /High traffic risk/ })).toBeNull()
+  })
+})
+
 describe('RouteScreen', () => {
   const header = { from: null, to: { lat: 1, lon: 2, label: 'Midtown MARTA' }, onEditFrom: noop, onEditTo: noop, onSwap: noop, onBack: noop }
 
@@ -87,6 +110,16 @@ describe('RouteScreen', () => {
     }
     render(<RouteScreen header={header} notice={null} onPickStart={noop} loading={false} sheet={sheet} />)
     expect(screen.getByRole('region', { name: 'Route comparison' })).toBeInTheDocument()
+  })
+
+  it('names the lit-and-busy search and notes the safety shading on the map', async () => {
+    const onOpenLegend = vi.fn()
+    render(
+      <RouteScreen header={header} notice={null} onPickStart={noop} loading sheet={null} prefer="lit_and_busy" safetyNote={onOpenLegend} />,
+    )
+    expect(screen.getByRole('region', { name: 'Finding routes' })).toHaveTextContent('Finding a well-lit, busier route…')
+    await userEvent.click(screen.getByRole('button', { name: 'Legend' }))
+    expect(onOpenLegend).toHaveBeenCalled()
   })
 })
 
@@ -151,8 +184,9 @@ describe('Panels', () => {
     depart: 'now',
     onDepart: noop,
     cityAvailable: false,
-    cityMode: false,
-    onCityMode: noop,
+    mapMode: 'streets',
+    onMapMode: noop,
+    safety: null,
     timeline: { hour: 1, onHour: noop, playing: false, onTogglePlay: noop, medians: [], lights: [], condLabel: 'Dry', day: 'weekday', onDay: noop },
     showReportsLegend: false,
   }
@@ -172,6 +206,12 @@ describe('Panels', () => {
 
     rerender(<Panels {...base} panel={{ kind: 'about' }} />)
     expect(screen.getByRole('dialog', { name: 'How PathPro works' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /Personal safety layer/ })).toBeNull()
+  })
+
+  it('adds the personal safety section to About when the layer is available', () => {
+    render(<Panels {...base} panel={{ kind: 'about' }} safetyMeta={safetyMeta()} />)
+    expect(screen.getByRole('heading', { name: 'Personal safety layer — how it works and its limits' })).toBeInTheDocument()
   })
 })
 
@@ -185,7 +225,7 @@ describe('DesktopLayer (≥1024 px)', () => {
       onGo: noop,
       onDismissSuggestion: noop,
       search: { field: 'to', suggestions: [], saved: {}, recents: [], canUseLocation: false, onUseLocation: noop, onPick: noop, onPickSuggestion: noop, onEditSaved: noop },
-      options: { cond: 'live', condLabel: 'Live', onCond: noop, depart: 'now', onDepart: noop, cityAvailable: false, cityMode: false, onCityMode: noop, showReportsLegend: false, onClearHistory: noop },
+      options: { cond: 'live', condLabel: 'Live', onCond: noop, depart: 'now', onDepart: noop, cityAvailable: false, mapMode: 'streets', onMapMode: noop, safety: null, showReportsLegend: false, onClearHistory: noop },
       onAbout: noop,
     },
     route: { header: { from: null, to: { lat: 1, lon: 2, label: 'Midtown MARTA' }, onEditFrom: noop, onEditTo: noop, onSwap: noop, onBack: noop }, notice: null, onPickStart: noop, loading: true, sheet: null },
@@ -210,5 +250,14 @@ describe('DesktopLayer (≥1024 px)', () => {
     rerender(<DesktopLayer {...base} screen="nav" />)
     expect(screen.getByText(/Walking to Midtown MARTA/)).toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Risk Tides timeline' })).toBeNull()
+  })
+
+  it('route: docks the safety legend on the map in personal safety mode', () => {
+    const dock = { meta: safetyMeta(), hour: 21, layers: DEFAULT_SAFETY_LAYERS, tooWide: false }
+    const { rerender } = render(<DesktopLayer {...base} screen="route" safetyDock={dock} />)
+    expect(screen.getByRole('region', { name: 'Personal safety legend' })).toHaveTextContent(FAIRNESS_NOTE)
+
+    rerender(<DesktopLayer {...base} screen="nav" safetyDock={dock} />)
+    expect(screen.queryByRole('region', { name: 'Personal safety legend' })).toBeNull()
   })
 })

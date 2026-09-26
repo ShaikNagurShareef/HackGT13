@@ -27,12 +27,14 @@ function setup(over: Partial<DesktopHomeProps> = {}) {
       depart: 'now',
       onDepart: vi.fn(),
       cityAvailable: true,
-      cityMode: false,
-      onCityMode: vi.fn(),
+      mapMode: 'streets',
+      onMapMode: vi.fn(),
+      safety: null,
       showReportsLegend: false,
       onClearHistory: vi.fn(),
     },
     onAbout: vi.fn(),
+    safetyAvailable: false,
     ...over,
   }
   render(<DesktopHome {...props} />)
@@ -68,7 +70,7 @@ describe('DesktopHome (persistent sidebar)', () => {
 
     expect(p.options.onCond).toHaveBeenCalledWith('wet')
     expect(p.options.onDepart).toHaveBeenCalledWith('+1h')
-    expect(p.options.onCityMode).toHaveBeenCalledWith(true)
+    expect(p.options.onMapMode).toHaveBeenCalledWith('city')
     expect(p.options.onClearHistory).toHaveBeenCalled()
     expect(p.onAbout).toHaveBeenCalled()
     expect(screen.getByRole('region', { name: 'Risk legend' })).toBeInTheDocument()
@@ -78,5 +80,10 @@ describe('DesktopHome (persistent sidebar)', () => {
   it('shows a learned routine at the top', () => {
     setup({ suggestion: { from: null, to: { lat: 1, lon: 2, label: 'Home' }, reason: 'Heading back?', kind: 'return', score: 2 }, etaMin: 12 })
     expect(screen.getByRole('region', { name: 'Suggested trip' })).toHaveTextContent('Heading back to Home?')
+  })
+
+  it('states the scope honestly in the footer', () => {
+    setup({ safetyAvailable: true })
+    expect(screen.getByRole('contentinfo')).toHaveTextContent('Traffic risk, plus personal-safety signals')
   })
 })

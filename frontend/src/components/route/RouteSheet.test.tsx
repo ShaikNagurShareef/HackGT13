@@ -1,7 +1,8 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { report, routes } from '../../test/fixtures'
+import { FAIRNESS_NOTE } from '../../lib/safety'
+import { report, route, routes, safetyMeta } from '../../test/fixtures'
 import { RouteSheet, type RouteSheetProps } from './RouteSheet'
 import { TripHeader } from './TripHeader'
 
@@ -93,6 +94,38 @@ describe('RouteSheet (RTE-04, mobile route sheet)', () => {
     expect(screen.getByTestId('route-fast')).toHaveTextContent('already the lower-risk option')
     expect(screen.queryByTestId('route-pp')).toBeNull()
     expect(screen.queryByRole('button', { name: /Preview walk/ })).toBeInTheDocument()
+  })
+})
+
+describe('RouteSheet personal-safety signals', () => {
+  const SAFETY = { lit_share: 0.82, busy_share: 0.6, help_points_within_100m: 3, crimes_persons_nearby: 4, day_part: 'evening' }
+
+  it('adds a compact lighting / help-point line to each route row, without crime', () => {
+    setup({ routes: routes({ fastest: route({ safety: { ...SAFETY, lit_share: 0.4, busy_share: 0.2 } }), pathpro: route({ safety: SAFETY }) }) })
+
+    expect(screen.getByTestId('route-pp')).toHaveTextContent('82% well-lit · 3 help points nearby · busier streets')
+    expect(screen.getByTestId('route-fast')).toHaveTextContent('40% well-lit · 3 help points nearby')
+    expect(screen.getByTestId('route-pp')).not.toHaveTextContent(/crime/i)
+  })
+
+  it('shows reported crimes nearby only in the expanded panel, per route, with the fairness note', async () => {
+    const user = userEvent.setup()
+    setup({
+      routes: routes({ fastest: route({ safety: { ...SAFETY, crimes_persons_nearby: 6 } }), pathpro: route({ safety: SAFETY }) }),
+      dayParts: safetyMeta().day_parts,
+    })
+    const evidence = screen.getByRole('region', { name: 'Personal safety along these routes' })
+
+    expect(evidence).toHaveTextContent('PathPro route: 4 reported crimes against persons nearby (evening, last 12 months)')
+    expect(evidence).toHaveTextContent('Fastest route: 6 reported crimes against persons nearby (evening, last 12 months)')
+    await user.click(within(evidence).getByText('How to read this'))
+    expect(evidence).toHaveTextContent(FAIRNESS_NOTE)
+  })
+
+  it('shows nothing extra for older responses without safety', () => {
+    setup()
+    expect(screen.queryByRole('region', { name: 'Personal safety along these routes' })).toBeNull()
+    expect(screen.getByTestId('route-pp')).not.toHaveTextContent('well-lit')
   })
 })
 

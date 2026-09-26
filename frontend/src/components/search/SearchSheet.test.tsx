@@ -118,12 +118,17 @@ describe('SearchSheet (SRCH-01..04, Google-Maps-style search)', () => {
     expect(p.onUseLocation).toHaveBeenCalled()
   })
 
+  it('states the personal-safety scope in the welcome when the layer is available', () => {
+    setup({ welcome: true, safetyAvailable: true })
+    expect(screen.getByText(/Traffic risk, plus personal-safety signals/)).toBeInTheDocument()
+  })
+
   it('shows a one-line welcome for first-time visitors', async () => {
     const user = userEvent.setup()
     const p = setup({ welcome: true, field: 'home' })
 
     expect(screen.getByRole('dialog', { name: 'Set Home' })).toBeInTheDocument()
-    expect(screen.getByText(/Traffic risk only — not crime or personal safety/)).toBeInTheDocument()
+    expect(screen.getByText(/Traffic risk from crash history\./)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Dismiss welcome' }))
     expect(p.onDismissWelcome).toHaveBeenCalled()
     await user.click(screen.getByRole('button', { name: 'Close search' }))
