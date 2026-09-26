@@ -26,8 +26,23 @@ SECRET_LIKE = re.compile(
 )
 
 
+def _mask_value(value: object) -> object:
+    if isinstance(value, str):
+        return SECRET_LIKE.sub("[MASKED]", value)
+    if isinstance(value, list):
+        return [_mask_value(v) for v in value]
+    if isinstance(value, dict):
+        return {k: _mask_value(v) for k, v in value.items()}
+    return value
+
+
 def mask(text: str) -> str:
-    return SECRET_LIKE.sub("[MASKED]", text)
+    """Mask secrets. JSON output is masked per decoded string: escapes like \\n would
+    otherwise sit next to a key and defeat the word boundaries in SECRET_LIKE."""
+    try:
+        return json.dumps(_mask_value(json.loads(text)), ensure_ascii=False)
+    except ValueError:
+        return SECRET_LIKE.sub("[MASKED]", text.replace("\\n", "\n"))
 
 
 def osa(script: str) -> str:
