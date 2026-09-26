@@ -32,3 +32,16 @@ RIDE_FEATURE_TO_FACTOR: dict[str, str] = {
     "log_bike_activity": "bike_activity",
 }
 RIDE_SPEC = FactorSpec(RIDE_SPATIAL_FACTORS, dict(TEMPORAL_FACTORS), RIDE_FEATURE_TO_FACTOR)
+_POOLED_LABELS = {
+    "history": "Pedestrian and cyclist crash history here",
+    "nearby_history": "Pedestrian and cyclist crashes on nearby streets",
+}
+
+
+def ride_spec(pooled: bool) -> FactorSpec:
+    """Ride factors; a model trained on pooled pedestrian+cyclist crashes says so."""
+    if not pooled:
+        return RIDE_SPEC
+    return FactorSpec(
+        {**RIDE_SPATIAL_FACTORS, **_POOLED_LABELS}, dict(TEMPORAL_FACTORS), RIDE_FEATURE_TO_FACTOR
+    )

@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any
 
 import numpy as np
 import pandas as pd
 
 from pathpulse_data.model.benchmark import BOOT_REPS, block_bootstrap
+from pathpulse_data.model.dataset import SegmentData
 from pathpulse_data.model.evaluate import roc_pr_auc, top_share_capture
 from pathpulse_data.model.temporal import TemporalModel
 from pathpulse_data.model.temporal_data import _shape_deviance, cell_table
@@ -17,6 +19,21 @@ COUNT_ONLY = "Past crash count only"
 RANDOM = "Random"
 WALK_REUSE = "Walk (pedestrian) model reused"
 TEMPORAL_CHOICES = ("cyclist-specific", "walk structure reused", "all-mode shape")
+POOLED = "is_ped_or_bike"
+TRAINING_CHOICES = ("cyclist-only", "pedestrian+cyclist")
+
+
+def with_pooled_target(data: SegmentData) -> SegmentData:
+    """Train on crashes involving a pedestrian OR a cyclist (borrowing strength: cyclist
+    crashes alone are ~380 in four years). Evaluation still scores cyclist crashes only."""
+    pooled = data.crashes["is_ped"].astype(bool) | data.crashes["is_bike"].astype(bool)
+    return replace(data, crashes=data.crashes.assign(**{POOLED: pooled}), target_col=POOLED)
+
+
+def choose_training(validation_capture: dict[str, float]) -> str:
+    """Training label with the best top-10% capture of *validation-year* cyclist crashes;
+    ties keep the cyclist-only label."""
+    return max(TRAINING_CHOICES, key=lambda c: (validation_capture[c], -TRAINING_CHOICES.index(c)))
 
 
 def compare_method(

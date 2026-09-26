@@ -35,6 +35,7 @@ from pathpulse_data.export.bundle import (
     TEMPORAL_TRAIN,
     model_version,
 )
+from pathpulse_data.export.factors import FactorSpec
 from pathpulse_data.model.benchmark import benchmark
 from pathpulse_data.model.dataset import SegmentData, load_segment_data, window_counts
 from pathpulse_data.model.spatial import SpatialFit, density, fit_spatial
@@ -64,7 +65,7 @@ from pathpulse_data.ride.features import (
     ride_extra,
     strava_trips,
 )
-from pathpulse_data.ride.spec import RIDE_SPEC
+from pathpulse_data.ride.spec import ride_spec
 
 log = logging.getLogger(__name__)
 TARGET = "is_bike"
@@ -154,33 +155,60 @@ def load_ride_data(base: SegmentData) -> tuple[SegmentData, pd.DataFrame]:
 
 def _with_walk_reuse(
     bench: dict[str, Any],
-    ride_fit: SpatialFit,
-    ride: SegmentData,
+    fit: SpatialFit,
+    data: SegmentData,
+    walk_fit: SpatialFit,
     walk: SegmentData,
+    bike: SegmentData,
     test_year: int,
 ) -> dict[str, Any]:
-    """Add 'Walk (pedestrian) model reused' + our gain CI over it to a ride benchmark."""
-    walk_fit = fit_spatial(walk, ride_fit.train_years)
-    observed = window_counts(ride, range(test_year, test_year + 1), ped=True).to_numpy()
-    lengths = ride.features["length_m"].to_numpy(float)
-    ours = density(ride_fit.expected(ride)["eb"], ride)
+    """Add 'Walk (pedestrian) model reused' + our gain CI over it, scored on cyclist crashes."""
+    observed = window_counts(bike, range(test_year, test_year + 1), ped=True).to_numpy()
+    lengths = bike.features["length_m"].to_numpy(float)
+    ours = density(fit.expected(data)["eb"], data)
     other = density(walk_fit.expected(walk)["eb"], walk)
-    blocks = ride.blocks.reindex(ride.features.index)
+    blocks = bike.blocks.reindex(bike.features.index)
     row = rev.compare_method(rev.WALK_REUSE, ours, other, observed, lengths, blocks)
     return {**bench, "walk_model_reuse": row}
 
 
-def evaluate_spatial(ride: SegmentData, walk: SegmentData) -> dict[str, Any]:
-    out: dict[str, Any] = {}
+def _ours(bench: dict[str, Any]) -> float:
+    return float({m["method"]: m for m in bench["methods"]}[rev.OURS]["capture_top10"])
+
+
+def evaluate_spatial(bike: SegmentData, walk: SegmentData) -> dict[str, Any]:
+    """Cyclist-only vs pooled pedestrian+cyclist training, both scored on cyclist crashes;
+    the label is chosen on the 2023 validation year, then reported on the 2024 test year."""
+    candidates = {"cyclist-only": bike, "pedestrian+cyclist": rev.with_pooled_target(bike)}
+    runs: dict[str, dict[str, Any]] = {name: {} for name in candidates}
     for key, (train, test_year) in (
-        ("spatial_test", SPATIAL_TEST),
         ("spatial_validation", SPATIAL_VAL),
+        ("spatial_test", SPATIAL_TEST),
     ):
-        ride_fit = fit_spatial(ride, train)
-        bench = benchmark(ride_fit, ride, test_year)
-        out[key] = _with_walk_reuse(bench, ride_fit, ride, walk, test_year)
-        log.info("ride %s done: %s", key, json.dumps(rev.targets(bench)))
-    return out
+        walk_fit = fit_spatial(walk, train)
+        for name, data in candidates.items():
+            fit = fit_spatial(data, train)
+            bench = benchmark(fit, data, test_year, label_col=TARGET)
+            runs[name][key] = _with_walk_reuse(bench, fit, data, walk_fit, walk, bike, test_year)
+            log.info("ride %s %s: %.3f %s", name, key, _ours(bench), rev.targets(bench))
+    choice = rev.choose_training({n: _ours(r["spatial_validation"]) for n, r in runs.items()})
+    summary = {
+        name: {
+            "validation_capture_top10": _ours(r["spatial_validation"]),
+            "test_capture_top10": _ours(r["spatial_test"]),
+            "test_capture_top10_ci95": r["spatial_test"]["capture_top10_ci95"],
+            "test_gain_vs_walk_model_ci95": r["spatial_test"]["walk_model_reuse"]["gain_ci95"],
+        }
+        for name, r in runs.items()
+    }
+    other = next(n for n in runs if n != choice)
+    return {
+        "training_label": choice,
+        "training_candidates": summary,
+        "spatial_test": runs[choice]["spatial_test"],
+        "spatial_validation": runs[choice]["spatial_validation"],
+        "not_chosen": {other: runs[other]},
+    }
 
 
 def evaluate_time(hours: pd.DataFrame) -> tuple[dict[str, Any], str]:
@@ -243,13 +271,20 @@ def headline(metrics: dict[str, Any]) -> dict[str, Any]:
             "deviance_reduction_vs_flat"
         ],
         "targets": rev.targets(test),
+        "training_label": metrics["training_label"],
+        "training_candidates": metrics["training_candidates"],
         "test_year": test["test_year"],
     }
 
 
 # ----------------------------------------------------------------------------- export
 def _write_ride_files(
-    out: Path, asm: Assembled, ride: SegmentData, feats: pd.DataFrame, metrics: dict[str, Any]
+    out: Path,
+    asm: Assembled,
+    ride: SegmentData,
+    feats: pd.DataFrame,
+    metrics: dict[str, Any],
+    spec: FactorSpec,
 ) -> tuple[list[str], dict[str, Any]]:
     bike_hist = window_counts(ride, SPATIAL_FINAL, ped=True).round(1)
     infra = feats["bike_infra"].fillna(0).astype(np.int64)
@@ -262,7 +297,7 @@ def _write_ride_files(
         ),
         extra_props={"b": infra.to_numpy()},
     )
-    writers.write_factors(out, asm, spec=RIDE_SPEC, prefix=RIDE_PREFIX)
+    writers.write_factors(out, asm, spec=spec, prefix=RIDE_PREFIX)
     writers.write_frames(out, asm, prefix=RIDE_PREFIX)
     graph = writers.write_graph(out, "bike", ride_name("walk_graph.npz"))
     n_hot = writers.write_hotspot_nodes(out, prefix=RIDE_PREFIX)
@@ -279,10 +314,12 @@ def export_main() -> None:
     hours = load_hours()
     temporal, choice = evaluate_time(hours)
     metrics: dict[str, Any] = {**evaluate_spatial(ride, base), "temporal_test": temporal}
-    fit = fit_spatial(ride, SPATIAL_FINAL)
+    pooled = metrics["training_label"] == "pedestrian+cyclist"
+    train_data = rev.with_pooled_target(ride) if pooled else ride
+    fit = fit_spatial(train_data, SPATIAL_FINAL)
     tmodel, t_ref = final_temporal(hours, choice)
     today = date.fromisoformat(min(src_manifest["reference_dates"].values()))
-    asm = assemble(fit, tmodel, t_ref, ride, today, spec=RIDE_SPEC)
+    asm = assemble(fit, tmodel, t_ref, train_data, today, spec=ride_spec(pooled))
     ingest = json.loads((INTERIM_DIR / "ingest_report.json").read_text())
     metrics |= {
         "headline": headline(metrics),
@@ -298,7 +335,7 @@ def export_main() -> None:
     assert asm.reference_dates == src_manifest["reference_dates"], "ride frames must share dates"
 
     out = new_ride_version(source, model_version())
-    files, extra = _write_ride_files(out, asm, ride, feats, metrics)
+    files, extra = _write_ride_files(out, asm, ride, feats, metrics, ride_spec(pooled))
     changed = verify_unchanged(source, out)
     if changed:
         raise RuntimeError(f"ride export changed walk/bundle files: {changed}")
@@ -308,6 +345,7 @@ def export_main() -> None:
         "exposure": EXPOSURE,
         "exposure_detail": EXPOSURE_DETAIL,
         "temporal_model": choice,
+        "training_label": metrics["training_label"],
         "segments": "same road segments and seg ids as walk",
         "spatial_train_years": [SPATIAL_FINAL.start, SPATIAL_FINAL.stop - 1],
     }

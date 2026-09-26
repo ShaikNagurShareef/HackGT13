@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import re
 from collections.abc import Callable
+from dataclasses import replace
 
 import geopandas as gpd
 import numpy as np
@@ -53,14 +54,22 @@ def _tiebreak(scores: np.ndarray, seed: int) -> np.ndarray:
     return scores + rng.uniform(0, 1e-9, len(scores))
 
 
-def method_scores(fit: SpatialFit, data: SegmentData) -> dict[str, np.ndarray]:
+def _labels(data: SegmentData, label_col: str | None) -> SegmentData:
+    """Data whose target is the crash flag being *scored* (default: the model's own target)."""
+    return data if label_col is None else replace(data, target_col=label_col)
+
+
+def method_scores(
+    fit: SpatialFit, data: SegmentData, label_col: str | None = None
+) -> dict[str, np.ndarray]:
     exp = fit.expected(data)
+    history = window_counts(_labels(data, label_col), fit.train_years, ped=True).to_numpy()
     lengths = effective_length(data.features).to_numpy()
     arc = data.features["arc_structural_count"].to_numpy(float)
     return {
         OURS: density(exp["eb"], data),
         "Model only (SPF)": density(exp["spf"], data),
-        COUNT_ONLY: _tiebreak(exp["history"].to_numpy() / (lengths / 100.0), 1),
+        COUNT_ONLY: _tiebreak(history / (lengths / 100.0), 1),
         HIN: _tiebreak(hin_scores(data).to_numpy(), 2),
         ARC_LABEL: _tiebreak(arc, 3),
         "Random": np.random.default_rng(4).uniform(size=len(lengths)),
@@ -80,11 +89,19 @@ def block_bootstrap(
     return bootstrap_ci(resample, len(members), reps, seed=seed)
 
 
-def benchmark(fit: SpatialFit, data: SegmentData, test_year: int) -> dict[str, object]:
-    observed = window_counts(data, range(test_year, test_year + 1), ped=True).to_numpy()
+def benchmark(
+    fit: SpatialFit, data: SegmentData, test_year: int, label_col: str | None = None
+) -> dict[str, object]:
+    """Score `fit` on `test_year` crashes of `label_col` (default: the model's own target).
+
+    Scoring another flag lets a model trained on pooled pedestrian+cyclist crashes be judged,
+    with its count-only baseline, on cyclist crashes alone.
+    """
+    labels = _labels(data, label_col)
+    observed = window_counts(labels, range(test_year, test_year + 1), ped=True).to_numpy()
     # Rank on clipped-length density, but spend the budget on real street length.
     lengths = data.features["length_m"].to_numpy(float)
-    scores = method_scores(fit, data)
+    scores = method_scores(fit, data, label_col)
     hin_raw = hin_scores(data).to_numpy()
     hin_share = float(lengths[hin_raw > 0].sum() / lengths.sum())
     rows = []
