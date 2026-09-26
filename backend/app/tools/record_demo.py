@@ -24,6 +24,9 @@ TRIPS = (
     ({"lat": 33.7765, "lon": -84.3893}, {"lat": 33.7716, "lon": -84.3872}),  # Tech Sq -> North Ave
 )
 STATIC_FILES = ("segments.geojson", "hotspot_nodes.json", "hex_cells.json")
+RIDE_STATIC_FILES = ("ride_segments.geojson", "ride_hotspot_nodes.json")
+RIDE_MODES = ("bike", "ebike", "scooter")
+CONDS = ("wet", "dry", "live")
 WEST_END = {"lat": 33.7537, "lon": -84.4167}
 # Georgia Tech + Midtown: the area the offline demo shows (well under the 0.3° bbox limit).
 DEMO_BBOX = "-84.4200,33.7550,-84.3700,33.7950"
@@ -75,7 +78,45 @@ def record(client: TestClient) -> dict[str, Any]:
         params = {**WEST_END, "t": DEPART, "cond": cond}
         fixtures[f"GET /areas/lookup|{cond}"] = _ok(client.get("/areas/lookup", params=params))
     fixtures.update(record_safety(client))
+    fixtures.update(record_ride(client))
     return fixtures
+
+
+def _ride_available(client: TestClient) -> bool:
+    modes = client.get("/meta").json()["data"].get("modes") or []
+    return any(m.get("network") == "ride" and m.get("available") for m in modes)
+
+
+def record_ride(client: TestClient) -> dict[str, Any]:
+    """Bike / e-bike / scooter routes, ride street details, and MARTA stations for the demo."""
+    out: dict[str, Any] = {"GET /transit/stations": _ok(client.get("/transit/stations"))}
+    if not _ride_available(client):
+        return out
+    seg_ids: set[int] = set()
+    for mode in RIDE_MODES:
+        for cond in CONDS:
+            for origin, dest in TRIPS:
+                body = {"origin": origin, "destination": dest, "depart_at": DEPART}
+                routes = _ok(client.post("/routes", json={**body, "cond": cond, "mode": mode}))
+                o = f"{origin['lat']:.4f},{origin['lon']:.4f}"
+                d = f"{dest['lat']:.4f},{dest['lon']:.4f}"
+                out[f"POST /routes {o}>{d}|{cond}|{mode}"] = routes
+                data = routes["data"]
+                explain = {"kind": "route", "route_key": data["route_key"]}
+                out[f"POST /explain route:{data['route_key']}"] = _ok(
+                    client.post("/explain", json=explain)
+                )
+                for route in (data["fastest"], data["pathpro"]):
+                    if route:
+                        seg_ids.update(s["seg_id"] for s in route["top_segments"])
+    for seg in sorted(seg_ids):
+        for mode in RIDE_MODES:
+            for cond in CONDS:
+                params = {"t": DEPART, "cond": cond, "mode": mode}
+                out[f"GET /segments/{seg}|{cond}|{mode}"] = _ok(
+                    client.get(f"/segments/{seg}", params=params)
+                )
+    return out
 
 
 def record_safety(client: TestClient) -> dict[str, Any]:
@@ -100,7 +141,15 @@ def copy_static(version: str, artifacts: Path) -> str:
     target.mkdir(parents=True)
     for name in STATIC_FILES:
         shutil.copy2(artifacts / name, target / name)
-    for frames in [*artifacts.glob("frames_*.bin"), *artifacts.glob("hex_frames_*.bin")]:
+    for name in RIDE_STATIC_FILES:
+        if (artifacts / name).exists():
+            shutil.copy2(artifacts / name, target / name)
+    frame_files = [
+        *artifacts.glob("frames_*.bin"),
+        *artifacts.glob("hex_frames_*.bin"),
+        *artifacts.glob("ride_frames_*.bin"),
+    ]
+    for frames in frame_files:
         shutil.copy2(frames, target / frames.name)
     return f"/demo/static/{version}"
 
