@@ -1,4 +1,5 @@
 import { useEffect, useRef, type KeyboardEvent } from 'react'
+import { createPortal } from 'react-dom'
 import { useDialog } from '../../hooks/useDialog'
 
 type Props = {
@@ -31,7 +32,9 @@ export function CheckInDialog({ onFine, onShareLocation }: Props) {
   // After useDialog has recorded the opener, move focus to the least drastic choice.
   useEffect(() => fine.current?.focus(), [])
 
-  return (
+  // Portal to <body>: the navigation view creates its own stacking context, which would otherwise
+  // keep this dialog (and its last button) under the bottom bar on phones.
+  return createPortal(
     <div className="checkin-backdrop">
       <section
         className="checkin panel"
@@ -59,6 +62,7 @@ export function CheckInDialog({ onFine, onShareLocation }: Props) {
           </button>
         </div>
       </section>
-    </div>
+    </div>,
+    document.body,
   )
 }
