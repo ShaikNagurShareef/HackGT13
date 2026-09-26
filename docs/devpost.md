@@ -8,6 +8,7 @@
 - Best Overall
 - MLH Best Use of Tiger Data
 - MLH Best Use of Vultr
+- MLH Best Use of MongoDB Atlas
 - MLH Best Use of ElevenLabs
 - MLH Best .tech Domain
 - MLH Best Use of Gemini API (if offered)
@@ -23,6 +24,7 @@ Walking from Klaus to Midtown MARTA at night, two routes look identical on a map
 - **Risk Tides:** an hour-by-hour, dry/wet, weekday/weekend map of pedestrian traffic risk on about 50,000 street segments across the whole City of Atlanta.
 - **Fastest vs PathPulse route.** Klaus → Midtown MARTA, Friday 10:30 PM in rain: **+4.2 min, 54% less traffic-risk exposure**, avoiding Peachtree Place and Williams St. When the fastest route is already the lower-risk one, PathPulse says so.
 - **"Why is this street risky?"** A score dial, confidence badge, factor bars that sum exactly to the score, crash history, and when crashes happened by hour (Tiger Data).
+- **Community street reports:** walkers flag a traffic-related issue on a street (signal out, sidewalk blocked, construction detour, and three more). Reports appear on the map, the street sheet, and route results for 14 days, and never change a score.
 - **City Pulse:** area-level traffic-risk scores for all 3,537 hexes of the City of Atlanta.
 - **Grounded AI explanations** and **voice alerts**. No logins, and the demo works offline.
 
@@ -42,6 +44,7 @@ Walking from Klaus to Midtown MARTA at night, two routes look identical on a map
   - **Groq** (gpt-oss-120b/20b) writes grounded explanations in under a second, with **Gemini** as fallback. A validator rejects any sentence with a number not in the evidence.
   - **ElevenLabs** speaks explanations and walk alerts.
   - **Tiger Data** (TimescaleDB + PostGIS) holds the crash hypertable, hourly continuous aggregates, geometry, and versioned risk grid.
+  - **MongoDB Atlas** stores community street reports: a 2dsphere index for map-viewport queries, a TTL index that expires reports after 14 days, one atomic upsert per report so repeats become confirmations, and an aggregation pipeline for the per-category summary. Reports never feed the model.
   - **Vultr** hosts the FastAPI backend and site behind Caddy.
   - The **.tech** domain: **pathpro.tech**, read as "path protect" (the .tech finishes the word).
 - **App:** React + MapLibre + deck.gl, with FastAPI and scipy Dijkstra for routing (p95 about 120 ms).
@@ -80,4 +83,4 @@ Walking from Klaus to Midtown MARTA at night, two routes look identical on a map
 
 ## Built with
 
-Python · FastAPI · LightGBM · scikit-learn · statsmodels · OSMnx · GeoPandas · H3 · SciPy · React · TypeScript · Vite · MapLibre GL · deck.gl · Groq · Gemini API · ElevenLabs · Tiger Data (TimescaleDB, PostGIS) · Vultr · Caddy · Playwright · Claude Code
+Python · FastAPI · LightGBM · scikit-learn · statsmodels · OSMnx · GeoPandas · H3 · SciPy · React · TypeScript · Vite · MapLibre GL · deck.gl · Groq · Gemini API · ElevenLabs · Tiger Data (TimescaleDB, PostGIS) · MongoDB Atlas · Vultr · Caddy · Playwright · Claude Code

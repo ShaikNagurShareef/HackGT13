@@ -57,8 +57,16 @@ Status as of Sat Sep 26, 2026, 7:00 AM ET. Submit on Devpost by **Sun 07:30** (h
 ### Create-X
 - [ ] Tick the Create-X interest box on Devpost
 
-### MongoDB Atlas (MLH, listed in the email)
-- Not used: Tiger Data is our database. Skip this prize rather than bolt on a second database.
+### MongoDB Atlas: Best Use of MongoDB Atlas
+Job: community street reports. Tiger Data stays the system of record for crashes and scores; Atlas holds what walkers tell us, and it never feeds the model.
+- [x] `ReportsRepository` on pymongo's async client with tight timeouts and a cooldown; unset or unreachable Atlas hides the feature and nothing else breaks
+- [x] Indexes: 2dsphere on `loc`, TTL on `expires_at` (14 days after the last confirmation), unique `{seg_id, category}`; created at API startup
+- [x] One atomic `find_one_and_update` upsert per report (repeats become confirmations); `$geoWithin` viewport query; `$group` summary pipeline
+- [x] API: `POST /api/reports`, `GET /api/reports?bbox=`, `GET /api/reports/summary`, `GET /api/segments/{id}/reports`; routes carry reports on the recommended route
+- [x] UI: "Report a street issue" chips on the street sheet, violet dots on the map, a line on the route card; hidden in `?demo=1`
+- [x] `check_keys` MongoDB line (ping + indexes); `MONGODB_URI` pattern in `deploy/capture_keys.py`
+- [ ] Create a free M0 cluster, allow the server's IP, put `MONGODB_URI` in `backend/.env`, restart the API, and confirm `check_keys` shows OK
+- [ ] Demo it in the video: report "Crossing signal out" on a street, then show the dot on the map and the line on the route card
 
 ## Submission
 - [ ] Devpost: every category above, the AI-tool disclosure (Claude Code + ECC) and data credits (already in `docs/devpost.md`)

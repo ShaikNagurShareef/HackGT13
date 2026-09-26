@@ -31,6 +31,7 @@ Every score is explainable: a trained model produces it, the score is split exac
   - An About page and model card state the limitations.
   - "Traffic risk estimate from historical crashes. Always stay alert." appears on every route.
   - 911 and Georgia Tech Police are one tap away.
+- **Community street reports.** Walkers flag a traffic-related issue on a street (sidewalk blocked, crossing signal out, construction detour, poor lighting, flooding, fast-moving traffic). Reports show as violet dots on the map, on the street sheet, and on route results for 14 days. They are context only: they never change a score, a route, or what the explanation model sees.
 - **Demo mode.** `?demo=1` replays the scripted scenario from recorded responses, with the network off.
 
 ## How well it works
@@ -126,7 +127,7 @@ cd frontend && npm test -- --coverage && npx playwright test
 
 ## Sponsor technology, and the job each one does
 
-These integrations are implemented and tested. Each one switches on when its key is present in `backend/.env`, which `deploy/go.sh` verifies. Without keys, PathPulse falls back gracefully: template explanations, the device voice, and in-memory history.
+These integrations are implemented and tested. Each one switches on when its key is present in `backend/.env`, which `deploy/go.sh` verifies. Without keys, PathPulse falls back gracefully: template explanations, the device voice, and in-memory history. Without `MONGODB_URI`, community reports are hidden and everything else works.
 
 - **Groq** (`openai/gpt-oss-120b`, fallback `gpt-oss-20b`): fast, grounded one-to-three-sentence explanations.
 - **Gemini API:** second provider in the explanation chain.
@@ -134,6 +135,12 @@ These integrations are implemented and tested. Each one switches on when its key
 - **Tiger Data:** system of record.
   - The crash hypertable and hourly continuous aggregate power "when crashes happened here".
   - PostGIS stores street geometry, and a versioned risk grid stores the scores.
+- **MongoDB Atlas:** community street reports (`backend/app/repositories/reports.py`, pymongo's async client).
+  - A 2dsphere index answers "reports in this map view" with `$geoWithin`.
+  - A TTL index expires each report 14 days after its last confirmation, with no cleanup job.
+  - One atomic `find_one_and_update` upsert per report: a repeat report on the same street and category confirms the existing one instead of duplicating it (unique index on segment + category).
+  - An aggregation pipeline (`$match` → `$group` → `$sort`) summarises active reports by category.
+  - Report locations come from our street graph, never from the phone, and there is no free-text field. Reports never feed the model or the explanation evidence.
 - **Vultr:** hosts the API and the site (Caddy + systemd).
 - **.tech:** [pathpro.tech](https://pathpro.tech), read as "path protect": the `.tech` completes the word.
 

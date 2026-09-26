@@ -108,6 +108,7 @@
   - has more than three sentences
   - is truncated
 - **Other safeguards:** no tracking or analytics. Guest locations are not stored.
+- **Community street reports (MongoDB Atlas) do not feed the model.** They are shown beside scores for context only and never change a score, a route choice, or the LLM's evidence.
 
 ## Known limitations
 
