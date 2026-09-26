@@ -76,6 +76,12 @@ def known_share(lengths: np.ndarray, codes: np.ndarray, target: int) -> float | 
     return float(np.sum(lengths[codes == target]) / known_len)
 
 
+def busier_share(lengths: np.ndarray, activity: np.ndarray) -> float | None:
+    """Share of known-activity length that is moderate or busy ("busier" than quiet)."""
+    busier = np.where(activity == UNKNOWN, UNKNOWN, (activity >= MODERATE).astype(int))
+    return known_share(lengths, busier, 1)
+
+
 def densify(coords: list[list[float]], step_m: float) -> np.ndarray:
     """Points along a lon/lat polyline no more than ~`step_m` apart (vertices kept)."""
     pts = np.asarray(coords, dtype=float)

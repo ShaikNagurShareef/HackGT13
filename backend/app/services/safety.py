@@ -14,8 +14,8 @@ import numpy as np
 from app.api.schemas import RouteSafetyOut
 from app.domain.route_metrics import RouteMetrics
 from app.domain.safety import (
-    BUSY,
     LIT,
+    busier_share,
     day_part_at,
     day_part_for_hour,
     densify,
@@ -92,14 +92,15 @@ def _round(share: float | None) -> float | None:
 
 
 def route_safety(safety: SafetyBundle, route: RouteMetrics, depart: datetime) -> RouteSafetyOut:
-    """Lighting and busy shares by length, help points within 100 m, crimes in hexes crossed."""
+    """Lit and busier (moderate or busy) shares by length, help points within 100 m, and
+    reported crimes against persons in the hexes the route crosses (display only)."""
     part = day_part_at(depart)
     edges = np.array([s.edge for s in route.edges], dtype=np.int64)
     lengths = np.array([s.length_m for s in route.edges], dtype=float)
     pts = densify(route.coords, CORRIDOR_STEP_M)
     return RouteSafetyOut(
         lit_share=_round(known_share(lengths, safety.edges.lit[edges], LIT)),
-        busy_share=_round(known_share(lengths, safety.edges.activity_for(part)[edges], BUSY)),
+        busy_share=_round(busier_share(lengths, safety.edges.activity_for(part)[edges])),
         help_points_within_100m=_help_points_near(safety, pts),
         crimes_persons_nearby=_crimes_on_route(safety, pts, part),
         day_part=part,

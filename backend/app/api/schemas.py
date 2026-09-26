@@ -47,7 +47,8 @@ class AlertOut(BaseModel):
 
 
 class RouteSafetyOut(BaseModel):
-    """Signals along a route (~100 m corridor for help points). Crime is context only."""
+    """Signals along a route. busy_share = moderate-or-busy share of known foot traffic;
+    help points within 100 m; crimes are context only and never shape the route."""
 
     lit_share: float | None = Field(ge=0, le=1)
     busy_share: float | None = Field(ge=0, le=1)
