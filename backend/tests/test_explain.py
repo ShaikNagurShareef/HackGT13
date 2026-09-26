@@ -10,7 +10,13 @@ import pytest
 import respx
 from app.services.explain import template
 from app.services.explain.evidence import Evidence, _with_numbers
-from app.services.explain.providers import GEMINI_URL, GROQ_URL, GeminiProvider, GroqProvider
+from app.services.explain.providers import (
+    GEMINI_URL,
+    GROQ_URL,
+    SYSTEM_PROMPT,
+    GeminiProvider,
+    GroqProvider,
+)
 from app.services.explain.service import ExplainService
 from app.services.explain.validator import validation_errors
 
@@ -247,3 +253,9 @@ async def test_truncated_or_empty_completions_are_rejected() -> None:
             await groq.complete(ROUTE, 1.0)
         with pytest.raises(ValueError, match="empty"):
             await groq.complete(ROUTE, 1.0)
+
+
+@pytest.mark.unit
+def test_prompt_names_the_recommended_route_with_the_brand() -> None:
+    # The evidence key is lowercase "pathpro"; the model must not echo it as a name.
+    assert 'call it "the PathPro route"' in SYSTEM_PROMPT
