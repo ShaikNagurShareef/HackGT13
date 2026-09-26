@@ -200,3 +200,14 @@ def test_tts_endpoint_speaks_only_the_server_explanation_with_grok(bundle_dir: P
     assert spoken.headers["content-type"] == "audio/mpeg"
     assert spoken.content == b"grok-mp3"
     assert json.loads(voice.calls[0].request.content)["text"] == explained["text"]
+
+
+@pytest.mark.unit
+def test_provider_repr_never_shows_the_api_key() -> None:
+    from app.services.explain.providers import GeminiProvider, GrokProvider, GroqProvider
+
+    client = httpx.AsyncClient()
+    for cls in (GrokProvider, GroqProvider, GeminiProvider):
+        provider = cls(client=client, api_key="xai-supersecret-123", model="m")
+        assert "supersecret" not in repr(provider)
+        assert "supersecret" not in str(provider)

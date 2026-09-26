@@ -258,3 +258,38 @@ def test_cached_image_route_rejects_bad_ids_and_traversal(harness: Harness, path
 
     assert resp.status_code in {404, 422}
     assert resp.content != PNG
+
+
+@pytest.fixture
+def per_client_one(bundle_dir: Path, tmp_path: Path) -> Iterator[Harness]:
+    yield from _harness(
+        bundle_dir, tmp_path / "imagine", xai_api_key="xai-test", imagine_per_client_daily=1
+    )
+
+
+@pytest.mark.integration
+def test_one_client_cannot_spend_the_whole_daily_budget(per_client_one: Harness) -> None:
+    first = per_client_one.client.post("/imagine/segment", json={"seg_id": HOT_SEG})
+    second = per_client_one.client.post("/imagine/segment", json={"seg_id": HOT_SEG + 1})
+    repeat = per_client_one.client.post("/imagine/segment", json={"seg_id": HOT_SEG})
+
+    assert first.status_code == 200
+    assert second.status_code == 429
+    assert second.json()["error"]["code"] == "IMAGINE_CLIENT_LIMIT"
+    assert repeat.status_code == 200 and repeat.json()["data"]["cached"] is True
+    assert per_client_one.images.call_count == 1
+
+
+@pytest.mark.unit
+def test_client_limit_is_per_client_and_resets_each_day() -> None:
+    from datetime import date, timedelta
+
+    from app.services.imagine import ClientDailyLimit
+
+    limit = ClientDailyLimit(1)
+    today = date(2026, 9, 26)
+
+    assert limit.take("a", today) is True
+    assert limit.take("a", today) is False
+    assert limit.take("b", today) is True
+    assert limit.take("a", today + timedelta(days=1)) is True
