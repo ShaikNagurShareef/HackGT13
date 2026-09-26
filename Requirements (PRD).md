@@ -6,7 +6,7 @@ Sep 25, 2026 · @Nagur Shareef Shaik
 
 **Product:** PathPro — a predictive traffic-risk map and risk-aware walking router for Atlanta.
 
-**Tagline:** *See traffic risk before you walk into it.*
+**Tagline:** *See the risks on your way, before you go.*
 
 **Event context:** HackGT 13, Oracle of the Deep (ML/AI + visualization) track. Hacking window runs Friday Sep 25, 8 PM → Sunday Sep 27, 8 AM; Expo Sunday 9:30–11:00 AM in the Klaus Atrium; Devpost closes 12:00 PM (target submission 7:30 AM).
 

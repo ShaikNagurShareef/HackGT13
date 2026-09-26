@@ -11,7 +11,7 @@ export interface WelcomeToastProps {
 export function WelcomeToast({ dataThrough, safetyAvailable = false, onDismiss }: WelcomeToastProps) {
   return (
     <section className="welcome-toast panel" aria-label="Welcome to PathPro">
-      <p className="welcome-lede">See traffic risk before you walk into it.</p>
+      <p className="welcome-lede">See the risks on your way, before you go.</p>
       <p className="welcome-scope">
         {scopeLine(safetyAvailable)} Crash data through {dataThrough}.
       </p>

@@ -41,7 +41,7 @@ export function SearchSheet({ welcome, onDismissWelcome, note, onClose, safetyAv
       {welcome && (
         <aside className="welcome-line" aria-label="Welcome">
           <p>
-            <strong>See traffic risk before you walk into it.</strong> {scopeLine(safetyAvailable)}
+            <strong>See the risks on your way, before you go.</strong> {scopeLine(safetyAvailable)}
           </p>
           <button type="button" className="icon-btn ghost" aria-label="Dismiss welcome" onClick={onDismissWelcome}>
             <Icon name="close" size={18} />

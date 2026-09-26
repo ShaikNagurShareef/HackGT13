@@ -1,6 +1,6 @@
 # PathPro
 
-**See traffic risk before you walk into it.**
+**See the risks on your way, before you go.**
 
 **Live app: [pathpro.tech](https://pathpro.tech)**, hosted on Vultr (Atlanta) behind Caddy with automatic HTTPS.
 

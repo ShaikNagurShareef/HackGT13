@@ -1,6 +1,6 @@
 # PathPro — Devpost write-up (draft)
 
-**Tagline:** See traffic risk before you walk into it.
+**Tagline:** See the risks on your way, before you go.
 
 **Team CodingClaws (HackGT 13):** Nagur Shareef Shaik, Sahith Reddy Thummala, Pranav Nagothu, and Geethanjali Nagaboina.
 

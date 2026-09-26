@@ -7,7 +7,7 @@ export function SidebarBrand() {
       <LogoMark size={36} />
       <div>
         <h1 className="desk-brand-name">PathPro</h1>
-        <p className="desk-brand-tagline">See traffic risk before you walk into it.</p>
+        <p className="desk-brand-tagline">See the risks on your way, before you go.</p>
       </div>
     </header>
   )
