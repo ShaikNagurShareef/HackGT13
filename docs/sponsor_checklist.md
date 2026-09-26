@@ -65,7 +65,8 @@ Job: community street reports. Tiger Data stays the system of record for crashes
 - [x] API: `POST /api/reports`, `GET /api/reports?bbox=`, `GET /api/reports/summary`, `GET /api/segments/{id}/reports`; routes carry reports on the recommended route
 - [x] UI: "Report a street issue" chips on the street sheet, violet dots on the map, a line on the route card; hidden in `?demo=1`
 - [x] `check_keys` MongoDB line (ping + indexes); `MONGODB_URI` pattern in `deploy/capture_keys.py`
-- [ ] Create a free M0 cluster, allow the server's IP, put `MONGODB_URI` in `backend/.env`, restart the API, and confirm `check_keys` shows OK
+- [x] Free M0 cluster `pathpulse` (AWS us-east-1) live; `MONGODB_URI` in `backend/.env`; `/healthz` reports `ok`; live end-to-end test passed (report, confirmation, viewport, summary)
+- [ ] Allow the Vultr VM's IP in Atlas → Network Access when the server exists
 - [ ] Demo it in the video: report "Crossing signal out" on a street, then show the dot on the map and the line on the route card
 
 ## Submission
