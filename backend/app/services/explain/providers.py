@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 import httpx
@@ -60,7 +60,7 @@ def user_message(evidence: Evidence) -> str:
 @dataclass(frozen=True)
 class GroqProvider:
     client: httpx.AsyncClient
-    api_key: str
+    api_key: str = field(repr=False)
     model: str
     name: str = "groq"
 
@@ -90,7 +90,7 @@ class GrokProvider:
     """xAI Grok chat completions (OpenAI-compatible; non-reasoning model, no reasoning knob)."""
 
     client: httpx.AsyncClient
-    api_key: str
+    api_key: str = field(repr=False)
     model: str
     name: str = "grok"
 
@@ -117,7 +117,7 @@ class GrokProvider:
 @dataclass(frozen=True)
 class GeminiProvider:
     client: httpx.AsyncClient
-    api_key: str
+    api_key: str = field(repr=False)
     model: str
     name: str = "gemini"
 

@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     xai_image_model: str = "grok-imagine-image-2.0"
     xai_tts_voice: str = "eve"
     imagine_daily_budget: int = Field(default=40, ge=0)
+    # Per client address per day (the expo shares one NAT address; cached streets are free).
+    imagine_per_client_daily: int = Field(default=10, ge=0)
     imagine_cache_dir: Path = BACKEND_DIR / "cache" / "imagine"  # git-ignored (cache/)
     geoapify_api_key: SecretStr | None = None
     database_url: SecretStr | None = None

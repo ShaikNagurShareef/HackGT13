@@ -103,7 +103,11 @@ async def tts(
     audio = await service.speak(text)
     if audio is None:
         raise AppError("TTS_UNAVAILABLE", "Voice is unavailable; using the device voice.", 503)
-    return Response(content=audio, media_type="audio/mpeg", headers={"Cache-Control": "no-store"})
+    return Response(
+        content=audio,
+        media_type="audio/mpeg",
+        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
+    )
 
 
 @extras.get("/conditions/live", response_model=Envelope[ConditionUsed])

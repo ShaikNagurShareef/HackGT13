@@ -117,6 +117,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 cfg.xai_image_model,
                 cfg.imagine_cache_dir,
                 cfg.imagine_daily_budget,
+                cfg.imagine_per_client_daily,
             )
             street_reports: ReportsRepository = app.state.reports
             if street_reports.configured and not await street_reports.ensure_indexes():

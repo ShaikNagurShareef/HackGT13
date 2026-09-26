@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.deps import get_bundle
 from app.api.envelope import AppError, Envelope, ok
+from app.middleware import client_key
 from app.repositories.artifacts import Bundle
 from app.services.imagine import IMAGINE_LABEL, ImagineService, plan_for_segment
 
@@ -47,7 +48,9 @@ async def imagine_segment(
     req: ImagineRequest, request: Request, bundle: BundleDep
 ) -> Envelope[ImagineData]:
     plan = plan_for_segment(bundle, req.seg_id)
-    cached = await _service(request).ensure(req.seg_id, plan.prompt)
+    cached = await _service(request).ensure(
+        req.seg_id, plan.prompt, client_key(request.client.host if request.client else None)
+    )
     data = ImagineData(
         seg_id=req.seg_id,
         image_url=_image_url(req.seg_id),

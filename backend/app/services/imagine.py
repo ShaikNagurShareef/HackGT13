@@ -14,11 +14,12 @@ import binascii
 import logging
 import re
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
 import httpx
+from cachetools import TTLCache
 
 from app.api.envelope import AppError
 from app.api.schemas import SegmentDetail
@@ -34,6 +35,9 @@ XAI_IMAGES_URL = "https://api.x.ai/v1/images/generations"
 IMAGINE_LABEL = "AI illustration of evidence-based street fixes by Grok Imagine — not a real photo"
 UNAVAILABLE_MESSAGE = "Street redesign illustrations are unavailable right now."
 BUDGET_MESSAGE = "Today's street illustrations are used up. Please try again tomorrow."
+CLIENT_LIMIT_MESSAGE = "You've reached today's limit for new street illustrations."
+MAX_TRACKED_CLIENTS = 50_000
+DAY_S = 86_400
 TIMEOUT_S = 60.0
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 MAX_FIXES = 4
@@ -136,6 +140,24 @@ def _decode_image(payload: Any) -> bytes:
     return content
 
 
+class ClientDailyLimit:
+    """Caps new (paid) illustrations per client per day so one client cannot spend the budget."""
+
+    def __init__(self, limit: int) -> None:
+        self._limit = limit
+        self._used: TTLCache[tuple[date, str], int] = TTLCache(
+            maxsize=MAX_TRACKED_CLIENTS, ttl=DAY_S
+        )
+
+    def take(self, client: str, today: date | None = None) -> bool:
+        key = (today or date.today(), client)
+        used = self._used.get(key, 0)
+        if used >= self._limit:
+            return False
+        self._used[key] = used + 1
+        return True
+
+
 class ImagineService:
     def __init__(
         self,
@@ -144,12 +166,14 @@ class ImagineService:
         model: str,
         cache_dir: Path,
         daily_budget: int,
+        per_client_daily: int,
     ) -> None:
         self._client = client
         self._key = api_key
         self._model = model
         self._cache_dir = cache_dir
         self._budget = DailyBudget(daily_budget)
+        self._per_client = ClientDailyLimit(per_client_daily)
         self._inflight: dict[int, asyncio.Lock] = {}
 
     @property
@@ -173,7 +197,7 @@ class ImagineService:
         """The stored illustration, read off the event loop; None when not generated yet."""
         return await asyncio.to_thread(self._read, seg_id)
 
-    async def ensure(self, seg_id: int, prompt: str) -> bool:
+    async def ensure(self, seg_id: int, prompt: str, client: str) -> bool:
         """Make sure an image exists for this segment; True when it was already cached."""
         if self._path(seg_id).is_file():
             return True
@@ -184,6 +208,8 @@ class ImagineService:
             async with lock:  # single-flight: repeated taps on one street make one paid call
                 if self._path(seg_id).is_file():
                     return True
+                if not self._per_client.take(client):
+                    raise AppError("IMAGINE_CLIENT_LIMIT", CLIENT_LIMIT_MESSAGE, 429)
                 if not self._budget.take():
                     raise AppError("IMAGINE_BUDGET", BUDGET_MESSAGE, 429)
                 content = await self._generate(prompt)
