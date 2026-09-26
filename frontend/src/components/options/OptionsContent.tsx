@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import type { Condition } from '../../api/client'
-import type { RoutePreference } from '../../api/safetySchemas'
+import type { HelpPoint, RoutePreference } from '../../api/safetySchemas'
 import type { MapMode } from '../../lib/options'
-import type { SafetyLayers } from '../../lib/safety'
+import type { SafetyLayers, SafetyPick } from '../../lib/safety'
 import { ConditionsChip, DepartPicker, Legend } from '../Controls'
 import { RoutePreferencePicker } from '../safety/RoutePreferencePicker'
+import { SafetyHelpList } from '../safety/SafetyHelpList'
 import { SafetyLayerToggles } from '../safety/SafetyLayerToggles'
 import { SafetyLegend, type SafetyLegendProps } from '../safety/SafetyLegend'
 import { Timeline, type TimelineProps } from '../Timeline'
@@ -16,6 +17,9 @@ export interface SafetyOptions {
   onLayers: (layers: SafetyLayers) => void
   hasLit: boolean
   hasBusy: boolean
+  /** Help points in view: listed as buttons so each is reachable without the map. */
+  helpPoints: ReadonlyArray<HelpPoint>
+  onPickHelp: (pick: SafetyPick) => void
   prefer: RoutePreference
   onPrefer: (prefer: RoutePreference) => void
 }
@@ -68,6 +72,7 @@ export function OptionsContent(props: OptionsContentProps) {
           {safetyMode && (
             <SafetyLayerToggles layers={safety.legend.layers} onChange={safety.onLayers} hasLit={safety.hasLit} hasBusy={safety.hasBusy} />
           )}
+          {safetyMode && safety.legend.layers.help && <SafetyHelpList points={safety.helpPoints} onPick={safety.onPickHelp} />}
         </section>
       )}
       {props.timeline && (

@@ -58,8 +58,8 @@ export function useSafetyMode(mapMode: MapMode, hour: number): SafetyMode {
     [shown, hexes, helpPoints, layers, dayLabel],
   )
   const controls = useMemo<SafetyControls | null>(
-    () => (available ? { legend: legendProps, onLayers: setLayers, hasLit, hasBusy } : null),
-    [available, legendProps, hasLit, hasBusy],
+    () => (available ? { legend: legendProps, onLayers: setLayers, hasLit, hasBusy, helpPoints, onPickHelp: setPick } : null),
+    [available, legendProps, hasLit, hasBusy, helpPoints],
   )
   const closePick = useCallback(() => setPick(null), [])
 

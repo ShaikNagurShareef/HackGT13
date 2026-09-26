@@ -318,3 +318,33 @@
     width: 360px;
   }
 }
+
+/* Help points in view (keyboard / screen-reader access to what the map shows). */
+.safety-help-list ul {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.help-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text);
+  font-size: 14px;
+  text-align: left;
+}
+.help-row:hover {
+  background: var(--surface-hover);
+}
+.help-row:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.safety-help-list p {
+  margin: 4px 0 0;
+}

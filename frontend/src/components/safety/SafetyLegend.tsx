@@ -21,6 +21,8 @@ export interface SafetyLegendProps {
   tooWide: boolean
   /** Map-side versions (phone chip, desktop dock) leave the sources to the sheet and About. */
   compact?: boolean
+  /** Lets a disclosure button point at the legend (aria-controls). */
+  id?: string
 }
 
 const ALPHA_SCALE = 255
@@ -33,10 +35,10 @@ function whenLabel(meta: SafetyMeta | null, hour: number): string {
 }
 
 /** Legend for the personal-safety map mode: crime bands in words, overlays, the fairness note. */
-export function SafetyLegend({ meta, hour, layers, tooWide, compact = false }: SafetyLegendProps) {
+export function SafetyLegend({ meta, hour, layers, tooWide, compact = false, id }: SafetyLegendProps) {
   const overlays = layers.lit || layers.busy || layers.help
   return (
-    <section className="legend safety-legend panel" aria-label="Personal safety legend">
+    <section id={id} className="legend safety-legend panel" aria-label="Personal safety legend">
       <div className="legend-title safety-legend-title">
         <span>Personal safety</span>
         <span className="safety-when num">{whenLabel(meta, hour)}</span>

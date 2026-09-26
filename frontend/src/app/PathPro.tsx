@@ -191,6 +191,7 @@ export function PathPro({ data, loadError }: PathProProps) {
 
   const etaMin = suggestion && suggestionFrom ? estimateWalkMin(suggestionFrom, suggestion.to) : null
   const dismissSuggestion = () => setHiddenSuggestion(top?.to.label ?? null)
+  const safetyControls = safety.controls
   const optionValues = {
     cond: view.cond,
     condLabel: routes?.condition_used.label ?? condLabel,
@@ -200,8 +201,17 @@ export function PathPro({ data, loadError }: PathProProps) {
     cityAvailable: Boolean(data?.hexCells),
     mapMode,
     onMapMode: setMapMode,
-    safety: safety.controls
-      ? { ...safety.controls, prefer: view.prefer, onPrefer: (prefer: typeof view.prefer) => update({ prefer }) }
+    safety: safetyControls
+      ? {
+          ...safetyControls,
+          // From the phone's options sheet, close it so the help point's card is visible.
+          onPickHelp: (pick: Parameters<typeof safetyControls.onPickHelp>[0]) => {
+            safetyControls.onPickHelp(pick)
+            actions.closePanel()
+          },
+          prefer: view.prefer,
+          onPrefer: (prefer: typeof view.prefer) => update({ prefer }),
+        }
       : null,
     showReportsLegend: reports.available,
   }
