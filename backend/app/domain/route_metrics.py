@@ -9,10 +9,11 @@ import numpy as np
 
 from app.domain.scoring import HIGH_THRESHOLD, score_from_log_density
 from app.domain.timeutil import cell_at
-from app.repositories.artifacts import Bundle
+from app.repositories.artifacts import Bundle, WalkGraph
 
 TOP_SEGMENTS = 3
 UNNAMED = "Unnamed street"
+JOINT_TOLERANCE_DEG = 2e-5  # edge vertices are rounded to 5 decimals (~1 m)
 
 
 @dataclass(frozen=True)
@@ -49,6 +50,25 @@ class RouteMetrics:
         return {s.name for s in self.top_segments if s.score >= HIGH_THRESHOLD}
 
 
+def oriented_coords(g: WalkGraph, edge: int, from_node: int) -> np.ndarray:
+    """Edge vertices ordered from `from_node`, whichever way the geometry was stored.
+
+    OSMnx stores most walk-edge geometries from v to u, so the traversal direction alone
+    cannot orient them; the end nearer the node we are leaving comes first.
+    """
+    pts = g.edge_coords(edge)
+    start = np.array([g.node_lon[from_node], g.node_lat[from_node]])
+    head, tail = np.sum((pts[0] - start) ** 2), np.sum((pts[-1] - start) ** 2)
+    return pts[::-1] if tail < head else pts
+
+
+def _append_edge(coords: list[list[float]], pts: np.ndarray) -> list[list[float]]:
+    """Join an edge's vertices to the polyline, dropping the shared joint vertex."""
+    if coords and np.all(np.abs(np.asarray(coords[-1]) - pts[0]) <= JOINT_TOLERANCE_DEG):
+        pts = pts[1:]
+    return coords + [[float(x), float(y)] for x, y in pts]
+
+
 def measure_route(
     bundle: Bundle,
     path: list[int],
@@ -72,8 +92,7 @@ def measure_route(
         )
         log_ds.append(log_d)
         steps.append(EdgeStep(e, seg, float(g.edge_len[e]), 0.0))
-        pts = g.edge_coords(e)[::-1] if reversed_[d] else g.edge_coords(e)
-        coords += [[float(x), float(y)] for x, y in (pts[1:] if coords else pts)]
+        coords = _append_edge(coords, oriented_coords(g, e, nodes[-1]))
         nodes.append(int(dst[d]))
         elapsed += float(time_s[d])
     scores = score_from_log_density(np.array(log_ds), bundle.quantiles)
