@@ -89,3 +89,64 @@ def test_reuse_deviance_scores_both_task_shapes_on_held_out_target_crashes() -> 
     assert np.isfinite(all_mode) and all_mode > 0.0
     assert target_shape != pytest.approx(all_mode, rel=1e-12)
     assert cell_table(crashes, hours, range(2021, 2022))["count"].sum() > 0
+
+
+@pytest.mark.integration
+def test_benchmark_can_score_a_model_against_a_different_crash_flag(
+    fitted: tuple, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from dataclasses import replace
+
+    from pathpulse_data.model import benchmark as bench
+
+    data, _, fit = fitted
+    rng = np.random.default_rng(5)
+    crashes = data.crashes.assign(
+        is_bike=(~data.crashes["is_ped"]) & (rng.random(len(data.crashes)) < 0.05)
+    )
+    data = replace(data, crashes=crashes)
+    monkeypatch.setattr(bench, "hin_scores", lambda d: pd.Series(0.0, index=d.features.index))
+    monkeypatch.setattr(bench, "BOOT_REPS", 20)
+    in_2023 = crashes["year"] == 2023
+
+    default = bench.benchmark(fit, data, 2023)
+    as_bike = bench.benchmark(fit, data, 2023, label_col="is_bike")
+
+    assert default["observed_ped_crashes"] == pytest.approx(crashes.loc[in_2023, "is_ped"].sum())
+    assert as_bike["observed_ped_crashes"] == pytest.approx(crashes.loc[in_2023, "is_bike"].sum())
+    count_only = {m["method"]: m for m in as_bike["methods"]}[COUNT_ONLY]
+    assert 0.0 <= count_only["capture_top10"] <= 1.0
+
+
+@pytest.mark.unit
+def test_pooled_target_marks_pedestrian_or_cyclist_crashes() -> None:
+    from pathpulse_data.model.dataset import SegmentData
+    from pathpulse_data.ride.evaluate import POOLED, with_pooled_target
+
+    crashes = pd.DataFrame(
+        {"is_ped": [True, False, False], "is_bike": [False, True, False], "weight": 1.0}
+    )
+    idx = pd.RangeIndex(1)
+    data = SegmentData(
+        features=pd.DataFrame(index=idx),
+        crashes=crashes,
+        blocks=pd.Series(["a"], index=idx),
+        cv_groups=pd.Series(["a"], index=idx),
+        target_col="is_bike",
+    )
+
+    pooled = with_pooled_target(data)
+
+    assert pooled.target_col == POOLED
+    assert pooled.crashes[POOLED].tolist() == [True, True, False]
+    assert POOLED not in data.crashes.columns
+
+
+@pytest.mark.unit
+def test_choose_training_label_by_validation_capture() -> None:
+    from pathpulse_data.ride.evaluate import choose_training
+
+    assert choose_training({"cyclist-only": 0.60, "pedestrian+cyclist": 0.69}) == (
+        "pedestrian+cyclist"
+    )
+    assert choose_training({"cyclist-only": 0.60, "pedestrian+cyclist": 0.60}) == "cyclist-only"

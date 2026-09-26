@@ -142,3 +142,15 @@ def test_as_target_relabels_the_task_column_without_mutating_input() -> None:
     assert as_target(frame, "is_ped") is not frame
     with pytest.raises(KeyError):
         as_target(frame, "is_scooter")
+
+
+@pytest.mark.unit
+def test_pooled_ride_spec_labels_history_as_pedestrian_and_cyclist() -> None:
+    from pathpulse_data.ride.spec import ride_spec
+
+    pooled, cyclist = ride_spec(pooled=True), ride_spec(pooled=False)
+
+    assert "pedestrian" in pooled.spatial["history"].lower()
+    assert "cyclist" in pooled.spatial["history"].lower()
+    assert cyclist.spatial["history"] == "Cyclist crash history here"
+    assert list(pooled.spatial) == list(cyclist.spatial) == list(RIDE_SPEC.spatial)
