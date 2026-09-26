@@ -1,6 +1,33 @@
-import { useId, useState } from 'react'
-import { QUICK_PICKS, searchPlaces, type NamedPlace } from '../lib/places'
+import { useEffect, useId, useState } from 'react'
+import { api } from '../api/client'
+import type { GeoResult } from '../api/schemas'
+import { QUICK_PICKS, searchPlaces } from '../lib/places'
 import type { Place } from '../state/urlState'
+
+const GEOCODE_DEBOUNCE_MS = 250
+
+function useGeocode(text: string): GeoResult[] {
+  const [results, setResults] = useState<GeoResult[]>([])
+  useEffect(() => {
+    const q = text.trim()
+    if (q.length < 3) {
+      setResults([])
+      return
+    }
+    let cancelled = false
+    const id = window.setTimeout(() => {
+      api
+        .geocode(q)
+        .then((r) => !cancelled && setResults(r))
+        .catch(() => !cancelled && setResults([]))
+    }, GEOCODE_DEBOUNCE_MS)
+    return () => {
+      cancelled = true
+      window.clearTimeout(id)
+    }
+  }, [text])
+  return results
+}
 
 interface FieldProps {
   label: string
@@ -13,7 +40,14 @@ function PlaceField({ label, value, placeholder, onPick }: FieldProps) {
   const [text, setText] = useState('')
   const [open, setOpen] = useState(false)
   const listId = useId()
-  const results: NamedPlace[] = searchPlaces(text)
+  const remote = useGeocode(text)
+  const local = searchPlaces(text)
+  const results: Array<Place & { note?: string }> = [
+    ...local,
+    ...remote
+      .filter((r) => !local.some((l) => l.label === r.label))
+      .map((r) => ({ lat: r.lat, lon: r.lon, label: r.label, note: r.in_coverage ? r.address : 'Outside routing coverage' })),
+  ].slice(0, 5)
   const showEmpty = open && text.trim().length >= 2 && results.length === 0
 
   const pick = (p: Place) => {
@@ -53,9 +87,10 @@ function PlaceField({ label, value, placeholder, onPick }: FieldProps) {
       {open && results.length > 0 && (
         <ul id={listId} role="listbox" className="suggestions panel">
           {results.map((r) => (
-            <li key={r.label} role="option" aria-selected={false}>
+            <li key={`${r.label}-${r.lat}`} role="option" aria-selected={false}>
               <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => pick(r)}>
                 {r.label}
+                {r.note && <span className="faint suggestion-note">{r.note}</span>}
               </button>
             </li>
           ))}

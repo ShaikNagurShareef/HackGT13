@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react'
 import { ApiError, api } from './api/client'
+import { DEMO_DEPART, DEMO_ROUTE, loadFixtures } from './api/demo'
 import type { Routes, SegmentDetail } from './api/schemas'
 import { About, FirstRun } from './components/About'
 import { ComparisonCard } from './components/ComparisonCard'
@@ -9,11 +10,15 @@ import { SegmentSheet } from './components/SegmentSheet'
 import { Timeline } from './components/Timeline'
 import type { FrameSet } from './frames/frameStore'
 import { useBundle } from './hooks/useBundle'
+import { useExplanation } from './hooks/useExplanation'
+import { useTypewriter } from './hooks/useTypewriter'
 import { useViewState } from './hooks/useViewState'
 import { hotspotsFor } from './lib/hotspots'
 import { atlantaParts, dayGroupOf } from './lib/time'
-import { MapView } from './map/MapView'
 import type { Place } from './state/urlState'
+
+// Map libraries (MapLibre + deck.gl) are the bulk of the JS; load them in parallel with the shell.
+const MapView = lazy(() => import('./map/MapView').then((m) => ({ default: m.MapView })))
 
 const SEEN_KEY = 'pathpulse:first-run-seen'
 const PLAY_MS = 1000
@@ -37,13 +42,58 @@ export default function App() {
   const [aboutOpen, setAboutOpen] = useState(false)
   const [firstRun, setFirstRun] = useState(() => !readSeen() && !view.demo)
   const [liveWet, setLiveWet] = useState(false)
+  const [liveLabel, setLiveLabel] = useState<string | null>(null)
 
   const now = useMemo(() => new Date(), [])
+
+  // Demo mode (DEMO-01/02): preload fixtures, open the scripted route, enable shortcuts.
+  useEffect(() => {
+    if (!view.demo) return
+    void loadFixtures().catch(() => setError('Demo data is missing. Run the demo recorder.'))
+    if (!view.from && !view.to) update({ ...DEMO_ROUTE, depart: DEMO_DEPART, cond: 'wet' })
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.metaKey || e.ctrlKey) return
+      const k = e.key.toLowerCase()
+      if (k === 't') update({ hour: 22 })
+      if (k === 'r') update({ cond: view.cond === 'wet' ? 'dry' : 'wet' })
+      if (k === 'd') update({ ...DEMO_ROUTE, depart: DEMO_DEPART, cond: 'wet', seg: null })
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // Shortcut handler must see the latest cond; from/to only matter on first load.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view.demo, view.cond, update])
   const departDate = routes ? new Date(routes.depart_at) : now
   const hour = view.hour ?? atlantaParts(departDate).hour
   const day = view.day ?? dayGroupOf(departDate)
   const mapCond = view.cond === 'live' ? (liveWet ? 'wet' : 'dry') : view.cond
-  const condLabel = view.cond === 'live' ? `Live · ${mapCond}` : view.cond === 'wet' ? 'Wet' : 'Dry'
+  const condLabel =
+    view.cond === 'live' ? (liveLabel ?? `Live · ${mapCond}`) : view.cond === 'wet' ? 'Wet' : 'Dry'
+
+  useEffect(() => {
+    if (view.cond !== 'live') return
+    let cancelled = false
+    api
+      .liveConditions()
+      .then((c) => {
+        if (cancelled) return
+        setLiveWet(c.cond === 'wet')
+        setLiveLabel(c.label)
+      })
+      .catch(() => !cancelled && setLiveLabel('Live weather unavailable — using dry conditions.'))
+    return () => {
+      cancelled = true
+    }
+  }, [view.cond])
+
+  const routeKey = routes?.route_key ?? null
+  const routeExplain = useExplanation(routeKey, () => api.explainRoute(routeKey ?? ''))
+  const segKey = detail ? `${detail.seg_id}|${detail.at}|${view.cond}` : null
+  const segExplain = useExplanation(segKey, () =>
+    api.explainSegment(detail?.seg_id ?? 0, detail?.at ?? 'now', view.cond),
+  )
+  const routeText = useTypewriter(routeExplain?.text ?? null)
+  const segText = useTypewriter(segExplain?.text ?? null)
 
   useEffect(() => {
     if (!data) return
@@ -121,7 +171,8 @@ export default function App() {
   const lights = data.meta.frame_light[day] ?? []
   return (
     <main className="app">
-      <MapView
+      <Suspense fallback={<div className="map map-fallback" aria-busy="true" />}>
+        <MapView
         bbox={data.meta.coverage_bbox}
         segments={data.segments}
         frame={frame}
@@ -132,7 +183,8 @@ export default function App() {
         selectedSeg={view.seg}
         onSegment={onSegment}
         onMapPick={onMapPick}
-      />
+        />
+      </Suspense>
       <div className="top-bar">
         <SearchBar
           from={view.from}
@@ -161,14 +213,14 @@ export default function App() {
         {detail ? (
           <SegmentSheet
             detail={detail}
-            explanation={null}
+            explanation={segText}
             onClose={() => update({ seg: null })}
             onAbout={() => setAboutOpen(true)}
           />
         ) : routes ? (
           <ComparisonCard
             routes={routes}
-            explanation={null}
+            explanation={routeText}
             onClear={() => update({ from: null, to: null })}
             onSelectSegment={onSegment}
           />

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 
 from app.api.deps import get_bundle, get_router, get_weather
 from app.api.envelope import AppError, Envelope, ok
@@ -67,11 +67,14 @@ async def meta(bundle: BundleDep) -> Envelope[MetaData]:
 @api.post("/routes", response_model=Envelope[RoutesData])
 async def routes(
     req: RouteRequest,
+    request: Request,
     bundle: BundleDep,
     router: Annotated[Router, Depends(get_router)],
     weather: Annotated[WeatherService, Depends(get_weather)],
 ) -> Envelope[RoutesData]:
-    return ok(await plan_routes(bundle, router, weather, req), bundle.model_version)
+    data = await plan_routes(bundle, router, weather, req)
+    request.app.state.routes_cache[data.route_key] = data  # evidence for /explain stays server-side
+    return ok(data, bundle.model_version)
 
 
 @api.get("/segments/{seg_id}", response_model=Envelope[SegmentDetail])

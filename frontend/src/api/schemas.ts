@@ -85,3 +85,16 @@ export type Route = z.infer<typeof routeSchema>
 export type Routes = z.infer<typeof routesSchema>
 export type SegmentDetail = z.infer<typeof segmentSchema>
 export type ConditionUsed = z.infer<typeof conditionUsedSchema>
+
+export const explainSchema = z.object({ text: z.string(), source: z.string() })
+export const geoResultsSchema = z.array(
+  z.object({
+    label: z.string(),
+    address: z.string(),
+    lat: z.number(),
+    lon: z.number(),
+    in_coverage: z.boolean(),
+  }),
+)
+export type Explanation = z.infer<typeof explainSchema>
+export type GeoResult = z.infer<typeof geoResultsSchema>[number]

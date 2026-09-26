@@ -1,13 +1,21 @@
 import type { z } from 'zod'
 import {
+  conditionUsedSchema,
   envelope,
+  explainSchema,
+  geoResultsSchema,
   metaSchema,
   routesSchema,
   segmentSchema,
+  type ConditionUsed,
+  type Explanation,
+  type GeoResult,
   type Meta,
   type Routes,
   type SegmentDetail,
 } from './schemas'
+
+import { demoResponse, isDemoMode } from './demo'
 
 export const API_BASE = '/api'
 const TIMEOUT_MS = 8000
@@ -29,8 +37,10 @@ async function request<T extends z.ZodType>(
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
   try {
-    const resp = await fetch(`${API_BASE}${path}`, { ...init, signal: controller.signal })
-    const parsed = envelope(schema).safeParse(await resp.json())
+    const raw = isDemoMode()
+      ? await demoResponse(init?.method ?? 'GET', path, init?.body as string | undefined)
+      : await (await fetch(`${API_BASE}${path}`, { ...init, signal: controller.signal })).json()
+    const parsed = envelope(schema).safeParse(raw)
     if (!parsed.success) throw new ApiError('BAD_RESPONSE', 'Unexpected response from PathPulse.')
     const body = parsed.data
     if (!body.success || body.data == null) {
@@ -58,4 +68,19 @@ export const api = {
     }),
   segment: (id: number, t: string, cond: Condition): Promise<SegmentDetail> =>
     request(`/segments/${id}?t=${encodeURIComponent(t)}&cond=${cond}`, segmentSchema),
+  explainRoute: (routeKey: string): Promise<Explanation> =>
+    request('/explain', explainSchema, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind: 'route', route_key: routeKey }),
+    }),
+  explainSegment: (id: number, t: string, cond: Condition): Promise<Explanation> =>
+    request('/explain', explainSchema, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind: 'segment', seg_id: id, t, cond }),
+    }),
+  liveConditions: (): Promise<ConditionUsed> => request('/conditions/live', conditionUsedSchema),
+  geocode: (q: string): Promise<GeoResult[]> =>
+    request(`/geocode?q=${encodeURIComponent(q)}`, geoResultsSchema),
 }
