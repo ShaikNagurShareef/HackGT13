@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from functools import lru_cache
 
 import numpy as np
 
@@ -14,6 +15,7 @@ from app.repositories.artifacts import Bundle, WalkGraph
 TOP_SEGMENTS = 3
 UNNAMED = "Unnamed street"
 ONE_MINUTE = timedelta(minutes=1)
+MINUTE_CACHE_SIZE = 16_384  # ~11 days of minutes x dry/wet; entries are tiny
 JOINT_TOLERANCE_DEG = 2e-5  # edge vertices are rounded to 5 decimals (~1 m)
 
 
@@ -70,17 +72,20 @@ def _append_edge(coords: list[list[float]], pts: np.ndarray) -> list[list[float]
     return coords + [[float(x), float(y)] for x, y in pts]
 
 
-def _cell(cells: dict[datetime, Cell | None], ts: datetime, wet: bool) -> Cell:
+@lru_cache(maxsize=MINUTE_CACHE_SIZE)
+def _uniform_cell(minute: datetime, wet: bool) -> Cell | None:
+    """The cell for a whole minute, or None when the minute crosses a cell boundary."""
+    start, end = cell_at(minute, wet), cell_at(minute + ONE_MINUTE, wet)
+    return start if start == end else None
+
+
+def _cell(ts: datetime, wet: bool) -> Cell:
     """cell_at(ts), computing the sun position once per minute instead of once per edge.
 
-    A minute whose start and end fall in the same cell is uniform; a minute that crosses a
-    light, hour, or day boundary is evaluated at the exact time, so results never change.
+    Minutes that cross a light, hour, or day boundary are evaluated at the exact time, so
+    results are identical to calling cell_at for every edge.
     """
-    minute = ts.replace(second=0, microsecond=0)
-    if minute not in cells:
-        start, end = cell_at(minute, wet), cell_at(minute + ONE_MINUTE, wet)
-        cells[minute] = start if start == end else None
-    uniform = cells[minute]
+    uniform = _uniform_cell(ts.replace(second=0, microsecond=0), wet)
     return uniform if uniform is not None else cell_at(ts, wet)
 
 
@@ -96,7 +101,6 @@ def measure_route(
 ) -> RouteMetrics:
     g, meta = bundle.graph, bundle.seg_meta
     away = float(bundle.quantiles[500])
-    cells: dict[datetime, Cell | None] = {}  # sun position per minute (long rides)
     elapsed, steps, log_ds = 0.0, [], []
     coords: list[list[float]] = []
     nodes = [int(g.edge_v[edge_of[path[0]]] if reversed_[path[0]] else g.edge_u[edge_of[path[0]]])]
@@ -104,11 +108,7 @@ def measure_route(
         e = int(edge_of[d])
         mid = depart + timedelta(seconds=elapsed + time_s[d] / 2)
         seg = int(g.edge_seg[e])
-        log_d = (
-            float(bundle.log_density(np.array([seg]), _cell(cells, mid, wet))[0])
-            if seg >= 0
-            else away
-        )
+        log_d = float(bundle.log_density(np.array([seg]), _cell(mid, wet))[0]) if seg >= 0 else away
         log_ds.append(log_d)
         steps.append(EdgeStep(e, seg, float(g.edge_len[e]), 0.0))
         coords = _append_edge(coords, oriented_coords(g, e, nodes[-1]))

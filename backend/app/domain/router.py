@@ -207,12 +207,12 @@ class Router:
         _, pred = dijkstra(weights, indices=origin, return_predecessors=True)
         if pred[dest] < 0:
             raise RoutingError("NO_CONNECTION", "No connection found between these points.")
-        path, node = [], dest
-        while node != origin:
-            prev = int(pred[node])
-            path.append(int(ids[prev, node]) - 1)
-            node = prev
-        return path[::-1]
+        nodes = [dest]
+        while nodes[-1] != origin:
+            nodes.append(int(pred[nodes[-1]]))
+        nodes.reverse()
+        edge_ids = np.asarray(ids[nodes[:-1], nodes[1:]]).ravel() - 1  # one vectorized lookup
+        return [int(e) for e in edge_ids]
 
     def _relative_density(self, depart: datetime, wet: bool) -> np.ndarray:
         """Per directed edge: risk density at departure, relative to a score-75 street."""
