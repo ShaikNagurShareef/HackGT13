@@ -57,7 +57,9 @@ export function fixtureKey(method: string, path: string, body?: string): string 
     if (route === '/routes') {
       const o = b.origin as { lat: number; lon: number }
       const d = b.destination as { lat: number; lon: number }
-      return `POST /routes ${coordKey(o)}>${coordKey(d)}|${String(b.cond ?? 'live')}`
+      // Only default-preference routes are recorded; a lit-and-busy request must not get one.
+      const lit = b.prefer === 'lit_and_busy' ? '|lit' : ''
+      return `POST /routes ${coordKey(o)}>${coordKey(d)}|${String(b.cond ?? 'live')}${lit}`
     }
     if (route === '/explain' && b.kind === 'route') return `POST /explain route:${String(b.route_key)}`
     if (route === '/explain' && b.kind === 'segment') {
@@ -83,6 +85,21 @@ const REPORTS_OFF = {
   error: { code: 'REPORTS_UNAVAILABLE', message: 'Community reports are not part of the offline demo.' },
 }
 
+/** Personal-safety layer: served only from recorded fixtures, otherwise unavailable (never the network). */
+const SAFETY_OFF = {
+  success: false,
+  data: null,
+  error: { code: 'SAFETY_UNAVAILABLE', message: 'The personal-safety layer is not part of this offline demo.' },
+}
+
+/** Safety fixtures are recorded for the whole demo area, so the viewport is ignored; hexes vary by hour. */
+function safetyKey(path: string): string | null {
+  const [route, query = ''] = path.split('?')
+  if (route === '/safety/meta' || route === '/safety/help-points') return `GET ${route}`
+  if (route === '/safety/hexes') return `GET /safety/hexes|${new URLSearchParams(query).get('hour') ?? ''}`
+  return null
+}
+
 function isReportsPath(path: string): boolean {
   const route = path.split('?')[0]
   return route === '/reports' || route.startsWith('/reports/') || /^\/segments\/\d+\/reports$/.test(route)
@@ -91,6 +108,11 @@ function isReportsPath(path: string): boolean {
 export async function demoResponse(method: string, path: string, body?: string): Promise<unknown> {
   if (path.startsWith('/geocode')) return { success: true, data: [], error: null }
   if (isReportsPath(path)) return REPORTS_OFF
+  if (path.startsWith('/safety/')) {
+    const recorded = await loadFixtures().catch((): Fixtures => ({}))
+    const key = safetyKey(path)
+    return (key && recorded[key]) ?? SAFETY_OFF
+  }
   const fixtures = await loadFixtures()
   const key = fixtureKey(method, path, body)
   return (key && fixtures[key]) ?? DEMO_ONLY

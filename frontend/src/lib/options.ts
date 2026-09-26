@@ -1,6 +1,7 @@
 /** Home status chip: a one-line summary shown only when map options differ from the defaults. */
 
 import type { Condition } from '../api/client'
+import type { RoutePreference } from '../api/safetySchemas'
 import { hourLabel } from './time'
 
 export interface OptionsState {
@@ -8,6 +9,8 @@ export interface OptionsState {
   depart: string
   hour: number | null
   cityMode: boolean
+  safetyMode?: boolean
+  prefer?: RoutePreference
 }
 
 const RELATIVE = /^\+(\d{1,3})([mh])$/
@@ -32,6 +35,8 @@ export function statusLabel(s: OptionsState): string | null {
     s.depart !== 'now' ? departLabel(s.depart) : null,
     s.hour != null ? `Tides ${hourLabel(s.hour)}` : null,
     s.cityMode ? 'City Pulse' : null,
+    s.safetyMode ? 'Personal safety' : null,
+    s.prefer === 'lit_and_busy' ? 'Well-lit & busier' : null,
   ].filter((p): p is string => p != null)
   return parts.length ? parts.join(' · ') : null
 }

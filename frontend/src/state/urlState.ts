@@ -1,6 +1,7 @@
 /** Shareable, refresh-safe view state in the URL (PRD §3.3). */
 
 import type { Condition } from '../api/client'
+import { DEFAULT_PREFERENCE, type RoutePreference } from '../api/safetySchemas'
 import type { DayGroup } from '../lib/time'
 
 export interface Place {
@@ -18,6 +19,8 @@ export interface ViewState {
   day: DayGroup | null
   seg: number | null
   demo: boolean
+  /** Route preference; crime is never an input to routing. */
+  prefer: RoutePreference
 }
 
 export const DEFAULT_STATE: ViewState = {
@@ -29,10 +32,13 @@ export const DEFAULT_STATE: ViewState = {
   day: null,
   seg: null,
   demo: false,
+  prefer: DEFAULT_PREFERENCE,
 }
 
 const CONDS: ReadonlyArray<Condition> = ['live', 'dry', 'wet']
 const DAYS: ReadonlyArray<DayGroup> = ['weekday', 'friday', 'saturday', 'sunday']
+/** Short URL token for the non-default preference (`?pref=lit`). */
+const LIT_TOKEN = 'lit'
 const DEPART = /^(now|\+\d{1,3}[mh]|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?)$/
 
 function parsePlace(raw: string | null): Place | null {
@@ -70,6 +76,7 @@ export function parseState(search: string): ViewState {
     day: day && DAYS.includes(day) ? day : null,
     seg: parseIntIn(q.get('seg'), 0, 1_000_000),
     demo: q.get('demo') === '1',
+    prefer: q.get('pref') === LIT_TOKEN ? 'lit_and_busy' : DEFAULT_PREFERENCE,
   }
 }
 
@@ -83,6 +90,7 @@ export function serializeState(s: ViewState): string {
   if (s.day) q.set('day', s.day)
   if (s.seg != null) q.set('seg', String(s.seg))
   if (s.demo) q.set('demo', '1')
+  if (s.prefer === 'lit_and_busy') q.set('pref', LIT_TOKEN)
   const out = q.toString()
   return out ? `?${out}` : ''
 }

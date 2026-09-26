@@ -23,6 +23,7 @@ import {
   type SegmentDetail,
 } from './schemas'
 
+import { DEFAULT_PREFERENCE, type RoutePreference } from './safetySchemas'
 import { demoResponse, isDemoMode } from './demo'
 import { getApiOrigin } from './runtime'
 
@@ -50,7 +51,7 @@ async function fetchJson(url: string, init: RequestInit): Promise<unknown> {
   return resp.json()
 }
 
-async function request<T extends z.ZodType>(
+export async function request<T extends z.ZodType>(
   path: string,
   schema: T,
   init?: RequestInit,
@@ -80,6 +81,10 @@ export type LatLon = { lat: number; lon: number }
 /** [minLon, minLat, maxLon, maxLat] */
 export type Bbox = readonly [number, number, number, number]
 const BBOX_DECIMALS = 5
+/** Viewport as the API's `bbox` query value. */
+export function bboxParam(bbox: Bbox): string {
+  return bbox.map((v) => v.toFixed(BBOX_DECIMALS)).join(',')
+}
 export type Condition = 'live' | 'dry' | 'wet'
 
 export const api = {
@@ -89,11 +94,24 @@ export const api = {
     const origin = isDemoMode() ? '' : getApiOrigin()
     return origin ? { ...meta, static_base: `${origin}${meta.static_base}` } : meta
   },
-  routes: (origin: LatLon, destination: LatLon, departAt: string, cond: Condition): Promise<Routes> =>
+  /** `prefer` is sent only when it differs from the default, so older servers see the same request. */
+  routes: (
+    origin: LatLon,
+    destination: LatLon,
+    departAt: string,
+    cond: Condition,
+    prefer: RoutePreference = DEFAULT_PREFERENCE,
+  ): Promise<Routes> =>
     request('/routes', routesSchema, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ origin, destination, depart_at: departAt, cond }),
+      body: JSON.stringify({
+        origin,
+        destination,
+        depart_at: departAt,
+        cond,
+        ...(prefer === DEFAULT_PREFERENCE ? {} : { prefer }),
+      }),
     }),
   segment: (id: number, t: string, cond: Condition): Promise<SegmentDetail> =>
     request(`/segments/${id}?t=${encodeURIComponent(t)}&cond=${cond}`, segmentSchema),
@@ -125,6 +143,6 @@ export const api = {
       body: JSON.stringify({ seg_id: segId, category }),
     }),
   reportsInBbox: (bbox: Bbox): Promise<Report[]> =>
-    request(`/reports?bbox=${bbox.map((v) => v.toFixed(BBOX_DECIMALS)).join(',')}`, reportsSchema),
+    request(`/reports?bbox=${bboxParam(bbox)}`, reportsSchema),
   segmentReports: (id: number): Promise<Report[]> => request(`/segments/${id}/reports`, reportsSchema),
 }

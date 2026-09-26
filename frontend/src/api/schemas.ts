@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { routeSafetySchema } from './safetySchemas'
 
 const apiError = z.object({ code: z.string(), message: z.string() })
 
@@ -55,6 +56,8 @@ export const routeSchema = z.object({
       }),
     )
     .default([]),
+  /** Personal-safety signals along the route; null on older bundles (or if malformed). */
+  safety: routeSafetySchema.nullable().default(null).catch(null),
 })
 
 /** Community street report categories (fixed list; no free text). Mirrors backend/app/domain/reports.py. */
