@@ -1,6 +1,6 @@
 # Testing and quality
 
-How PathPro is tested, what the suites cover, the numbers measured for this document, and the known gaps. All counts below were produced by running the suites on 2026-09-26 (Apple M1, macOS) against the working tree at commit `f090bd4`.
+How PathPro is tested, what the suites cover, the numbers measured for this document, and the known gaps. All counts below were produced by running the suites on 2026-09-26 (Apple M1, macOS) against the working tree at commit `f090bd4` (frontend re-run at `04c5167`).
 
 ## 1. Strategy
 
@@ -31,9 +31,9 @@ How PathPro is tested, what the suites cover, the numbers measured for this docu
 | --- | --- | --- | --- |
 | Data pipeline | `uv run --package pathpulse-data pytest data/tests -q -p no:cacheprovider` | **222 passed** (27 test files) | 42 s |
 | Backend API | `uv run --package pathpulse-backend pytest backend/tests -q -p no:cacheprovider` | **277 passed**, 1 warning (Starlette `TestClient` deprecation notice) (26 test files) | 29 s |
-| Frontend unit and component | `cd frontend && npx vitest run --coverage` | **541 passed** in 66 test files | 79 s |
+| Frontend unit and component | `cd frontend && npx vitest run --coverage` | **542 passed** in 66 test files (re-measured at `04c5167`) | 79 s |
 | End-to-end (Playwright) | `cd frontend && npx playwright test` | **19 tests defined**: desktop project 16 (`live.spec.ts` 8, `demo.spec.ts` 5, `gps.spec.ts` 3), phone project (Pixel 7) 3 (`mobile.spec.ts`). **Not re-run for this document** (it starts uvicorn and Vite and renders WebGL on SwiftShader). | n/a |
-| Total automated tests | | **1,040 unit/integration tests passing + 19 e2e tests** | |
+| Total automated tests | | **1,041 unit/integration tests passing + 19 e2e tests** | |
 
 Playwright configuration: `timeout` 90 s, `expect` 20 s, SwiftShader GL flags, `retries: 1` on CI only, traces kept on failure, web servers started for the API (`/healthz`) and Vite.
 

@@ -148,7 +148,7 @@ UI copy is held to the same rules by tests: `frontend/src/components/safety/copy
 
 ## 10. Residual risks and follow-ups
 
-- Access-log coordinates are not rounded (section 2).
+- Client IPs and user agents remain in the access log, and entries written before the Sep 26, 2026 filter still hold full query strings (section 2).
 - Rate limits and caches are per process; scaling past one worker needs a shared store.
 - `/openapi.json` is public (no secrets in it, but it documents every endpoint).
 - No automated dependency-vulnerability scanning.

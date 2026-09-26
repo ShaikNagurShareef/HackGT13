@@ -40,7 +40,7 @@ Each diagram is a Mermaid block in its document (rendered by GitHub) and a 2× P
 | Ride model, 2024 holdout (174 cyclist crashes) | 69.9% [64.0, 76.1]; HIN 43.6%; past cyclist crashes 30.4% |
 | City Pulse, 2024 | 74.5% of crashes in the top 10% of 3,537 hexes |
 | Coverage | 49,915 road segments; 84,758-node walk graph; 49,824-node bike graph |
-| Tests (measured 2026-09-26) | data 222, backend 277, frontend 541 passing; 19 Playwright end-to-end tests defined |
+| Tests (measured 2026-09-26) | data 222, backend 277, frontend 542 passing; 19 Playwright end-to-end tests defined |
 
 Related project documents: [model card](../model_card.md), [safety sources](../safety_sources.md), [process notes](../process/process_notes.md), [PRD](<../../Requirements (PRD).md>).
 

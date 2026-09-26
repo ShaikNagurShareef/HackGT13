@@ -192,7 +192,7 @@ Because of `ProtectHome=true`, the venv must use the system Python (`/usr/bin/py
 Logs:
 
 - API: `journalctl -u pathpulse -f`. Startup logs `PathPro API ready: model <version>, <n> walk segments, ride <n|unavailable>`. Provider, database, and Atlas failures log the exception **type** only, because exception text can echo a connection string. `httpx` is set to WARNING so the Geoapify key (a query parameter) never lands in logs.
-- Caddy: JSON access log at `/var/log/caddy/pathpulse.log`; service log in `journalctl -u caddy`.
+- Caddy: JSON access log at `/var/log/caddy/pathpulse.log`, written through a `format filter` that deletes the `lat`, `lon`, `bbox`, `q`, and `t` query parameters and the `Cookie` header; service log in `journalctl -u caddy`.
 
 ## 8. Rollback
 
