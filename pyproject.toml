@@ -1,0 +1,48 @@
+[project]
+name = "pathpulse"
+version = "0.1.0"
+description = "PathPulse workspace root: pedestrian traffic-risk forecasting for Atlanta"
+requires-python = ">=3.12"
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["data", "backend"]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "pytest-cov>=6.0",
+  "hypothesis>=6.120",
+  "respx>=0.22",
+  "mypy>=1.13",
+  "ruff>=0.8",
+  "pandas-stubs",
+  "types-cachetools",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF", "S", "PTH"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S", "PLR2004"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+ignore_missing_imports = true
+exclude = ["tests/"]
+
+[tool.pytest.ini_options]
+addopts = "-q --strict-markers"
+markers = [
+  "unit: fast isolated tests",
+  "integration: tests touching FastAPI app or multiple modules",
+  "network: tests that call live external services (skipped by default)",
+]

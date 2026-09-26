@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+.hypothesis/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/test-results/
+frontend/playwright-report/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Data: raw pulls are re-fetchable; cleaned snapshots in data/interim are committed
+data/raw/
+data/cache/
+*.graphml
+*.pkl
+
+# Model artifacts: only the pinned demo bundle is committed
+artifacts/*
+!artifacts/.gitkeep
+!artifacts/demo/
+
+# OS / editor
+.DS_Store
+.idea/
+*.swp
+
+# Claude Code local-only state
+.claude/settings.local.json
+.claude/checkpoints.log
