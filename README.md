@@ -12,7 +12,7 @@ PathPro is a pedestrian traffic-risk forecaster for Atlanta. It learns from publ
 Every score is explainable: a trained model produces it, the score is split exactly into the factors that drive it, and an LLM turns that evidence into one plain-English sentence. The LLM never produces a number.
 
 > Built at **HackGT 13** (Sep 25–27, 2026) for the **Oracle of the Deep** (ML/AI + visualization) track and the **Aramco "A Marina's Mission"** social-good track.
-> Scope: **traffic** risk to pedestrians only. PathPro does not model crime or personal safety.
+> Scope: **traffic** risk to pedestrians, plus a **personal-safety layer**: street lighting, foot traffic, help points (GT blue-light phones, police, fire, hospitals, MARTA), and an informational layer of reported crimes against persons. Crime is never used to choose routes or in the traffic model. See [model card](docs/model_card.md) and [safety sources](docs/safety_sources.md).
 
 | Risk Tides (Friday 10 PM, wet) | Fastest vs PathPro route |
 | --- | --- |
@@ -135,7 +135,7 @@ These integrations are implemented and tested. Each one switches on when its key
 - **Tiger Data:** system of record.
   - The crash hypertable and hourly continuous aggregate power "when crashes happened here".
   - PostGIS stores street geometry, and a versioned risk grid stores the scores.
-- **MongoDB Atlas:** community street reports (`backend/app/repositories/reports.py`, pymongo's async client).
+- **MongoDB Atlas:** community street reports (`backend/app/repositories/reports.py`) and **Share my walk** live links (`backend/app/repositories/walks.py`, TTL-expiring after 6 h, optimistic-concurrency position updates), on pymongo's async client.
   - A 2dsphere index answers "reports in this map view" with `$geoWithin`.
   - A TTL index expires each report 14 days after its last confirmation, with no cleanup job.
   - One atomic `find_one_and_update` upsert per report: a repeat report on the same street and category confirms the existing one instead of duplicating it (unique index on segment + category).

@@ -58,6 +58,7 @@ Status as of Sat Sep 26, 2026, 7:00 AM ET. Submit on Devpost by **Sun 07:30** (h
 - [ ] Tick the Create-X interest box on Devpost
 
 ### MongoDB Atlas: Best Use of MongoDB Atlas
+- [x] Share my walk: `shared_walks` collection with a TTL index (6 h after last update), unique walk_id, hashed owner tokens, optimistic-concurrency updates; live on pathpro.tech
 Job: community street reports. Tiger Data stays the system of record for crashes and scores; Atlas holds what walkers tell us, and it never feeds the model.
 - [x] `ReportsRepository` on pymongo's async client with tight timeouts and a cooldown; unset or unreachable Atlas hides the feature and nothing else breaks
 - [x] Indexes: 2dsphere on `loc`, TTL on `expires_at` (14 days after the last confirmation), unique `{seg_id, category}`; created at API startup
@@ -68,6 +69,12 @@ Job: community street reports. Tiger Data stays the system of record for crashes
 - [x] Free M0 cluster `pathpulse` (AWS us-east-1) live; `MONGODB_URI` in `backend/.env`; `/healthz` reports `ok`; live end-to-end test passed (report, confirmation, viewport, summary)
 - [x] Vultr VM IP (155.138.233.35) allowed in Atlas → Network Access
 - [ ] Demo it in the video: report "Crossing signal out" on a street, then show the dot on the map and the line on the route card
+
+## Personal-safety extension (added Sep 26)
+- [x] Safety layer live: lighting, foot traffic, help points (100 GT blue-light phones + police, fire, hospitals, MARTA), and APD crimes against persons (informational, hex × day-part, fairness note; never used for routing)
+- [x] "Well-lit & busier (after dark)" route preference; Share my walk + late check-in
+- [x] Model card, PRD and CLAUDE.md amended; independent code review: no critical issues, all findings fixed
+- [ ] In the demo video and Devpost: show the fairness safeguards explicitly (judges will ask)
 
 ## Submission
 - [ ] Devpost: every category above, the AI-tool disclosure (Claude Code + ECC) and data credits (already in `docs/devpost.md`)
