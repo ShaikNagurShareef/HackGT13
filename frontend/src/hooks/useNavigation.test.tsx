@@ -126,4 +126,32 @@ describe('useNavigation', () => {
     act(() => result.current.start('gps'))
     expect(result.current.instruction).toBeNull()
   })
+
+  it('rides: ride wording on the street banner and a wider arrival radius', () => {
+    const quiet = route({ alerts: [] })
+    const { result, rerender } = renderHook(
+      ({ gps }: { gps: GeoFix }) =>
+        useNavigation({ route: quiet, gps, streets: STREETS, destination: DEST, departAt: DEPART, mode: 'bike' }),
+      { initialProps: { gps: gpsAt(START) } },
+    )
+
+    act(() => result.current.start('gps'))
+    expect(result.current.instruction?.headline).toBe('Keep riding on Ferst Drive Northwest')
+    // ~35 m short of the end: outside the 30 m walking radius, inside the 40 m ride radius.
+    rerender({ gps: gpsAt({ lat: END.lat - 0.000315, lon: END.lon }) })
+    expect(result.current.arrived).toBe(true)
+  })
+
+  it('a ride preview moves faster than a walk preview', () => {
+    vi.useFakeTimers()
+    const walk = setup({ r: route(), gps: null })
+    const ride = renderHook(() =>
+      useNavigation({ route: route(), gps: null, streets: STREETS, destination: DEST, departAt: DEPART, mode: 'bike', speedMps: 4.2 }),
+    )
+
+    act(() => walk.result.current.start('preview'))
+    act(() => ride.result.current.start('preview'))
+    act(() => void vi.advanceTimersByTime(1000))
+    expect(ride.result.current.alongM).toBeGreaterThan(walk.result.current.alongM * 2)
+  })
 })

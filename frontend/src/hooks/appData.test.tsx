@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError, api } from '../api/client'
 import { FrameSet } from '../frames/frameStore'
-import { routes, segment } from '../test/fixtures'
+import { route, routes, segment } from '../test/fixtures'
 import { DEFAULT_STATE, type ViewState } from '../state/urlState'
 import { useDemoMode } from './useDemoMode'
 import { useLiveCondition } from './useLiveCondition'
@@ -20,7 +20,7 @@ describe('useRoutes', () => {
   it('stays empty without both ends', () => {
     const onError = vi.fn()
     const { result } = renderHook(() => useRoutes({ ...TRIP, from: null }, { onError, onOutside: vi.fn(), onLoaded: vi.fn() }))
-    expect(result.current).toEqual({ routes: null, loading: false })
+    expect(result.current).toMatchObject({ routes: null, loading: false })
   })
 
   it('loads routes for a trip and reports them', async () => {
@@ -33,7 +33,7 @@ describe('useRoutes', () => {
     await waitFor(() => expect(result.current.routes).toBe(r))
     expect(result.current.loading).toBe(false)
     expect(onLoaded).toHaveBeenCalledWith(r)
-    expect(api.routes).toHaveBeenCalledWith(KLAUS, MIDTOWN, 'now', 'wet', 'lower_traffic_risk')
+    expect(api.routes).toHaveBeenCalledWith(KLAUS, MIDTOWN, 'now', 'wet', 'lower_traffic_risk', 'walk')
   })
 
   it('surfaces errors and hands an out-of-coverage destination to the area fallback', async () => {
@@ -65,9 +65,39 @@ describe('useRoutes', () => {
     await waitFor(() => expect(result.current.routes).toBe(first))
 
     rerender({ prefer: 'lit_and_busy' })
-    expect(result.current).toEqual({ routes: null, loading: true })
+    expect(result.current).toMatchObject({ routes: null, loading: true })
     await waitFor(() => expect(result.current.routes).toBe(lit))
-    expect(spy).toHaveBeenLastCalledWith(KLAUS, MIDTOWN, 'now', 'wet', 'lit_and_busy')
+    expect(spy).toHaveBeenLastCalledWith(KLAUS, MIDTOWN, 'now', 'wet', 'lit_and_busy', 'walk')
+  })
+
+  it('fetches the selected mode, keeps each mode\'s duration, and switches back without refetching', async () => {
+    const walk = routes()
+    const bike = routes({ mode: 'bike', route_key: 'cccccccccccccccc', pathpro: route({ duration_s: 540 }) })
+    const spy = vi.spyOn(api, 'routes').mockResolvedValueOnce(walk).mockResolvedValueOnce(bike)
+    const handlers = { onError: vi.fn(), onOutside: vi.fn(), onLoaded: vi.fn() }
+    const { result, rerender } = renderHook(({ mode }) => useRoutes({ ...TRIP, mode }, handlers), {
+      initialProps: { mode: 'walk' as 'walk' | 'bike' },
+    })
+    await waitFor(() => expect(result.current.routes).toBe(walk))
+
+    rerender({ mode: 'bike' })
+    await waitFor(() => expect(result.current.routes).toBe(bike))
+    expect(spy).toHaveBeenLastCalledWith(KLAUS, MIDTOWN, 'now', 'wet', 'lower_traffic_risk', 'bike')
+    expect(result.current.durations).toEqual({ walk: 1362, bike: 540 })
+
+    rerender({ mode: 'walk' })
+    expect(result.current.routes).toBe(walk)
+    expect(spy).toHaveBeenCalledTimes(2)
+  })
+
+  it('hands MODE_UNAVAILABLE to the caller so it can fall back to Walk', async () => {
+    vi.spyOn(api, 'routes').mockRejectedValue(new ApiError('MODE_UNAVAILABLE', 'Bike routing is not available.'))
+    const onModeUnavailable = vi.fn()
+    const onError = vi.fn()
+    renderHook(() => useRoutes({ ...TRIP, mode: 'bike' }, { onError, onOutside: vi.fn(), onLoaded: vi.fn(), onModeUnavailable }))
+
+    await waitFor(() => expect(onModeUnavailable).toHaveBeenCalledWith('bike'))
+    expect(onError).not.toHaveBeenCalledWith('Bike routing is not available.')
   })
 })
 

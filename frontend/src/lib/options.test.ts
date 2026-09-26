@@ -34,3 +34,11 @@ describe('departLabel', () => {
     expect(departLabel('garbage')).toBe('Now')
   })
 })
+
+describe('statusLabel (travel mode)', () => {
+  it('names a ride mode and drops the walk-only preference', () => {
+    expect(statusLabel({ ...DEFAULTS, mode: 'bike' })).toBe('Bike')
+    expect(statusLabel({ ...DEFAULTS, mode: 'ebike', prefer: 'lit_and_busy' })).toBe('E-bike')
+    expect(statusLabel({ ...DEFAULTS, mode: 'walk' })).toBeNull()
+  })
+})

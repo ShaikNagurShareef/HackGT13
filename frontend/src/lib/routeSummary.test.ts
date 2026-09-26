@@ -56,3 +56,18 @@ describe('templateSummary', () => {
     expect(templateSummary(bare)).toBe('The fastest route is already the lower-risk option.')
   })
 })
+
+describe('summarizeRoutes (ride modes)', () => {
+  it('headlines the ride: "14 min ride · 38% less traffic risk"', () => {
+    const r = routes({ mode: 'bike', exposure_reduction_pct: 38, pathpro: { ...routes().fastest, duration_s: 840 } })
+
+    expect(summarizeRoutes(r).primary.title).toBe('14 min ride · 38% less traffic risk')
+    expect(summarizeRoutes(r).secondary?.title).toBe('18 min ride')
+  })
+
+  it('names the ride when the fastest is already lower-risk', () => {
+    const r = routes({ mode: 'scooter', pathpro: null, fastest: { ...routes().fastest, duration_s: 600 } })
+
+    expect(summarizeRoutes(r).primary.title).toBe('10 min ride · already the lower-risk option')
+  })
+})

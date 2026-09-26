@@ -41,6 +41,7 @@ export const routes = (over: Partial<Routes> = {}): Routes => ({
   avoided: [{ seg_id: 12, name: 'Peachtree Place Northwest', score: 98 }],
   route_key: 'aaaaaaaaaaaaaaaa',
   reports: [],
+  mode: 'walk',
   ...over,
 })
 
@@ -84,6 +85,8 @@ export const meta = (): Meta => ({
   },
   spatial_factors: [],
   temporal_factors: [],
+  modes: [],
+  ride_model: null,
 })
 
 export const report = (over: Partial<Report> = {}): Report => ({

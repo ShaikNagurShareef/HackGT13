@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../api/client'
 import type { Area } from '../api/schemas'
 import type { Routines } from '../hooks/useRoutines'
+import { modeOptions } from '../lib/modes'
 import { DEFAULT_SAFETY_LAYERS, FAIRNESS_NOTE } from '../lib/safety'
 import { meta, routes, safetyMeta, segment } from '../test/fixtures'
 import { DesktopLayer, type DesktopLayerProps } from './DesktopLayer'
@@ -259,5 +260,68 @@ describe('DesktopLayer (≥1024 px)', () => {
 
     rerender(<DesktopLayer {...base} screen="nav" safetyDock={dock} />)
     expect(screen.queryByRole('region', { name: 'Personal safety legend' })).toBeNull()
+  })
+})
+
+describe('transport modes on the screens', () => {
+  const header = { from: null, to: { lat: 1, lon: 2, label: 'Midtown MARTA' }, onEditFrom: noop, onEditTo: noop, onSwap: noop, onBack: noop }
+  const modes = { options: modeOptions([]), selected: 'walk' as const, onSelect: vi.fn() }
+
+  it('RouteScreen: mode tabs under the trip header, and ride wording while finding routes', () => {
+    render(<RouteScreen header={header} notice={null} onPickStart={noop} loading sheet={null} modes={{ ...modes, selected: 'bike' }} />)
+
+    expect(screen.getByRole('group', { name: 'Travel mode' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Finding routes' })).toHaveTextContent('Finding the lower-risk ride…')
+  })
+
+  it('DesktopLayer: navigation says riding for ride modes', () => {
+    render(
+      <DesktopLayer
+        screen="nav"
+        home={{} as DesktopLayerProps['home']}
+        route={{ header, notice: null, onPickStart: noop, loading: false, sheet: null }}
+        destination="Midtown MARTA"
+        timeline={{ hour: 22, onHour: noop, playing: false, onTogglePlay: noop, medians: [], lights: [], condLabel: 'Wet', day: 'friday', onDay: noop }}
+        welcomeDataThrough={null}
+        onDismissWelcome={noop}
+        travelMode="bike"
+      />,
+    )
+    expect(screen.getByText(/Riding to Midtown MARTA/)).toBeInTheDocument()
+  })
+
+  it('DetailLayer: a ride street skips the walk-network extras and explains locally', async () => {
+    const explain = vi.spyOn(api, 'explainSegment')
+    const hourly = vi.spyOn(api, 'segmentHourly')
+    vi.stubGlobal('matchMedia', () => ({ matches: true }))
+    render(<DetailLayer area={null} detail={segment()} cond="wet" onCloseArea={noop} onCloseDetail={noop} onAbout={noop} onReported={noop} rideNetwork />)
+
+    await waitFor(() => expect(screen.getByTestId('segment-explanation')).toHaveTextContent('Fifth Street Northwest scores 96'))
+    expect(explain).not.toHaveBeenCalled()
+    expect(hourly).not.toHaveBeenCalled()
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  it('Panels: the search sheet carries a compact mode chip', async () => {
+    const onSelect = vi.fn()
+    const routines: Routines = { suggestions: [], recents: [], saved: {}, record: vi.fn(), setSaved: vi.fn(), clear: vi.fn() }
+    const actions = { closePanel: vi.fn(), searchNote: () => null } as unknown as PanelsProps['actions']
+    render(
+      <Panels
+        panel={{ kind: 'search', field: 'to' }}
+        meta={meta()}
+        actions={actions}
+        routines={routines}
+        canUseLocation
+        welcome={false}
+        onDismissWelcome={noop}
+        options={{} as PanelsProps['options']}
+        modes={{ ...modes, options: modeOptions([{ key: 'bike', label: 'Bike', available: true, speed_kmh: 15, network: 'ride', static_prefix: 'ride_' }]), onSelect }}
+      />,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Bike' }))
+    expect(onSelect).toHaveBeenCalledWith('bike')
   })
 })

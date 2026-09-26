@@ -13,6 +13,7 @@ describe('url state', () => {
       seg: 1234,
       demo: true,
       prefer: 'lit_and_busy',
+      mode: 'ebike',
     }
 
     expect(parseState(serializeState(view))).toEqual(view)
@@ -44,5 +45,12 @@ describe('url state', () => {
     expect(serializeState({ ...DEFAULT_STATE, prefer: 'lit_and_busy' })).toBe('?pref=lit')
     expect(parseState('?pref=lit').prefer).toBe('lit_and_busy')
     expect(parseState('?pref=crime').prefer).toBe('lower_traffic_risk')
+  })
+
+  it('keeps the travel mode in the URL (walk is the default) and ignores unknown modes', () => {
+    expect(serializeState({ ...DEFAULT_STATE, mode: 'bike' })).toBe('?mode=bike')
+    expect(parseState('?mode=scooter').mode).toBe('scooter')
+    expect(parseState('?mode=car').mode).toBe('walk')
+    expect(DEFAULT_STATE.mode).toBe('walk')
   })
 })

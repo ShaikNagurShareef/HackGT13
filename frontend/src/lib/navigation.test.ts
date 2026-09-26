@@ -152,3 +152,14 @@ describe('startMode (GPS navigation or preview walk)', () => {
     expect(far.note).toBe("You're 1.2 km from this route, so Start previews the walk.")
   })
 })
+
+describe('ride modes (navigation copy)', () => {
+  it('keeps the same alerts and uses ride wording for the street banner', () => {
+    expect(nextInstruction({ ...base, alongM: 178, mode: 'bike' }).headline).toBe('High traffic risk ahead')
+    expect(nextInstruction({ ...base, alongM: 500, mode: 'bike' }).headline).toMatch(/^Keep riding on /)
+  })
+
+  it('previews the ride, not the walk', () => {
+    expect(startMode(LINE, null, 'scooter').note).toBe('Location is off, so Start previews the ride.')
+  })
+})
