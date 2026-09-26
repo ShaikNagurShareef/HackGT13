@@ -85,7 +85,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             yield
             await street_reports.close()
 
-    app = FastAPI(title="PathPulse API", version=bundle.model_version, lifespan=lifespan)
+    app = FastAPI(title="PathPro API", version=bundle.model_version, lifespan=lifespan)
     app.state.bundle = bundle
     app.state.router = Router(bundle)
     app.state.hexes = load_hexes(bundle.root)  # City Pulse is optional (P1)
@@ -119,5 +119,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         StaticFiles(directory=bundle.root),
         name="static",
     )
-    log.info("PathPulse API ready: model %s, %d segments", bundle.model_version, bundle.n_segments)
+    log.info("PathPro API ready: model %s, %d segments", bundle.model_version, bundle.n_segments)
     return app

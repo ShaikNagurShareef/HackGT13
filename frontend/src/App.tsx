@@ -32,7 +32,7 @@ const MAP_UNAVAILABLE = (
   </div>
 )
 
-const SEEN_KEY = 'pathpulse:first-run-seen'
+const SEEN_KEY = 'pathpro:first-run-seen'
 const PLAY_MS = 1000
 
 function readSeen(): boolean {
@@ -109,7 +109,7 @@ export default function App() {
   const segExplain = useExplanation(segKey, () =>
     api.explainSegment(detail?.seg_id ?? 0, detail?.at ?? 'now', view.cond),
   )
-  const walk = usePreviewWalk(routes?.pathpulse ?? null, true)
+  const walk = usePreviewWalk(routes?.pathpro ?? null, true)
   // Community reports (MongoDB Atlas) are live-only context: hidden in the offline demo.
   const communityReports = useViewportReports(!demo && !cityMode)
   const routeText = useTypewriter(routeExplain.result?.text ?? null)
@@ -215,7 +215,7 @@ export default function App() {
   )
 
   if (loadError) return <main className="app app-error"><p>{loadError}</p></main>
-  if (!data) return <main className="app app-loading" aria-busy="true"><p>Loading PathPulse…</p></main>
+  if (!data) return <main className="app app-loading" aria-busy="true"><p>Loading PathPro…</p></main>
 
   const lights = data.meta.frame_light[day] ?? []
   return (
@@ -230,7 +230,7 @@ export default function App() {
         frameKey={`${day}-${mapCond}-${hour}-${frames ? "ready" : "empty"}`}
         hotspots={hotspots}
         fastest={routes?.fastest ?? null}
-        pathpulse={routes?.pathpulse ?? null}
+        pathpro={routes?.pathpro ?? null}
         selectedSeg={view.seg}
         onSegment={onSegment}
         onMapPick={onMapPick}
@@ -273,7 +273,7 @@ export default function App() {
             </div>
           )}
         </div>
-        <button type="button" className="icon-btn about-btn" aria-label="About PathPulse" onClick={() => setAboutOpen(true)}>
+        <button type="button" className="icon-btn about-btn" aria-label="About PathPro" onClick={() => setAboutOpen(true)}>
           i
         </button>
       </div>

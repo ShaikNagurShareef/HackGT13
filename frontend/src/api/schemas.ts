@@ -94,7 +94,7 @@ export const routesSchema = z.object({
   condition_used: conditionUsedSchema,
   depart_at: z.string(),
   fastest: routeSchema,
-  pathpulse: routeSchema.nullable(),
+  pathpro: routeSchema.nullable(),
   message_code: z.string(),
   message: z.string().nullable(),
   time_cost_min: z.number().nullable(),

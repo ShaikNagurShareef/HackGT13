@@ -8,7 +8,7 @@ export function FirstRun({ dataThrough, onDone }: { dataThrough: string; onDone:
   return (
     <div className="scrim" role="dialog" aria-modal="true" aria-labelledby="firstrun-title">
       <section className="firstrun panel">
-        <h1 id="firstrun-title">PathPulse</h1>
+        <h1 id="firstrun-title">PathPro</h1>
         <p className="lede">See traffic risk before you walk into it.</p>
         <p>
           The map shows where and when <strong>pedestrian traffic crashes</strong> have concentrated across the
@@ -32,7 +32,7 @@ export function About({ meta, onClose }: { meta: Meta; onClose: () => void }) {
     <div className="scrim" role="dialog" aria-modal="true" aria-labelledby="about-title" onClick={onClose}>
       <section className="about panel" onClick={(e) => e.stopPropagation()}>
         <header className="sheet-head">
-          <h1 id="about-title">How PathPulse works</h1>
+          <h1 id="about-title">How PathPro works</h1>
           <button type="button" className="icon-btn" aria-label="Close" onClick={onClose} autoFocus>
             ×
           </button>
@@ -56,7 +56,7 @@ export function About({ meta, onClose }: { meta: Meta; onClose: () => void }) {
           Trained on 2020–2023 and tested on held-out {String(h.test_year ?? 2024)} crashes: the 10% of street length
           ranked highest held <strong>{pct(h.capture_top10)}</strong> of pedestrian crashes (95% CI {pct(ci[0])}–
           {pct(ci[1])}), versus 10% by chance and {pct(h.count_only_capture_top10)} by ranking on past crashes alone.
-          On the City High Injury Network's own share of street length, PathPulse held {pct(h.capture_at_hin_share)}{' '}
+          On the City High Injury Network's own share of street length, PathPro held {pct(h.capture_at_hin_share)}{' '}
           vs {pct(h.hin_capture_at_own_share)}.
         </p>
         <h2>Limitations</h2>
@@ -74,7 +74,7 @@ export function About({ meta, onClose }: { meta: Meta; onClose: () => void }) {
         </p>
         <h2>Emergency</h2>
         <p>
-          <a href="tel:911">Call 911</a> · <a href="tel:4048942500">Georgia Tech Police 404-894-2500</a>. PathPulse is
+          <a href="tel:911">Call 911</a> · <a href="tel:4048942500">Georgia Tech Police 404-894-2500</a>. PathPro is
           not an emergency service.
         </p>
       </section>

@@ -1,4 +1,4 @@
-# PathPulse on one Vultr VM: Caddy terminates TLS (automatic Let's Encrypt for {$DOMAIN}),
+# PathPro on one Vultr VM: Caddy terminates TLS (automatic Let's Encrypt for {$DOMAIN}),
 # serves the SPA and model artifacts from disk, and proxies /api to uvicorn on localhost.
 {$DOMAIN} {
 	encode zstd gzip

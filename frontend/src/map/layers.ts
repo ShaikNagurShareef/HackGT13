@@ -24,7 +24,7 @@ interface LayerInput {
   frameKey: string
   hotspots: ReadonlyArray<Hotspot>
   fastest: Route | null
-  pathpulse: Route | null
+  pathpro: Route | null
   selectedSeg: number | null
   reducedMotion: boolean
   onSegment: (id: number) => void
@@ -47,7 +47,7 @@ export function buildLayers(input: LayerInput): Layer[] {
   if (input.hex) {
     const h = input.hex
     const hexLayer = buildHexLayer(h.cells, h.frame, h.frameKey, reducedMotion, h.onPick)
-    return [hexLayer, ...routeLayers(input.fastest, input.pathpulse), ...walkerLayer(input.walker)]
+    return [hexLayer, ...routeLayers(input.fastest, input.pathpro), ...walkerLayer(input.walker)]
   }
   const routing = input.fastest != null
   const alpha = routing ? 110 : 230
@@ -123,7 +123,7 @@ export function buildLayers(input: LayerInput): Layer[] {
   }
   return [
     ...layers,
-    ...routeLayers(input.fastest, input.pathpulse),
+    ...routeLayers(input.fastest, input.pathpro),
     ...reportLayers(input.reports, input.onSegment),
     ...walkerLayer(input.walker),
   ]
@@ -169,7 +169,7 @@ function walkerLayer(position: [number, number] | null | undefined): Layer[] {
   ]
 }
 
-function routeLayers(fastest: Route | null, pathpulse: Route | null): Layer[] {
+function routeLayers(fastest: Route | null, pathpro: Route | null): Layer[] {
   const out: Layer[] = []
   if (fastest) {
     out.push(
@@ -185,11 +185,11 @@ function routeLayers(fastest: Route | null, pathpulse: Route | null): Layer[] {
       }),
     )
   }
-  if (pathpulse) {
+  if (pathpro) {
     out.push(
       new PathLayer<Route>({
         id: 'route-pathpulse-halo',
-        data: [pathpulse],
+        data: [pathpro],
         getPath: (d) => d.coords,
         getColor: TEAL_HALO,
         getWidth: 16,
@@ -198,8 +198,8 @@ function routeLayers(fastest: Route | null, pathpulse: Route | null): Layer[] {
         jointRounded: true,
       }),
       new PathLayer<Route>({
-        id: 'route-pathpulse',
-        data: [pathpulse],
+        id: 'route-pathpro',
+        data: [pathpro],
         getPath: (d) => d.coords,
         getColor: TEAL,
         getWidth: 6,

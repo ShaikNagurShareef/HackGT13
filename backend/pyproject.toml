@@ -1,7 +1,7 @@
 [project]
 name = "pathpulse-backend"
 version = "0.1.0"
-description = "PathPulse API: routes, segment detail, explanations, live conditions"
+description = "PathPro API: routes, segment detail, explanations, live conditions"
 requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.115",

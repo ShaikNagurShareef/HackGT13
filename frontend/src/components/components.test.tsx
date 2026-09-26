@@ -31,7 +31,7 @@ describe('ComparisonCard (RTE-04)', () => {
   })
 
   it('renders the single-route case positively (RTE-03)', () => {
-    const single = routes({ pathpulse: null, time_cost_min: null, exposure_reduction_pct: null, unavoidable: [] })
+    const single = routes({ pathpro: null, time_cost_min: null, exposure_reduction_pct: null, unavoidable: [] })
     render(<ComparisonCard routes={single} explanation={null} onClear={vi.fn()} onSelectSegment={vi.fn()} />)
 
     expect(screen.getAllByText('The fastest route is already the lower-risk option.')).toHaveLength(1)
@@ -68,7 +68,7 @@ describe('ComparisonCard (RTE-04)', () => {
       />,
     )
 
-    const avoided = screen.getByLabelText('High-risk stretches the PathPulse route avoids')
+    const avoided = screen.getByLabelText('High-risk stretches the PathPro route avoids')
     expect(avoided).toHaveTextContent('Avoids 1 high-risk stretch')
     await userEvent.click(within(avoided).getByRole('button', { name: /Peachtree Place Northwest/ }))
     await userEvent.click(screen.getByRole('button', { name: /Listen/ }))
@@ -231,7 +231,7 @@ describe('About and first run (TRUST-01..03)', () => {
     const onClose = vi.fn()
     render(<About meta={meta()} onClose={onClose} />)
 
-    const dialog = screen.getByRole('dialog', { name: 'How PathPulse works' })
+    const dialog = screen.getByRole('dialog', { name: 'How PathPro works' })
     expect(dialog).toHaveTextContent('46%')
     expect(dialog).toHaveTextContent('37%–56%')
     expect(screen.getByRole('link', { name: 'Georgia Tech Police 404-894-2500' })).toHaveAttribute('href', 'tel:4048942500')

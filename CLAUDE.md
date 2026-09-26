@@ -1,4 +1,4 @@
-# PathPulse
+# PathPro
 
 Pedestrian traffic-risk forecasting map and risk-aware walking router for Atlanta (HackGT 13).
 Source of truth for scope: `Requirements (PRD).md`. Build plan: see `docs/architecture.md`.

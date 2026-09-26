@@ -1,4 +1,4 @@
-# PathPulse
+# PathPro
 
 **See traffic risk before you walk into it.**
 
@@ -7,14 +7,14 @@
 - **Offline demo:** add `?demo=1` for the scripted Klaus → Midtown MARTA scenario.
 - **Deploy:** `deploy/go.sh pathpro.tech` provisions the Vultr VM, installs Caddy + systemd, ships the app, and smoke-tests it.
 
-PathPulse is a pedestrian traffic-risk forecaster for Atlanta. It learns from public crash records where and when people on foot get hit by vehicles. It turns that into a map that changes by hour and weather (**Risk Tides**). It also offers a walking route that trades a few minutes for much less exposure to high-risk streets.
+PathPro is a pedestrian traffic-risk forecaster for Atlanta. It learns from public crash records where and when people on foot get hit by vehicles. It turns that into a map that changes by hour and weather (**Risk Tides**). It also offers a walking route that trades a few minutes for much less exposure to high-risk streets.
 
 Every score is explainable: a trained model produces it, the score is split exactly into the factors that drive it, and an LLM turns that evidence into one plain-English sentence. The LLM never produces a number.
 
 > Built at **HackGT 13** (Sep 25–27, 2026) for the **Oracle of the Deep** (ML/AI + visualization) track and the **Aramco "A Marina's Mission"** social-good track.
-> Scope: **traffic** risk to pedestrians only. PathPulse does not model crime or personal safety.
+> Scope: **traffic** risk to pedestrians only. PathPro does not model crime or personal safety.
 
-| Risk Tides (Friday 10 PM, wet) | Fastest vs PathPulse route |
+| Risk Tides (Friday 10 PM, wet) | Fastest vs PathPro route |
 | --- | --- |
 | ![Risk Tides](docs/images/risk-tides.png) | ![Route comparison](docs/images/route-compare.png) |
 | **Why is this street risky?** | **City Pulse: all of Atlanta** |
@@ -23,7 +23,7 @@ Every score is explainable: a trained model produces it, the score is split exac
 ## What it does
 
 - **Risk Tides.** Scrub or play 24 hours and switch Dry/Wet or the day of the week. About 50,000 street segments across the whole City of Atlanta re-color on one fixed 0–100 citywide scale. The top 5% of intersections glow.
-- **Fastest vs PathPulse route.** *Klaus → Midtown MARTA, Friday 10:30 PM, rain:* **+4.2 min, 54% less traffic-risk exposure**, avoiding Peachtree Place and Williams St. If the fastest route is already the lower-risk one, PathPulse says so plainly.
+- **Fastest vs PathPro route.** *Klaus → Midtown MARTA, Friday 10:30 PM, rain:* **+4.2 min, 54% less traffic-risk exposure**, avoiding Peachtree Place and Williams St. If the fastest route is already the lower-risk one, PathPro says so plainly.
 - **"Why?" on every street.** A score dial, a confidence badge, and factor bars that add up exactly to the score. The sheet also shows the street's crash history and when crashes happened by hour (from Tiger Data).
 - **City Pulse.** Area-level traffic-risk scores for 3,537 hexes covering the whole City of Atlanta. Any address in the city gets a score, even outside street-level routing coverage.
 - **Grounded AI explanations.** The chain is Groq, then Gemini, then a deterministic template. A validator rejects any sentence containing a number that isn't in the evidence, or the words "safe" or "crime".
@@ -40,7 +40,7 @@ The data runs 2020–2024 across the whole City of Atlanta (2,228 pedestrian cra
 
 | Method | Crashes in the top 10% of street length | At the City HIN's own 10% of length | ROC-AUC |
 | --- | --- | --- | --- |
-| **PathPulse** | **74.3%** (95% CI 70–78%) | **73.9%** | **0.89** |
+| **PathPro** | **74.3%** (95% CI 70–78%) | **73.9%** | **0.89** |
 | Ranking by past pedestrian crashes | 49.8% | 49.8% | 0.72 |
 | City of Atlanta High Injury Network (2025) | 53.8% | 53.7% | 0.69 |
 | ARC structural risk flags | 51.2% | 50.1% | 0.79 |
@@ -127,7 +127,7 @@ cd frontend && npm test -- --coverage && npx playwright test
 
 ## Sponsor technology, and the job each one does
 
-These integrations are implemented and tested. Each one switches on when its key is present in `backend/.env`, which `deploy/go.sh` verifies. Without keys, PathPulse falls back gracefully: template explanations, the device voice, and in-memory history. Without `MONGODB_URI`, community reports are hidden and everything else works.
+These integrations are implemented and tested. Each one switches on when its key is present in `backend/.env`, which `deploy/go.sh` verifies. Without keys, PathPro falls back gracefully: template explanations, the device voice, and in-memory history. Without `MONGODB_URI`, community reports are hidden and everything else works.
 
 - **Groq** (`openai/gpt-oss-120b`, fallback `gpt-oss-20b`): fast, grounded one-to-three-sentence explanations.
 - **Gemini API:** second provider in the explanation chain.
@@ -157,4 +157,4 @@ These integrations are implemented and tested. Each one switches on when its key
   - OpenFreeMap basemap
 - **Libraries:** FastAPI, LightGBM, scikit-learn, statsmodels, OSMnx, GeoPandas, H3, MapLibre GL, deck.gl, React, Vite.
 
-PathPulse is not an emergency service. In an emergency call **911**. Georgia Tech Police: **404-894-2500**.
+PathPro is not an emergency service. In an emergency call **911**. Georgia Tech Police: **404-894-2500**.

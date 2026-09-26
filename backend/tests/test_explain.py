@@ -20,7 +20,7 @@ ROUTE = _with_numbers(
         "time": "10 PM",
         "conditions": "wet",
         "fastest": {"minutes": 18, "score": 93, "riskiest_streets": ["10th Street Northwest"]},
-        "pathpulse": {
+        "pathpro": {
             "minutes": 23,
             "score": 83,
             "extra_minutes": 4.3,
@@ -65,7 +65,7 @@ def test_validator_rejects(text: str, error: str) -> None:
 @pytest.mark.unit
 def test_validator_accepts_grounded_text_with_street_numbers() -> None:
     text = (
-        "At 10 PM in wet conditions the PathPulse route adds 4.3 min but cuts exposure 49% "
+        "At 10 PM in wet conditions the PathPro route adds 4.3 min but cuts exposure 49% "
         "by skipping Peachtree Place Northwest; 10th Street Northwest scores 93."
     )
 
@@ -126,7 +126,7 @@ class FakeProvider:
         return self.reply
 
 
-GOOD = "The PathPulse route adds 4.3 min and cuts traffic-risk exposure 49%."
+GOOD = "The PathPro route adds 4.3 min and cuts traffic-risk exposure 49%."
 
 
 @pytest.mark.unit
@@ -233,9 +233,7 @@ async def test_truncated_or_empty_completions_are_rejected() -> None:
             httpx.Response(
                 200,
                 json={
-                    "choices": [
-                        {"finish_reason": "length", "message": {"content": "The PathPulse"}}
-                    ]
+                    "choices": [{"finish_reason": "length", "message": {"content": "The PathPro"}}]
                 },
             ),
             httpx.Response(

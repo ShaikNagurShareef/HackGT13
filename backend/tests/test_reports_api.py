@@ -193,7 +193,7 @@ def test_routes_carry_reports_for_the_chosen_route_only(
 
     data = client.post("/routes", json=_hot_route(client)).json()["data"]
 
-    assert data["pathpulse"] is not None
+    assert data["pathpro"] is not None
     assert [(r["seg_id"], r["category"]) for r in data["reports"]] == [(CALM_SEG, "construction")]
 
 

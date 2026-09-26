@@ -18,7 +18,7 @@ export interface MapViewProps {
   frameKey: string
   hotspots: ReadonlyArray<Hotspot>
   fastest: Route | null
-  pathpulse: Route | null
+  pathpro: Route | null
   selectedSeg: number | null
   onSegment: (id: number) => void
   onMapPick: (lat: number, lon: number) => void
@@ -141,7 +141,7 @@ export function MapView(props: MapViewProps) {
 
   useEffect(() => {
     const map = mapRef.current
-    const route = props.pathpulse ?? props.fastest
+    const route = props.pathpro ?? props.fastest
     if (!map || !route || route.coords.length < 2) return
     const lons = route.coords.map((c) => c[0])
     const lats = route.coords.map((c) => c[1])
@@ -152,7 +152,7 @@ export function MapView(props: MapViewProps) {
       ],
       { padding: { top: 120, bottom: 220, left: 60, right: 420 }, duration: prefersReducedMotion() ? 0 : 700 },
     )
-  }, [props.fastest, props.pathpulse])
+  }, [props.fastest, props.pathpro])
 
   if (!supported) {
     return (

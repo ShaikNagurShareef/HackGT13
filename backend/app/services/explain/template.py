@@ -31,14 +31,14 @@ def segment_text(ev: Evidence) -> str:
 
 def route_text(ev: Evidence) -> str:
     p = ev.payload
-    if "pathpulse" not in p:
+    if "pathpro" not in p:
         streets = p["fastest"]["riskiest_streets"]
         extra = f" Its highest-risk stretch is {streets[0]}." if streets else ""
         return f"The fastest route is already the lower-risk option.{extra}"
-    pp = p["pathpulse"]
+    pp = p["pathpro"]
     avoids = f" by avoiding {_join(pp['avoids'])}" if pp["avoids"] else ""
     text = (
-        f"The PathPulse route adds {pp['extra_minutes']} min and cuts traffic-risk exposure "
+        f"The PathPro route adds {pp['extra_minutes']} min and cuts traffic-risk exposure "
         f"{pp['less_exposure_percent']}%{avoids}."
     )
     if p.get("unavoidable"):

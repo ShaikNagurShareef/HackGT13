@@ -25,8 +25,8 @@ async def test_speaks_caches_and_respects_budget() -> None:
     async with httpx.AsyncClient() as client:
         service = TtsService(client, "k", "v", "eleven_flash_v2_5", daily_budget=1)
 
-        assert await service.speak("PathPulse adds 4 min.") == b"mp3"
-        assert await service.speak("PathPulse adds 4 min.") == b"mp3"  # cached
+        assert await service.speak("PathPro adds 4 min.") == b"mp3"
+        assert await service.speak("PathPro adds 4 min.") == b"mp3"  # cached
         assert await service.speak("Another sentence.") is None  # budget spent
     assert route.call_count == 1
     assert route.calls[0].request.headers["xi-api-key"] == "k"

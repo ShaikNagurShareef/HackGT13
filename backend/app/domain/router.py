@@ -43,7 +43,7 @@ class RoutingError(Exception):
 @dataclass(frozen=True)
 class RoutePlan:
     fastest: RouteMetrics
-    pathpulse: RouteMetrics | None
+    pathpro: RouteMetrics | None
     message_code: str
     tradeoff_extra_s: float | None
     unavoidable: tuple[str, ...]

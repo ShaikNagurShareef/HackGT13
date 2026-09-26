@@ -30,30 +30,30 @@ def test_snap_finds_nearest_node(router: Router, bundle: Bundle) -> None:
 
 
 @pytest.mark.unit
-def test_fastest_takes_hot_corridor_and_pathpulse_detours(router: Router) -> None:
+def test_fastest_takes_hot_corridor_and_pathpro_detours(router: Router) -> None:
     plan = router.plan(node_id(HOT_ROW, 0), node_id(HOT_ROW, COLS - 1), NIGHT, wet=False)
 
     assert plan.fastest.nodes == [node_id(HOT_ROW, c) for c in range(COLS)]
-    assert plan.pathpulse is not None
-    assert node_id(CALM_ROW, 1) in plan.pathpulse.nodes
-    assert plan.pathpulse.exposure <= plan.fastest.exposure * 0.85
-    assert plan.pathpulse.risk_score < plan.fastest.risk_score
+    assert plan.pathpro is not None
+    assert node_id(CALM_ROW, 1) in plan.pathpro.nodes
+    assert plan.pathpro.exposure <= plan.fastest.exposure * 0.85
+    assert plan.pathpro.risk_score < plan.fastest.risk_score
 
 
 @pytest.mark.unit
-def test_pathpulse_route_respects_detour_budget(router: Router) -> None:
+def test_pathpro_route_respects_detour_budget(router: Router) -> None:
     plan = router.plan(node_id(HOT_ROW, 0), node_id(HOT_ROW, COLS - 1), NIGHT, wet=True)
 
-    assert plan.pathpulse is not None
+    assert plan.pathpro is not None
     fastest = plan.fastest.duration_s
-    assert plan.pathpulse.duration_s <= min(fastest * 1.25, fastest + 360) + 1e-6
+    assert plan.pathpro.duration_s <= min(fastest * 1.25, fastest + 360) + 1e-6
 
 
 @pytest.mark.unit
 def test_calm_trip_returns_single_route(router: Router) -> None:
     plan = router.plan(node_id(CALM_ROW, 0), node_id(CALM_ROW, COLS - 1), NIGHT, wet=False)
 
-    assert plan.pathpulse is None
+    assert plan.pathpro is None
     assert plan.message_code == "fastest_is_lower_risk"
 
 

@@ -25,7 +25,7 @@ export const routes = (over: Partial<Routes> = {}): Routes => ({
   condition_used: { cond: 'wet', source: 'override', label: 'Wet (your choice)' },
   depart_at: '2026-09-25T22:30:00-04:00',
   fastest: route(),
-  pathpulse: route({
+  pathpro: route({
     duration_s: 1362,
     risk_score: 83,
     exposure: 1.3,

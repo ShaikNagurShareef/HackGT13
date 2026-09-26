@@ -12,7 +12,7 @@ describe('runtime API resolution', () => {
       url.endsWith('live.json') ? json({ api: 'https://abc-def.trycloudflare.com/' }) : json({ success: true }),
     )
 
-    await initRuntime('/PathPulse/', fetcher as unknown as typeof fetch, true)
+    await initRuntime('/PathPro/', fetcher as unknown as typeof fetch, true)
 
     expect(getApiOrigin()).toBe('https://abc-def.trycloudflare.com')
     expect(usingFallbackDemo()).toBe(false)

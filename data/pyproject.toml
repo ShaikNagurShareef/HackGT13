@@ -1,7 +1,7 @@
 [project]
 name = "pathpulse-data"
 version = "0.1.0"
-description = "PathPulse data pipeline: ingest crashes, build network, train and export the risk model"
+description = "PathPro data pipeline: ingest crashes, build network, train and export the risk model"
 requires-python = ">=3.12"
 dependencies = [
   "osmnx>=2.1",

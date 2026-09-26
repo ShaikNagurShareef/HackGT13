@@ -56,7 +56,7 @@ def record(client: TestClient) -> dict[str, Any]:
             fixtures[f"POST /explain route:{data['route_key']}"] = _ok(
                 client.post("/explain", json=explain)
             )
-            for route in (data["fastest"], data["pathpulse"]):
+            for route in (data["fastest"], data["pathpro"]):
                 if route:
                     seg_ids.update(s["seg_id"] for s in route["top_segments"])
     for seg in sorted(seg_ids):

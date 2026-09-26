@@ -90,7 +90,7 @@ class RoutesData(BaseModel):
     condition_used: ConditionUsed
     depart_at: str
     fastest: RouteOut
-    pathpulse: RouteOut | None
+    pathpro: RouteOut | None
     message_code: str
     message: str | None
     time_cost_min: float | None

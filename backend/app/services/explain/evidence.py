@@ -72,7 +72,7 @@ def segment_evidence(detail: SegmentDetail) -> Evidence:
 
 
 def route_evidence(routes: RoutesData) -> Evidence:
-    fastest, pp = routes.fastest, routes.pathpulse
+    fastest, pp = routes.fastest, routes.pathpro
     fast_names = [s.name for s in fastest.top_segments]
     payload: dict[str, Any] = {
         "time": _time_label(routes.depart_at),
@@ -85,7 +85,7 @@ def route_evidence(routes: RoutesData) -> Evidence:
     }
     if pp is not None:
         pp_names = {s.name for s in pp.top_segments}
-        payload["pathpulse"] = {
+        payload["pathpro"] = {
             "minutes": round(pp.duration_s / 60),
             "score": pp.risk_score,
             "extra_minutes": routes.time_cost_min,

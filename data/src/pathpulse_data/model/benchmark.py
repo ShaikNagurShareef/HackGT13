@@ -26,7 +26,7 @@ from pathpulse_data.network.layers import UTM, load_lines
 log = logging.getLogger(__name__)
 BOOT_REPS = 400
 OURS, COUNT_ONLY, HIN = (
-    "PathPulse (EB ensemble)",
+    "PathPro (EB ensemble)",
     "Past crash count only",
     "City High Injury Network",
 )

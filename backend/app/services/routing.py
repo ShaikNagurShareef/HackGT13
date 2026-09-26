@@ -44,7 +44,7 @@ def _check_coverage(bundle: Bundle, req: RouteRequest, hexes: HexBundle | None) 
         if not in_coverage(bundle, hexes, point.lat, point.lon):
             raise AppError(
                 "OUT_OF_COVERAGE",
-                "PathPulse covers the City of Atlanta for now. "
+                "PathPro covers the City of Atlanta for now. "
                 "Pick a starting point and destination inside city limits.",
                 status=422,
             )
@@ -96,7 +96,7 @@ def _message(plan: RoutePlan) -> str | None:
             f"A lower-risk route exists but adds {extra} min. "
             "Showing the best option under 6 extra min."
         )
-    if plan.pathpulse and plan.pathpulse.limited_data_m > 0:
+    if plan.pathpro and plan.pathpro.limited_data_m > 0:
         return "Part of this route has limited crash history; score is less certain."
     return None
 
@@ -127,7 +127,7 @@ async def plan_routes(
         plan = await asyncio.to_thread(router.plan, origin, dest, depart, resolved.wet)
     except RoutingError as exc:
         raise AppError(exc.code, str(exc), status=422) from exc
-    fastest, pp = plan.fastest, plan.pathpulse
+    fastest, pp = plan.fastest, plan.pathpro
     reduction = (
         round((1 - pp.exposure / fastest.exposure) * 100) if pp and fastest.exposure else None
     )
@@ -144,7 +144,7 @@ async def plan_routes(
         condition_used=ConditionUsed(cond=cond, source=resolved.source, label=resolved.label),  # type: ignore[arg-type]
         depart_at=depart.isoformat(),
         fastest=route_out(bundle, fastest),
-        pathpulse=route_out(bundle, pp) if pp else None,
+        pathpro=route_out(bundle, pp) if pp else None,
         message_code=plan.message_code,
         message=_message(plan),
         time_cost_min=round((pp.duration_s - fastest.duration_s) / 60, 1) if pp else None,

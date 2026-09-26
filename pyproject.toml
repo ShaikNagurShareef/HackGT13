@@ -1,7 +1,7 @@
 [project]
 name = "pathpulse"
 version = "0.1.0"
-description = "PathPulse workspace root: pedestrian traffic-risk forecasting for Atlanta"
+description = "PathPro workspace root: pedestrian traffic-risk forecasting for Atlanta"
 requires-python = ">=3.12"
 
 [tool.uv]

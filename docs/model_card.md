@@ -1,4 +1,4 @@
-# PathPulse model card
+# PathPro model card
 
 **Model:** pedestrian traffic-risk forecaster for Atlanta road segments and citywide H3 cells.
 **Version:** see `/meta` → `model_version`. Crash data runs through 2026-09-19.
@@ -75,7 +75,7 @@
 
 | 2024 holdout (543 pedestrian crashes, whole city) | Top 10% length | Top 5% length | At HIN's 9.8% | ROC-AUC | PR-AUC |
 | --- | --- | --- | --- | --- | --- |
-| PathPulse (Empirical Bayes ensemble) | **74.3%** [70.5, 78.3] | **61.1%** | **73.9%** | **0.889** | **0.277** |
+| PathPro (Empirical Bayes ensemble) | **74.3%** [70.5, 78.3] | **61.1%** | **73.9%** | **0.889** | **0.277** |
 | Model only (no EB) | 74.3% | 61.2% | 73.8% | 0.889 | 0.276 |
 | Past pedestrian crash density | 49.8% | 44.4% | 49.8% | 0.716 | 0.160 |
 | City High Injury Network 2025 | 53.8% | 39.3% | 53.7% | 0.694 | 0.088 |
@@ -84,7 +84,7 @@
 
 - **Confidence intervals** resample 614 H3 res-8 spatial blocks across the city.
 - **Gain over past-crash ranking:** +24.5 points on 2024 (95% CI +20.4 to +28.8).
-- **2023 check (train 2020–2022):** PathPulse 68.1% vs HIN 54.2% vs past-crash ranking 45.5%. ROC-AUC 0.869.
+- **2023 check (train 2020–2022):** PathPro 68.1% vs HIN 54.2% vs past-crash ranking 45.5%. ROC-AUC 0.869.
 - **City Pulse:**
   - 2024: top 10% of cells held **74.5%** (past crashes 66.1%, random 13.1%). ROC-AUC 0.916.
   - 2023: 69.2% vs 58.8%.

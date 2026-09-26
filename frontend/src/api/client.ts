@@ -45,7 +45,7 @@ async function fetchJson(url: string, init: RequestInit): Promise<unknown> {
   const resp = await fetch(url, init)
   const type = resp.headers.get('content-type') ?? ''
   if (!type.includes('json')) {
-    throw new ApiError('SERVER', 'PathPulse is busy right now. Please try again.')
+    throw new ApiError('SERVER', 'PathPro is busy right now. Please try again.')
   }
   return resp.json()
 }
@@ -62,7 +62,7 @@ async function request<T extends z.ZodType>(
       ? await demoResponse(init?.method ?? 'GET', path, init?.body as string | undefined)
       : await fetchJson(`${apiBase()}${path}`, { ...init, signal: controller.signal })
     const parsed = envelope(schema).safeParse(raw)
-    if (!parsed.success) throw new ApiError('BAD_RESPONSE', 'Unexpected response from PathPulse.')
+    if (!parsed.success) throw new ApiError('BAD_RESPONSE', 'Unexpected response from PathPro.')
     const body = parsed.data
     if (!body.success || body.data == null) {
       throw new ApiError(body.error?.code ?? 'UNKNOWN', body.error?.message ?? 'Request failed.')

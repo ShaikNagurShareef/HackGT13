@@ -61,7 +61,7 @@ def test_routes_returns_both_routes_on_hot_corridor(client: TestClient) -> None:
 
     data = client.post("/routes", json=body).json()["data"]
 
-    assert data["pathpulse"] is not None
+    assert data["pathpro"] is not None
     assert data["condition_used"] == {
         "cond": "wet",
         "source": "override",

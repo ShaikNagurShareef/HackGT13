@@ -1,7 +1,7 @@
-# PathPulse — Architecture & Build Plan
+# PathPro — Architecture & Build Plan
 
 ## Context
-Build **PathPulse** (domain **pathpulse.tech**, verified available) from `Requirements (PRD).md`. It is an Atlanta pedestrian traffic-risk forecaster with:
+Build **PathPro** (domain **pathpulse.tech**, verified available) from `Requirements (PRD).md`. It is an Atlanta pedestrian traffic-risk forecaster with:
 - hourly **Risk Tides**
 - a fastest vs lower-risk walking router
 - factor-by-factor explanations
@@ -10,7 +10,7 @@ Build **PathPulse** (domain **pathpulse.tech**, verified available) from `Requir
 
 The goal is to win: Oracle of the Deep, Best Overall, the social-good track, and MLH prizes.
 
-**Environment.** 8 GB M1, Python 3.12, uv, Node 22 and npm, **no Docker**. `gh` is logged in; the remote is `ShaikNagurShareef/PathPulse`. The ECC plugin is installed at project scope.
+**Environment.** 8 GB M1, Python 3.12, uv, Node 22 and npm, **no Docker**. `gh` is logged in; the remote is `ShaikNagurShareef/PathPro`. The ECC plugin is installed at project scope.
 
 **Decisions confirmed with the user**
 - Team: solo, with Claude.
@@ -23,7 +23,7 @@ The goal is to win: Oracle of the Deep, Best Overall, the social-good track, and
 **How we differ from past work**
 - lumos.ai (AGPL, ideas only): crime-based, city-level scores, the model imitates a formula, no route comparison, no per-factor explanation, nothing on the map changes over time.
 - **SafeWay (HackGT 11)**: an Atlanta safety router with fixed hand-set weights.
-- PathPulse instead has:
+- PathPro instead has:
   - a *forecasting* model trained on real crash outcomes, with pedestrian exposure
   - an honest held-out test that beats the City's own High Injury Network
   - risk that changes by hour and weather

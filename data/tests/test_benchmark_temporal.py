@@ -26,7 +26,7 @@ def test_benchmark_reports_every_method_and_beats_random(
 
     methods = {m["method"]: m for m in result["methods"]}
     assert len(methods) == 6
-    ours = methods["PathPulse (EB ensemble)"]["capture_top10"]
+    ours = methods["PathPro (EB ensemble)"]["capture_top10"]
     assert ours > methods["Random"]["capture_top10"]
     lo, hi = result["capture_top10_ci95"]
     assert lo <= ours <= hi

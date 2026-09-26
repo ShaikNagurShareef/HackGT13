@@ -56,7 +56,7 @@ def polyline_midpoint(points: np.ndarray) -> tuple[float, float]:
 
 def segment_location(bundle: Bundle, seg_id: int) -> SegmentLocation:
     """Street name and midpoint from the bundle's walk graph; clients never supply a location."""
-    missing = AppError("NOT_FOUND", "That street segment is not in PathPulse coverage.", 404)
+    missing = AppError("NOT_FOUND", "That street segment is not in PathPro coverage.", 404)
     if not 0 <= seg_id < bundle.n_segments:
         raise missing
     edges = np.flatnonzero(bundle.graph.edge_seg == seg_id)
@@ -107,9 +107,9 @@ async def submit_report(
 
 
 async def route_reports(repo: ReportsRepository, routes: RoutesData) -> list[ReportOut]:
-    """Reports on the recommended route (PathPulse if present, else fastest); [] on any failure."""
+    """Reports on the recommended route (PathPro if present, else fastest); [] on any failure."""
     if not repo.configured:
         return []
-    chosen = routes.pathpulse or routes.fastest
+    chosen = routes.pathpro or routes.fastest
     found = await repo.for_segments(chosen.segment_ids, budget_s=ROUTE_REPORTS_BUDGET_S)
     return [report_out(r) for r in found or []]

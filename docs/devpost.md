@@ -1,4 +1,4 @@
-# PathPulse — Devpost write-up (draft)
+# PathPro — Devpost write-up (draft)
 
 **Tagline:** See traffic risk before you walk into it.
 
@@ -22,7 +22,7 @@ Walking from Klaus to Midtown MARTA at night, two routes look identical on a map
 ## What it does
 
 - **Risk Tides:** an hour-by-hour, dry/wet, weekday/weekend map of pedestrian traffic risk on about 50,000 street segments across the whole City of Atlanta.
-- **Fastest vs PathPulse route.** Klaus → Midtown MARTA, Friday 10:30 PM in rain: **+4.2 min, 54% less traffic-risk exposure**, avoiding Peachtree Place and Williams St. When the fastest route is already the lower-risk one, PathPulse says so.
+- **Fastest vs PathPro route.** Klaus → Midtown MARTA, Friday 10:30 PM in rain: **+4.2 min, 54% less traffic-risk exposure**, avoiding Peachtree Place and Williams St. When the fastest route is already the lower-risk one, PathPro says so.
 - **"Why is this street risky?"** A score dial, confidence badge, factor bars that sum exactly to the score, crash history, and when crashes happened by hour (Tiger Data).
 - **Community street reports:** walkers flag a traffic-related issue on a street (signal out, sidewalk blocked, construction detour, and three more). Reports appear on the map, the street sheet, and route results for 14 days, and never change a score.
 - **City Pulse:** area-level traffic-risk scores for all 3,537 hexes of the City of Atlanta.
@@ -37,7 +37,7 @@ Walking from Klaus to Midtown MARTA at night, two routes look identical on a map
   - Features: StreetLight pedestrian activity, 2023 traffic volumes, speed limits, lanes, bus boardings, sidewalks, signals, crossings.
 - **ML:** an exposure-aware safety performance function (Poisson GLM + monotone LightGBM, spatial-block cross-validation), blended with each street's history by Empirical Bayes. A multi-task Poisson GLM learns how risk shifts by hour, day, light, and rain. Every score splits exactly into plain-language factors.
 - **Evaluation:** trained on 2020–23 and tested on 2024.
-  - The 10% of street length PathPulse ranks highest held **74.3%** of 2024 pedestrian crashes (95% spatial-block CI 70–78%).
+  - The 10% of street length PathPro ranks highest held **74.3%** of 2024 pedestrian crashes (95% spatial-block CI 70–78%).
   - That compares with 49.8% for past-crash ranking, 53.8% for the City High Injury Network, and 11.9% at random. It repeats on 2023 (68.1% vs 45.5%).
   - City Pulse: **74.5%** of crashes in the top 10% of areas. ROC-AUC 0.89 streets / 0.92 areas.
 - **Sponsors and their jobs:**
@@ -73,7 +73,7 @@ Walking from Klaus to Midtown MARTA at night, two routes look identical on a map
 - Most of the work is data plumbing and honest evaluation, not model choice.
 - Exposure bias and label shifts are real. Saying so makes the claims stronger, not weaker.
 
-## What's next for PathPulse
+## What's next for PathPro
 
 - Cycling and wheelchair profiles
 - Exposure-normalized per-trip risk

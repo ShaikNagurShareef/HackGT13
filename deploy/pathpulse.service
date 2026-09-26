@@ -1,5 +1,5 @@
 [Unit]
-Description=PathPulse API (FastAPI/uvicorn)
+Description=PathPro API (FastAPI/uvicorn)
 After=network-online.target
 Wants=network-online.target
 

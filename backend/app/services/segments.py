@@ -25,7 +25,7 @@ def factor_values(bundle: Bundle, seg_id: int, key: tuple[str, int, str, bool]) 
 
 def segment_detail(bundle: Bundle, seg_id: int, at: datetime, resolved: Resolved) -> SegmentDetail:
     if not 0 <= seg_id < bundle.n_segments:
-        raise AppError("NOT_FOUND", "That street segment is not in PathPulse coverage.", status=404)
+        raise AppError("NOT_FOUND", "That street segment is not in PathPro coverage.", status=404)
     cell = cell_at(at, resolved.wet)
     factors = factor_values(bundle, seg_id, cell.key)
     result = attribute(bundle.base, factors, bundle.quantiles, top_n=TOP_FACTORS)

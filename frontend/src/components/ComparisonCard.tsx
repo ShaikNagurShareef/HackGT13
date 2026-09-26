@@ -28,16 +28,16 @@ function RouteRow({ label, route, kind }: { label: string; route: Route; kind: '
 
 /** One-sentence evidence summary; replaced by the grounded LLM text when it arrives. */
 export function templateSummary(routes: Routes): string {
-  const { fastest, pathpulse } = routes
+  const { fastest, pathpro } = routes
   const worst = fastest.top_segments.slice(0, 2).map((s) => s.name)
-  if (!pathpulse) {
+  if (!pathpro) {
     return worst.length
       ? `The fastest route is already the lower-risk option; its busiest stretch is ${worst[0]}.`
       : 'The fastest route is already the lower-risk option.'
   }
-  const avoided = worst.filter((n) => !pathpulse.top_segments.some((s) => s.name === n))
+  const avoided = worst.filter((n) => !pathpro.top_segments.some((s) => s.name === n))
   const via = avoided.length ? ` by avoiding ${avoided.join(' and ')}` : ''
-  return `PathPulse adds ${routes.time_cost_min} min and cuts traffic-risk exposure ${routes.exposure_reduction_pct}%${via}.`
+  return `PathPro adds ${routes.time_cost_min} min and cuts traffic-risk exposure ${routes.exposure_reduction_pct}%${via}.`
 }
 
 export interface ComparisonCardProps {
@@ -59,14 +59,14 @@ export function ComparisonCard({
   onListen,
   walk,
 }: ComparisonCardProps) {
-  const { fastest, pathpulse } = routes
+  const { fastest, pathpro } = routes
   const depart = new Date(routes.depart_at)
   return (
     <section className="compare panel" aria-label="Route comparison" aria-live="polite">
       <header className="compare-head">
         <div>
           <div className="compare-title">
-            {pathpulse ? (
+            {pathpro ? (
               <>
                 <span className="num">+{routes.time_cost_min} min</span>,{' '}
                 <span className="num">{routes.exposure_reduction_pct}%</span> less traffic-risk exposure
@@ -83,8 +83,8 @@ export function ComparisonCard({
           ×
         </button>
       </header>
-      {pathpulse && <RouteRow label="PathPulse route" route={pathpulse} kind="pp" />}
-      <RouteRow label={pathpulse ? 'Fastest route' : 'Route'} route={fastest} kind="fast" />
+      {pathpro && <RouteRow label="PathPro route" route={pathpro} kind="pp" />}
+      <RouteRow label={pathpro ? 'Fastest route' : 'Route'} route={fastest} kind="fast" />
       <p className="explanation" data-testid="route-explanation">
         {explanation ?? templateSummary(routes)}
       </p>
@@ -94,7 +94,7 @@ export function ComparisonCard({
             🔊 Listen
           </button>
         )}
-        {walk && pathpulse && (
+        {walk && pathpro && (
           <button
             type="button"
             className="chip"
@@ -110,8 +110,8 @@ export function ComparisonCard({
           {walk.banner}
         </p>
       )}
-      {pathpulse && routes.avoided.length > 0 && (
-        <div className="avoided" aria-label="High-risk stretches the PathPulse route avoids">
+      {pathpro && routes.avoided.length > 0 && (
+        <div className="avoided" aria-label="High-risk stretches the PathPro route avoids">
           <span className="faint">
             Avoids {routes.avoided.length} high-risk stretch{routes.avoided.length === 1 ? '' : 'es'}:
           </span>
@@ -122,7 +122,7 @@ export function ComparisonCard({
           ))}
         </div>
       )}
-      {routes.message && pathpulse && <p className="faint">{routes.message}</p>}
+      {routes.message && pathpro && <p className="faint">{routes.message}</p>}
       {routes.reports.length > 0 && (
         <p className="route-reports" data-testid="route-reports">
           <span className="report-dot" aria-hidden="true" /> {routeReportsLine(routes.reports)}

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Create the PathPulse VM on Vultr (Atlanta, Ubuntu 24.04, 2 GB) using VULTR_API_KEY from
+# Create the PathPro VM on Vultr (Atlanta, Ubuntu 24.04, 2 GB) using VULTR_API_KEY from
 # backend/.env. Writes the server IP to deploy/.host. Safe to re-run: reuses an existing VM.
 set -euo pipefail
 

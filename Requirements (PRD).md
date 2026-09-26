@@ -1,10 +1,10 @@
-# PathPulse — Product Requirements
+# PathPro — Product Requirements
 
 Sep 25, 2026 · @Nagur Shareef Shaik
 
 ## 1. Overview
 
-**Product:** PathPulse — a predictive traffic-risk map and risk-aware walking router for Atlanta.
+**Product:** PathPro — a predictive traffic-risk map and risk-aware walking router for Atlanta.
 
 **Tagline:** *See traffic risk before you walk into it.*
 
@@ -16,9 +16,9 @@ Navigation apps optimize one number: travel time. They are silent about the fact
 
 ### 1.2 Product thesis
 
-PathPulse turns public crash records into a street-level, time-varying risk surface, lets people *see* how that surface changes through the day and weather (Risk Tides), and offers a route that trades a small amount of time for a large reduction in exposure. Every score is explainable: a trained model produces it, SHAP decomposes it, and an LLM translates that evidence into plain language. The LLM never produces a risk number.
+PathPro turns public crash records into a street-level, time-varying risk surface, lets people *see* how that surface changes through the day and weather (Risk Tides), and offers a route that trades a small amount of time for a large reduction in exposure. Every score is explainable: a trained model produces it, SHAP decomposes it, and an LLM translates that evidence into plain language. The LLM never produces a risk number.
 
-**Scope of "risk":** PathPulse models *traffic* risk to pedestrians — the historical and predicted likelihood of vehicle–pedestrian crashes. It does not model crime or personal security, and the product must say so wherever a user might assume otherwise (see §7 copy rules).
+**Scope of "risk":** PathPro models *traffic* risk to pedestrians — the historical and predicted likelihood of vehicle–pedestrian crashes. It does not model crime or personal security, and the product must say so wherever a user might assume otherwise (see §7 copy rules).
 
 ### 1.3 Goals
 
@@ -49,7 +49,7 @@ Crime or personal-safety prediction; native mobile apps; crowdsourced reporting;
 
 ### 2.1 Personas
 
-| Persona | Context | What they need from PathPulse |
+| Persona | Context | What they need from PathPro |
 | --- | --- | --- |
 | **Night walker** (primary) — GT student walking between campus, Home Park, Midtown, and MARTA after dark | Time-pressed, on a phone, often in low light and sometimes in rain | A quick, glanceable "which way is lower risk right now" answer and a hands-free heads-up near hotspots |
 | **Planner** — student or parent choosing an apartment, commute, or event route in advance | On a laptop, exploring, comparing times and conditions | Explore the map at different hours and weather, compare routes for a future departure time |
@@ -58,32 +58,32 @@ Crime or personal-safety prediction; native mobile apps; crowdsourced reporting;
 
 ### 2.2 Core scenarios
 
-**S1 — Walk home tonight.** A student enters "Klaus → Midtown MARTA", departure *Now* (10:30 PM, light rain). PathPulse shows the fastest route (18 min, risk 74) and a PathPulse route (21 min, risk 31), explains the difference in one sentence, and can speak alerts on approach to high-risk segments.
+**S1 — Walk home tonight.** A student enters "Klaus → Midtown MARTA", departure *Now* (10:30 PM, light rain). PathPro shows the fastest route (18 min, risk 74) and a PathPro route (21 min, risk 31), explains the difference in one sentence, and can speak alerts on approach to high-risk segments.
 
 **S2 — Explore the tides.** A user drags the timeline from 2 PM to 11 PM and toggles rain, watching corridors light up. They tap a glowing intersection and see its score, top contributing factors, and a plain-English explanation.
 
-**S3 — Plan ahead.** A user sets departure to Saturday 1 AM. PathPulse uses the forecast if available, otherwise asks the user to choose dry or wet, and labels the assumption.
+**S3 — Plan ahead.** A user sets departure to Saturday 1 AM. PathPro uses the forecast if available, otherwise asks the user to choose dry or wet, and labels the assumption.
 
-**S4 — Nothing better exists.** For some trips the fastest route is already the lower-risk choice. PathPulse says so plainly rather than inventing a detour.
+**S4 — Nothing better exists.** For some trips the fastest route is already the lower-risk choice. PathPro says so plainly rather than inventing a detour.
 
-**S5 — Outside coverage.** A user searches a destination in Decatur. PathPulse explains the coverage area and offers the nearest covered point or a map-only view.
+**S5 — Outside coverage.** A user searches a destination in Decatur. PathPro explains the coverage area and offers the nearest covered point or a map-only view.
 
 ## 3. User journeys and screen flow
 
-PathPulse is a single-page app with one persistent map and four modes layered on top of it. There is no splash screen and no login wall: the map with live risk is the first thing a user sees.
+PathPro is a single-page app with one persistent map and four modes layered on top of it. There is no splash screen and no login wall: the map with live risk is the first thing a user sees.
 
 | Screen / mode | Entry | What's on screen | Exits |
 | --- | --- | --- | --- |
-| **First run** | First visit (per browser) | Map loads behind a one-card intro: what PathPulse shows, that it models *traffic* risk, data-through date, "Got it" | Explore |
+| **First run** | First visit (per browser) | Map loads behind a one-card intro: what PathPro shows, that it models *traffic* risk, data-through date, "Got it" | Explore |
 | **Explore** (default) | App load, or clearing a route | Full-screen risk map at the current hour and live conditions; Risk Tides timeline docked at the bottom; conditions chip (Live · Dry · Wet); search bar at top; legend | Route (search), Segment detail (tap) |
-| **Route compare** | Origin + destination set | Two routes drawn (fastest in neutral grey, PathPulse in teal), comparison card with time, risk score, high-risk meters, and a one-line explanation; departure-time picker | Walk (Start), Segment detail (tap on route), Explore (clear) |
+| **Route compare** | Origin + destination set | Two routes drawn (fastest in neutral grey, PathPro in teal), comparison card with time, risk score, high-risk meters, and a one-line explanation; departure-time picker | Walk (Start), Segment detail (tap on route), Explore (clear) |
 | **Segment detail** | Tap a segment, intersection, or hotspot | Bottom sheet: risk score dial, confidence badge, factor contribution bars, 1–3 sentence explanation, crash history summary (counts by light/surface, date range), "Listen" | Back to previous mode |
-| **Walk** (P1) | "Start walk" on the PathPulse route | Simplified map following the user, next high-risk segment distance, voice alerts on/off, end walk | Route compare (end) |
+| **Walk** (P1) | "Start walk" on the PathPro route | Simplified map following the user, next high-risk segment distance, voice alerts on/off, end walk | Route compare (end) |
 | **About / data** | Info icon | Methodology in plain words, data sources and freshness, limitations, emergency numbers | Back |
 
 ### 3.1 Primary journey (S1)
 
-The user taps the search bar, types a destination, and picks a suggestion. Origin defaults to device location if permission is granted, otherwise the search bar asks for an origin with Klaus Building as a suggested chip. Departure defaults to *Now*. Within 1.5 s the comparison card appears and the map animates the two routes drawing from origin to destination. Tapping the PathPulse route highlights the hotspots it avoids; tapping a red segment on the fastest route opens Segment detail explaining why that stretch scores high. "Start walk" enters Walk mode and, after an explicit tap to enable audio, speaks alerts.
+The user taps the search bar, types a destination, and picks a suggestion. Origin defaults to device location if permission is granted, otherwise the search bar asks for an origin with Klaus Building as a suggested chip. Departure defaults to *Now*. Within 1.5 s the comparison card appears and the map animates the two routes drawing from origin to destination. Tapping the PathPro route highlights the hotspots it avoids; tapping a red segment on the fastest route opens Segment detail explaining why that stretch scores high. "Start walk" enters Walk mode and, after an explicit tap to enable audio, speaks alerts.
 
 ### 3.2 Exploration journey (S2)
 
@@ -141,12 +141,12 @@ Priorities: **P0** = required for the demo (MVP), **P1** = strong polish if time
 
 | ID | Requirement | Pri | Acceptance criteria |
 | --- | --- | --- | --- |
-| RTE-01 | Compute the fastest walking route and a risk-aware PathPulse route on the same pedestrian network | P0 | Both routes returned in one response, p95 < 1.5 s |
-| RTE-02 | PathPulse route must respect a detour budget: ≤ fastest × 1.25 or fastest + 6 min, whichever is smaller | P0 | No returned route violates the budget |
+| RTE-01 | Compute the fastest walking route and a risk-aware PathPro route on the same pedestrian network | P0 | Both routes returned in one response, p95 < 1.5 s |
+| RTE-02 | PathPro route must respect a detour budget: ≤ fastest × 1.25 or fastest + 6 min, whichever is smaller | P0 | No returned route violates the budget |
 | RTE-03 | If no candidate lowers route risk by ≥ 10 points, show a single route with "The fastest route is already the lower-risk option" | P0 | Verified on a short campus trip |
 | RTE-04 | Comparison card: walk time, distance, route risk (0–100), meters on high-risk segments, % reduction | P0 | Numbers match backend response exactly |
 | RTE-05 | Departure time picker (Now, +15 min, +1 h, custom) that re-scores routes | P0 | Changing time updates both routes and the map frame |
-| RTE-06 | Highlight the specific hotspots the PathPulse route avoids, with a count ("Avoids 3 high-risk crossings") | P1 | Tapping the count flies to each |
+| RTE-06 | Highlight the specific hotspots the PathPro route avoids, with a count ("Avoids 3 high-risk crossings") | P1 | Tapping the count flies to each |
 | RTE-07 | Up to one additional alternative ("Balanced") when meaningfully different | P2 | Shown only if it differs by ≥ 15% of path length |
 
 ### 4.6 Explainability (EXP)
@@ -156,7 +156,7 @@ Priorities: **P0** = required for the demo (MVP), **P1** = strong polish if time
 | EXP-01 | Segment detail shows score, top 5 factor contributions (signed), and a remainder bar so parts sum to the displayed score | P0 | Displayed contributions sum to score ±1 |
 | EXP-02 | Confidence badge (High / Medium / Limited data) based on historical observations near the segment | P0 | Segments with < 3 nearby observations show Limited data |
 | EXP-03 | Crash history summary: count, pedestrian-involved count, share after dark, share on wet surface, data date range | P0 | Numbers trace to stored aggregates |
-| EXP-04 | Route-level explanation: which segments drive the fastest route's score and what the PathPulse route avoids | P0 | Explanation references at most 3 named streets/intersections |
+| EXP-04 | Route-level explanation: which segments drive the fastest route's score and what the PathPro route avoids | P0 | Explanation references at most 3 named streets/intersections |
 | EXP-05 | "How is this calculated?" link to About methodology | P0 | Link present in every detail sheet |
 
 ### 4.7 GenAI explanations (GEN)
@@ -224,13 +224,13 @@ Traffic risk only; the same model family as street segments, aggregated to H3 re
 
 ## 5. Edge cases and error states
 
-The rule for every row: the user always sees a usable map, an honest statement of what PathPulse assumed or could not do, and one clear next action. No blank panels, no spinners longer than 3 s without text, no raw error codes.
+The rule for every row: the user always sees a usable map, an honest statement of what PathPro assumed or could not do, and one clear next action. No blank panels, no spinners longer than 3 s without text, no raw error codes.
 
 ### 5.1 Search, places, and location
 
 | ID | Situation | Expected behavior | Copy |
 | --- | --- | --- | --- |
-| EC-01 | Destination outside coverage | Keep the pin, don't route; offer nearest covered point along the straight line | "PathPulse covers Midtown, Georgia Tech, and Downtown for now. Route to the edge of coverage?" |
+| EC-01 | Destination outside coverage | Keep the pin, don't route; offer nearest covered point along the straight line | "PathPro covers Midtown, Georgia Tech, and Downtown for now. Route to the edge of coverage?" |
 | EC-02 | Origin and destination identical or < 60 m apart | No routing; show the segment detail of the location instead | "You're already there — here's the risk on this block." |
 | EC-03 | Geocoder returns no results | Keep typed text, suggest quick picks | "No match nearby. Try a building or street name." |
 | EC-04 | Ambiguous result (e.g., "Starbucks") | Show up to 5 results ranked by distance with addresses | — |
@@ -305,7 +305,7 @@ The rule for every row: the user always sees a usable map, an honest statement o
 | EC-60 | User reads "risk" as crime/personal safety | First-run card, About, and the TRUST-02 note all say "traffic risk"; LLM is forbidden from crime framing |
 | EC-61 | User treats a low score as "safe" | Never display the word "safe"; low scores read "Lower traffic risk" |
 | EC-62 | Stigmatizing an area | No area or neighborhood labels on risk; explanations reference street features and conditions, not places' people |
-| EC-63 | Someone in immediate danger | Emergency numbers are always one tap away (TRUST-03); PathPulse is not an emergency service |
+| EC-63 | Someone in immediate danger | Emergency numbers are always one tap away (TRUST-03); PathPro is not an emergency service |
 
 ## 6. Non-functional requirements
 
@@ -342,7 +342,7 @@ The rule for every row: the user always sees a usable map, an honest statement o
 
 ### 7.2 Visual language ("Deep water")
 
-The theme borrows from HackGT's Seaside setting and the track name. The night basemap is deep navy; risk is rendered as light on dark water. The risk scale is a perceptually uniform, luminance-ordered ramp from deep teal (lower) through sand/amber to coral and hot magenta (higher), so it reads correctly in grayscale and for common color-vision deficiencies. Line width grows with risk (1.5 px → 5 px at zoom 15). Hotspots use an additive glow. The PathPulse route is a bright teal line with a slow moving "current" animation; the fastest route is neutral grey so it reads as the baseline, not the villain.
+The theme borrows from HackGT's Seaside setting and the track name. The night basemap is deep navy; risk is rendered as light on dark water. The risk scale is a perceptually uniform, luminance-ordered ramp from deep teal (lower) through sand/amber to coral and hot magenta (higher), so it reads correctly in grayscale and for common color-vision deficiencies. Line width grows with risk (1.5 px → 5 px at zoom 15). Hotspots use an additive glow. The PathPro route is a bright teal line with a slow moving "current" animation; the fastest route is neutral grey so it reads as the baseline, not the villain.
 
 Type: Inter (UI) with tabular numerals for all scores and times. Risk score dial uses a large numeric (48 px) with the band word beneath ("Elevated").
 
@@ -369,7 +369,7 @@ Route draw: 700 ms ease-out from origin. Frame change: 400 ms color interpolatio
 
 Each sponsor technology must do a job the product genuinely needs, and each must be *visible* in the demo at the moment it matters. Confirm which MLH prizes are live for HackGT 13 at the MLH table before relying on them.
 
-| Sponsor / prize | Role in PathPulse | Requirement | Where judges see it |
+| Sponsor / prize | Role in PathPro | Requirement | Where judges see it |
 | --- | --- | --- | --- |
 | **Oracle of the Deep** (track) | Whole product | ML model + SHAP + Risk Tides visualization | Entire demo; model card in About |
 | **Aramco — A Marina's Mission** (social-good track) | Whole product: pedestrian deaths are a public-health problem | Impact framing in pitch and Devpost; cite Atlanta Vision Zero numbers | Opening line of the pitch |
@@ -386,7 +386,7 @@ Each sponsor technology must do a job the product genuinely needs, and each must
 
 **Not targeted:** Visa, Impiricus, Meta, NSA challenges, SpaceXAI (we use Groq, not xAI Grok), DigitalOcean (not an MLH prize at HackGT 13), MongoDB (Tiger Data is the database).
 
-**Prior-art differentiation:** SafeWay (HackGT 11) routed on hand-weighted crime/lighting factors; lumos.ai scores crime at city level. PathPulse forecasts *traffic* risk from real crash outcomes with pedestrian exposure, validates on a future holdout against the City's own High Injury Network, and explains every score.
+**Prior-art differentiation:** SafeWay (HackGT 11) routed on hand-weighted crime/lighting factors; lumos.ai scores crime at city level. PathPro forecasts *traffic* risk from real crash outcomes with pedestrian exposure, validates on a future holdout against the City's own High Injury Network, and explains every score.
 
 ### 8.1 Devpost submission checklist
 
@@ -396,7 +396,7 @@ Public repo with README (setup, architecture diagram, model card); 2–3 minute 
 
 ### 9.1 Scope tiers
 
-**MVP (must ship by Sunday 4 AM feature freeze):** all P0 requirements — risk map, Risk Tides (hour + dry/wet), conditions with fallback, search, fastest vs PathPulse routes with detour budget, segment detail with SHAP and grounded Grok explanation, trust/about, demo mode.
+**MVP (must ship by Sunday 4 AM feature freeze):** all P0 requirements — risk map, Risk Tides (hour + dry/wet), conditions with fallback, search, fastest vs PathPro routes with detour budget, segment detail with SHAP and grounded Grok explanation, trust/about, demo mode.
 
 **Polish (P1, Saturday evening onward):** City Pulse citywide hex layer and area card (CITY-01…04), voice "Listen" and Preview walk, day-of-week tides, sparkline, avoided-hotspot callouts, streaming explanations, theme by daylight, long-press pins.
 

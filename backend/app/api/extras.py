@@ -144,7 +144,7 @@ class HourlyOut(BaseModel):
 async def segment_hourly(seg_id: int, request: Request, bundle: BundleDep) -> Envelope[HourlyOut]:
     """When crashes happened on this street, by hour (Tiger Data continuous aggregate)."""
     if not 0 <= seg_id < bundle.n_segments:
-        raise AppError("NOT_FOUND", "That street segment is not in PathPulse coverage.", 404)
+        raise AppError("NOT_FOUND", "That street segment is not in PathPro coverage.", 404)
     history: HistoryRepository = request.app.state.history
     profile = await history.hourly(seg_id)
     if profile is None:

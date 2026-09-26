@@ -67,7 +67,7 @@ def _merge_close(alerts: list[Alert]) -> list[Alert]:
 def avoided_segments(
     fastest: tuple[EdgeStep, ...], chosen: tuple[EdgeStep, ...], names: list[str]
 ) -> list[int]:
-    """High-risk streets on the fastest route that the PathPulse route avoids entirely.
+    """High-risk streets on the fastest route that the PathPro route avoids entirely.
 
     One entry per street name (its riskiest segment), in walking order.
     """

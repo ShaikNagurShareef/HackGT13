@@ -1,4 +1,4 @@
--- PathPulse system of record on Tiger Data (TimescaleDB + PostGIS). Idempotent.
+-- PathPro system of record on Tiger Data (TimescaleDB + PostGIS). Idempotent.
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 CREATE EXTENSION IF NOT EXISTS postgis;
 

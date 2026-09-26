@@ -59,7 +59,7 @@ export function useBundle(): { data: BundleData | null; error: string | null } {
           })
         }
       } catch {
-        if (!cancelled) setError("Couldn't load the PathPulse map data. Check your connection and refresh.")
+        if (!cancelled) setError("Couldn't load the PathPro map data. Check your connection and refresh.")
       }
     })()
     return () => {

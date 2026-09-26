@@ -25,7 +25,7 @@ describe('api client', () => {
   })
 
   it('surfaces server error codes and messages', async () => {
-    respond({ success: false, data: null, error: { code: 'OUT_OF_COVERAGE', message: 'PathPulse covers Midtown' } })
+    respond({ success: false, data: null, error: { code: 'OUT_OF_COVERAGE', message: 'PathPro covers Midtown' } })
 
     await expect(api.segment(1, 'now', 'live')).rejects.toMatchObject({ code: 'OUT_OF_COVERAGE' })
   })

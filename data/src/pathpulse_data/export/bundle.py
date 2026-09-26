@@ -65,7 +65,7 @@ def evaluate_all() -> dict[str, Any]:
 
 def headline(metrics: dict[str, Any]) -> dict[str, Any]:
     methods = {m["method"]: m for m in metrics["spatial_test"]["methods"]}
-    ours = methods["PathPulse (EB ensemble)"]
+    ours = methods["PathPro (EB ensemble)"]
     hin = methods["City High Injury Network"]
     return {
         "capture_top10": ours["capture_top10"],
@@ -78,7 +78,7 @@ def headline(metrics: dict[str, Any]) -> dict[str, Any]:
         "model_only_capture_top10": methods["Model only (SPF)"]["capture_top10"],
         "validation_gain_vs_count_only": (
             {m["method"]: m for m in metrics["spatial_validation"]["methods"]}[
-                "PathPulse (EB ensemble)"
+                "PathPro (EB ensemble)"
             ]["capture_top10"]
             - {m["method"]: m for m in metrics["spatial_validation"]["methods"]}[
                 "Past crash count only"
