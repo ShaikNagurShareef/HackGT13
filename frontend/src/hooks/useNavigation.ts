@@ -66,16 +66,18 @@ export function useNavigation({ route, gps, streets, destination }: NavigationIn
         : null
   const alongM = route && position ? projectOnRoute(route.coords, cum, { lon: position[0], lat: position[1] }).alongM : 0
   const end = route?.coords[route.coords.length - 1]
-  const arrived = live && (mode === 'preview' ? walk.progress >= 1 : gpsArrived)
+  const hasPosition = position != null
 
-  useEffect(() => {
-    if (!live || mode !== 'gps' || !gps || !end) return
-    if (hasArrived(gps, { lon: end[0], lat: end[1] })) setGpsArrived(true)
-  }, [live, mode, gps, end])
+  // Arrival is sticky: GPS jitter must not bounce the walker out of "You've arrived".
+  // Adjusting state during render (not in an effect) is React's pattern for this.
+  if (live && mode === 'gps' && gps && end && !gpsArrived && hasArrived(gps, { lon: end[0], lat: end[1] })) {
+    setGpsArrived(true)
+  }
+  const arrived = live && (mode === 'preview' ? walk.progress >= 1 : gpsArrived)
 
   // Voice is a side effect of moving along the route, so it lives in an effect, not render.
   useEffect(() => {
-    if (!live || !route || !position) return
+    if (!live || !route || !hasPosition) return
     if (arrived) {
       if (!arrivalSpoken.current) deviceSpeak(ARRIVED_TEXT)
       arrivalSpoken.current = true
@@ -88,7 +90,7 @@ export function useNavigation({ route, gps, streets, destination }: NavigationIn
     lastSpokenS.current = walkS
     deviceSpeak(alertText(route.alerts[idx]))
     navigator.vibrate?.(VIBRATE_MS)
-  }, [live, route, position, alongM, arrived])
+  }, [live, route, hasPosition, alongM, arrived])
 
   const start = useCallback(
     (next: NavMode) => {

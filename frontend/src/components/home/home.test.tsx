@@ -7,7 +7,8 @@ import { LocationNotice } from './LocationNotice'
 import { MapControls } from './MapControls'
 import { SearchPill } from './SearchPill'
 import { StatusChip } from './StatusChip'
-import { SuggestionCard, isStrongSuggestion, suggestionHeadline } from './SuggestionCard'
+import { isStrongSuggestion, suggestionHeadline } from '../../lib/suggestion'
+import { SuggestionCard } from './SuggestionCard'
 import { WelcomeToast } from './WelcomeToast'
 
 const HOME = { lat: 33.785, lon: -84.402, label: 'Home' }
