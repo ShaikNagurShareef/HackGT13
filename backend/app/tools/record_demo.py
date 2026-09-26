@@ -25,6 +25,8 @@ TRIPS = (
 )
 STATIC_FILES = ("segments.geojson", "hotspot_nodes.json", "hex_cells.json")
 WEST_END = {"lat": 33.7537, "lon": -84.4167}
+# Georgia Tech + Midtown: the area the offline demo shows (well under the 0.3° bbox limit).
+DEMO_BBOX = "-84.4200,33.7550,-84.3700,33.7950"
 
 
 def _ok(resp: Any) -> Any:
@@ -72,7 +74,23 @@ def record(client: TestClient) -> dict[str, Any]:
     for cond in ("wet", "dry", "live"):
         params = {**WEST_END, "t": DEPART, "cond": cond}
         fixtures[f"GET /areas/lookup|{cond}"] = _ok(client.get("/areas/lookup", params=params))
+    fixtures.update(record_safety(client))
     return fixtures
+
+
+def record_safety(client: TestClient) -> dict[str, Any]:
+    """Safety layer for the demo area; skipped when the bundle has no safety files."""
+    meta = client.get("/safety/meta").json()
+    if not meta.get("success"):
+        return {}
+    out: dict[str, Any] = {"GET /safety/meta": meta}
+    out["GET /safety/help-points"] = _ok(
+        client.get("/safety/help-points", params={"bbox": DEMO_BBOX})
+    )
+    for hour in range(24):
+        params = {"bbox": DEMO_BBOX, "hour": hour}
+        out[f"GET /safety/hexes|{hour}"] = _ok(client.get("/safety/hexes", params=params))
+    return out
 
 
 def copy_static(version: str, artifacts: Path) -> str:
