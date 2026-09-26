@@ -74,9 +74,9 @@ export function useNavigation({ route, gps, streets, destination }: NavigationIn
 
   // Arrival is sticky: GPS jitter must not bounce the walker out of "You've arrived".
   // Adjusting state during render (not in an effect) is React's pattern for this.
-  if (live && mode === 'gps' && gps && end && !gpsArrived && hasArrived(gps, { lon: end[0], lat: end[1] })) {
-    setGpsArrived(true)
-  }
+  const reachedEnd = end != null && gps != null && hasArrived(gps, { lon: end[0], lat: end[1] })
+  const reachedDestination = destination != null && gps != null && hasArrived(gps, destination)
+  if (live && mode === 'gps' && !gpsArrived && (reachedEnd || reachedDestination)) setGpsArrived(true)
   const arrived = live && (mode === 'preview' ? walk.progress >= 1 : gpsArrived)
 
   // Voice is a side effect of moving along the route, so it lives in an effect, not render.
