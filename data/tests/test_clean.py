@@ -144,3 +144,130 @@ def test_drop_invalid_coords_counts_reasons() -> None:
 
     assert len(kept) == 1
     assert report == {"missing_coords": 1, "zero_coords": 1, "outside_georgia": 1}
+
+
+def _crash_level(**extra: list[object]) -> pd.DataFrame:
+    base: dict[str, list[object]] = {
+        "OBJECTID": [1, 2, 3],
+        "KABCO_Severity": ["(O) No Injury"] * 3,
+        "Roadway__From_Crash_Report_": ["10th St"] * 3,
+        "Intersection_Name__from_Crash_R": [None] * 3,
+        "Intersection_Name__from_Crash_Report_": [None] * 3,
+        "Intersecting_Roadway": [None] * 3,
+        "lat": [33.78] * 3,
+        "lon": [-84.38] * 3,
+    }
+    return pd.DataFrame({**base, **extra})
+
+
+@pytest.mark.unit
+def test_every_source_carries_a_bike_flag_column() -> None:
+    assert "is_bike" in CANONICAL_COLUMNS
+
+
+@pytest.mark.unit
+def test_arc_yearly_bike_flag_from_bicycle_related() -> None:
+    raw = _crash_level(
+        Crash_Year=[2022, 2023, 2024],
+        F__of_Pedestrians_per_crash=[0, 1, 0],
+        Bicycle_Related__T_F_=["true", "false", None],
+    )
+
+    out = normalize_source("arc_crashes_2020_2024", raw)
+
+    assert out["is_bike"].tolist() == [True, False, False]
+    assert out["is_ped"].tolist() == [False, True, False]
+
+
+@pytest.mark.unit
+def test_pedbike_layer_splits_bicycle_from_pedestrian_mode() -> None:
+    raw = _crash_level(
+        Mode=["Pedestrian", "Bicycle", None],
+        Date_and_Time=[1665573240000] * 3,
+    )
+
+    out = normalize_source("coa_pedbike_2022", raw)
+
+    assert out["is_bike"].tolist() == [False, True, False]
+    assert out["is_ped"].tolist() == [True, False, False]
+
+
+@pytest.mark.unit
+def test_marta_bike_flag_from_crash_mode() -> None:
+    raw = _crash_level(
+        Crash_Mode=["Auto", "Bicycle", "Pedestrian"],
+        Date=["2023-05-02"] * 3,
+        Time=["2:50:00 PM"] * 3,
+    )
+
+    out = normalize_source("marta_all_2023", raw)
+
+    assert out["is_bike"].tolist() == [False, True, False]
+
+
+@pytest.mark.unit
+def test_ka_bike_flag_from_bicycle_related_or_travel_mode_not_scooter() -> None:
+    raw = pd.DataFrame(
+        {
+            "Date_W_Time": [1665573240000] * 3,
+            "Pedestrian_Related": ["false"] * 3,
+            "Bicycle_Related": ["true", "false", "false"],
+            "TravelMode": ["Vehicle Only", "Bicyclist", "Scooter Rider"],
+            "KABCO_Severity": ["(A) Suspected Serious Injury"] * 3,
+            "Roadway": ["Peachtree St"] * 3,
+            "Intersecting_Roadway": [None] * 3,
+            "lat": [33.78] * 3,
+            "lon": [-84.38] * 3,
+        }
+    )
+
+    out = normalize_source("coa_ka_since_2013", raw)
+
+    assert out["is_bike"].tolist() == [True, True, False]
+
+
+@pytest.mark.unit
+def test_gt_bike_flag_from_pedal_cycle_harmful_event() -> None:
+    raw = _crash_level(
+        Most_Harmful_Event__Crash_Level_=["Pedestrian", '["Motor Vehicle in Motion"]', None],
+        First_Harmful_Event__Unit_Order_=[None, '["Pedal-Cycle","Motor Vehicle"]', None],
+        Date=["2023-05-02"] * 3,
+        Time=["14:50"] * 3,
+        Light_Conditions__Crash_Level_=["Daylight"] * 3,
+        Surface_Condition__Crash_Level_=["Dry"] * 3,
+    )
+
+    out = normalize_source("gt_pedcyc_2021_2025", raw)
+
+    assert out["is_bike"].tolist() == [False, True, False]
+
+
+@pytest.mark.unit
+def test_midtown_bike_flag_and_bicyclist_age_never_kept() -> None:
+    raw = pd.DataFrame(
+        {
+            "Date_and_Time": ["01/01/2019 08:17 PM", "03/02/2020 07:00 AM"],
+            "Pedestrian_Related": ["false", "false"],
+            "Bicycle_Related": ["true", "false"],
+            "Bicyclist_Age": ["29", None],
+            "KABCO_Severity": ["(O) No Injury"] * 2,
+            "Roadway": ["14Th St"] * 2,
+            "Intersecting_Roadway": [None] * 2,
+            "lat": [33.786] * 2,
+            "lon": [-84.382] * 2,
+        }
+    )
+
+    out = normalize_source("coa_midtown_2019_2023", raw)
+
+    assert out["is_bike"].tolist() == [True, False]
+    assert list(out.columns) == list(CANONICAL_COLUMNS)
+
+
+@pytest.mark.unit
+def test_sources_without_a_bike_field_default_to_false() -> None:
+    raw = _crash_level(Date_and_Time=["01/01/2019 08:17 PM"] * 3, SHSP_Emphasis_Areas=[None] * 3)
+
+    out = normalize_source("cap_downtown_2017_2021", raw)
+
+    assert not out["is_bike"].any()

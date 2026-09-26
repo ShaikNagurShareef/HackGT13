@@ -11,7 +11,14 @@ BASE = pd.Timestamp("2022-10-12 19:14", tz=TZ)
 
 
 def _row(
-    source: str, minutes: float, dlat: float, *, ped: bool, sev: str, cid: str | None = None
+    source: str,
+    minutes: float,
+    dlat: float,
+    *,
+    ped: bool,
+    sev: str,
+    cid: str | None = None,
+    bike: bool = False,
 ) -> dict[str, object]:
     return {
         "source": source,
@@ -23,6 +30,7 @@ def _row(
         "lat": 33.7700 + dlat,
         "lon": -84.3900,
         "is_ped": ped,
+        "is_bike": bike,
         "severity": sev,
         "light_report": "Dark-Lighted",
         "surface_report": "Dry",
@@ -91,3 +99,19 @@ def test_severity_keeps_most_severe() -> None:
     out, _ = dedupe_timed(df)
 
     assert out["severity"].iloc[0] == "K"
+
+
+@pytest.mark.unit
+def test_bike_flag_survives_merge_with_an_unflagged_all_mode_record() -> None:
+    df = pd.DataFrame(
+        [
+            _row("coa_all_2022", 0, 0.0, ped=False, sev="O"),
+            _row("coa_pedbike_2022", 5, 0.00005, ped=False, sev="C", bike=True),
+            _row("coa_all_2022", 0, 0.01, ped=False, sev="O"),  # ~1.1 km away: separate
+        ]
+    )
+
+    out, _ = dedupe_timed(df)
+
+    assert sorted(out["is_bike"].tolist()) == [False, True]
+    assert not out["is_ped"].any()

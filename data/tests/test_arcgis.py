@@ -70,3 +70,12 @@ def test_fetch_layer_raises_on_arcgis_error_payload() -> None:
 
     with pytest.raises(RuntimeError, match="bad"):
         fetch_layer(Layer("x", URL))
+
+
+@pytest.mark.unit
+def test_build_params_orders_by_the_layer_key_field() -> None:
+    default = build_params(Layer("x", URL), 0, 10)
+    fid = build_params(Layer("x", URL, order_by="FID"), 0, 10)
+
+    assert default["orderByFields"] == "OBJECTID"
+    assert fid["orderByFields"] == "FID"
