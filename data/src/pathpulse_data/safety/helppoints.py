@@ -28,15 +28,20 @@ def _clean_name(name: object, kind: str) -> str:
     return text or DEFAULT_NAMES[kind]
 
 
+def _text(value: object) -> str:
+    """OSM tags arrive as str, None, NaN or pd.NA; only real strings count."""
+    return value if isinstance(value, str) else ""
+
+
 def _is_marta(row: pd.Series) -> bool:
-    labels = f"{row.get('network') or ''} {row.get('operator') or ''}".upper()
-    is_station = row.get("railway") == "station"
+    labels = f"{_text(row.get('network'))} {_text(row.get('operator'))}".upper()
+    is_station = _text(row.get("railway")) == "station"
     return is_station and ("MARTA" in labels or "METROPOLITAN ATLANTA RAPID TRANSIT" in labels)
 
 
 def _kind(row: pd.Series) -> str | None:
-    amenity = row.get("amenity")
-    if isinstance(amenity, str) and amenity in _AMENITY_KIND:
+    amenity = _text(row.get("amenity"))
+    if amenity in _AMENITY_KIND:
         return _AMENITY_KIND[amenity]
     if _is_marta(row):
         return "marta"

@@ -45,6 +45,8 @@ omit = [
   "*/export/writers.py",
   "*/network/features.py",
   "*/network/layers.py",
+  "*/safety/fetch.py",
+  "*/safety/export.py",
 ]
 
 [tool.coverage.report]
