@@ -15,7 +15,6 @@ import { useRoutes } from '../hooks/useRoutes'
 import { useRoutines } from '../hooks/useRoutines'
 import { useSegmentDetail } from '../hooks/useSegmentDetail'
 import { useTripPlanner } from '../hooks/useTripPlanner'
-import { useTypewriter } from '../hooks/useTypewriter'
 import { useViewState } from '../hooks/useViewState'
 import { useViewportReports } from '../hooks/useViewportReports'
 import { hotspotsFor } from '../lib/hotspots'
@@ -37,7 +36,16 @@ import { useTripActions } from './useTripActions'
 const PLAY_MS = 1000
 
 /** The app container: owns view state, data hooks, and which screen (home / route / nav) is showing. */
-export function PathPro({ data }: { data: BundleData }) {
+export interface PathProProps {
+  data: BundleData | null
+  loadError: string | null
+}
+
+/**
+ * Hooks run from the first render (before the model bundle arrives) so the trip, GPS, and
+ * routes load in parallel with the map data; only the rendering waits for the bundle.
+ */
+export function PathPro({ data, loadError }: PathProProps) {
   const [view, update] = useViewState()
   const demo = isDemoMode()
   const [error, setError] = useState<string | null>(null)
@@ -50,7 +58,7 @@ export function PathPro({ data }: { data: BundleData }) {
   const [focus, setFocus] = useState<{ path: [number, number][]; key: number } | null>(null)
 
   const geo = useGeolocation()
-  const planner = useTripPlanner({ view, update, geo, bbox: data.meta.coverage_bbox })
+  const planner = useTripPlanner({ view, update, geo, bbox: data?.meta.coverage_bbox ?? null })
   const routines = useRoutines(geo.position)
   useDemoMode(demo, view, update, setError)
   const live = useLiveCondition(view.cond)
@@ -72,19 +80,19 @@ export function PathPro({ data }: { data: BundleData }) {
   const liveCond = routes?.condition_used.cond ?? (live.wet ? 'wet' : 'dry')
   const mapCond = view.cond === 'live' ? liveCond : view.cond
   const condLabel = view.cond === 'live' ? (live.label ?? `Live · ${mapCond}`) : view.cond === 'wet' ? 'Wet' : 'Dry'
-  const frames = useRiskFrames(data.frames, day, mapCond, true, setError, 'Risk Tides frames could not load.')
-  const hexFrames = useRiskFrames(data.hexFrames, day, mapCond, cityMode, setError, 'City Pulse frames could not load.')
+  const frames = useRiskFrames(data?.frames ?? null, day, mapCond, true, setError, 'Risk Tides frames could not load.')
+  const hexFrames = useRiskFrames(data?.hexFrames ?? null, day, mapCond, cityMode, setError, 'City Pulse frames could not load.')
   const detail = useSegmentDetail(view.seg, routes?.depart_at ?? view.depart, view.cond, setError)
 
   const routeKey = routes?.route_key ?? null
   const routeExplain = useExplanation(routeKey, () => api.explainRoute(routeKey ?? ''))
-  const routeText = useTypewriter(routeExplain.result?.text ?? null)
+  const routeText = routeExplain.result?.text ?? null
   const kind = selection && selection.key === routeKey ? selection.kind : 'pp'
   const selectedRoute = routes ? (kind === 'pp' && routes.pathpro ? routes.pathpro : routes.fastest) : null
   const routeStreets = useMemo(() => {
     const ids = new Set(selectedRoute?.segment_ids ?? [])
-    return data.segments.filter((s) => ids.has(s.id))
-  }, [data.segments, selectedRoute])
+    return (data?.segments ?? []).filter((s) => ids.has(s.id))
+  }, [data, selectedRoute])
   const nav = useNavigation({ route: selectedRoute, gps: geo.position, streets: routeStreets, destination: view.to })
   const reports = useViewportReports(!demo && !cityMode)
   const actions = useTripActions({ onNotice: setError, view, update, geo, planner, routines, nav, routes, selectedRoute })
@@ -95,26 +103,47 @@ export function PathPro({ data }: { data: BundleData }) {
     return () => window.clearInterval(id)
   }, [playing, hour, update])
 
-  const frame = frames?.hour(hour) ?? null
+  const frame = useMemo(() => frames?.hour(hour) ?? null, [frames, hour])
   const medians = useMemo(() => frames?.medians() ?? [], [frames])
-  const hotspots = useMemo(() => (frame ? hotspotsFor(data.hotspotNodes, frame) : []), [data, frame])
+  const hotspots = useMemo(() => (data && frame ? hotspotsFor(data.hotspotNodes, frame) : []), [data, frame])
   const onSegment = useCallback((id: number) => update({ seg: id }), [update])
   const { pickDestination } = planner
   const onMapPick = useCallback((lat: number, lon: number) => pickDestination({ lat, lon, label: 'Dropped pin' }), [pickDestination])
   const focusSegment = (id: number) => {
-    const seg = data.segments.find((s) => s.id === id)
+    const seg = data?.segments.find((s) => s.id === id)
     if (seg) setFocus({ path: seg.path, key: Date.now() })
     update({ seg: id })
   }
 
+  const hexFrame = useMemo(() => hexFrames?.hour(hour) ?? null, [hexFrames, hour])
+  const hexKey = `hex-${day}-${mapCond}-${hour}-${hexFrames ? 'ready' : 'empty'}`
+  const hexDepart = routes?.depart_at ?? view.depart
+  const hexCells = data?.hexCells ?? null
+  const hex = useMemo(
+    () =>
+      cityMode && hexCells
+        ? {
+            cells: hexCells,
+            frame: hexFrame,
+            frameKey: hexKey,
+            onPick: (cell: string) => void showArea(api.area(cell, hexDepart, view.cond)),
+          }
+        : null,
+    [cityMode, hexCells, hexFrame, hexKey, hexDepart, view.cond, showArea],
+  )
+  const fastest = routes?.fastest ?? null
+  const pathpro = routes?.pathpro ?? null
+
   const screen = nav.active ? 'nav' : view.to || view.from ? 'route' : 'home'
   const fix = geo.position
-  const me: MeMarker | null =
-    nav.active && nav.position
-      ? { position: nav.position, accuracy: nav.mode === 'gps' ? (fix?.accuracy ?? null) : null, heading: nav.heading }
-      : fix
-        ? { position: [fix.lon, fix.lat], accuracy: fix.accuracy, heading: fix.heading }
-        : null
+  const navLon = nav.position?.[0]
+  const navLat = nav.position?.[1]
+  const me = useMemo<MeMarker | null>(() => {
+    if (nav.active && navLon != null && navLat != null) {
+      return { position: [navLon, navLat], accuracy: nav.mode === 'gps' ? (fix?.accuracy ?? null) : null, heading: nav.heading }
+    }
+    return fix ? { position: [fix.lon, fix.lat], accuracy: fix.accuracy, heading: fix.heading } : null
+  }, [nav.active, nav.mode, nav.heading, navLon, navLat, fix])
   const top = routines.suggestions[0]
   const suggestion = isStrongSuggestion(top) && hiddenSuggestion !== top.to.label ? top : null
   const suggestionFrom = suggestion?.from ?? fix
@@ -128,12 +157,26 @@ export function PathPro({ data }: { data: BundleData }) {
     playing,
     onTogglePlay: () => setPlaying((p) => !p),
     medians,
-    lights: data.meta.frame_light[day] ?? [],
+    lights: data?.meta.frame_light[day] ?? [],
     condLabel,
     day,
     onDay: (d: typeof day) => update({ day: d }),
   }
 
+  if (loadError) {
+    return (
+      <main className="app app-error">
+        <p>{loadError}</p>
+      </main>
+    )
+  }
+  if (!data) {
+    return (
+      <main className="app app-loading" aria-busy="true">
+        <p>Loading PathPro…</p>
+      </main>
+    )
+  }
   return (
     <main className="app" data-screen={screen}>
       <MapStage
@@ -143,8 +186,8 @@ export function PathPro({ data }: { data: BundleData }) {
         frame={frame}
         frameKey={`${day}-${mapCond}-${hour}-${frames ? 'ready' : 'empty'}`}
         hotspots={hotspots}
-        fastest={routes?.fastest ?? null}
-        pathpro={routes?.pathpro ?? null}
+        fastest={fastest}
+        pathpro={pathpro}
         selectedRoute={kind}
         selectedSeg={view.seg}
         onSegment={onSegment}
@@ -155,16 +198,7 @@ export function PathPro({ data }: { data: BundleData }) {
         focus={focus}
         reports={reports.reports}
         onViewport={reports.onViewport}
-        hex={
-          cityMode && data.hexCells
-            ? {
-                cells: data.hexCells,
-                frame: hexFrames?.hour(hour) ?? null,
-                frameKey: `hex-${day}-${mapCond}-${hour}-${hexFrames ? 'ready' : 'empty'}`,
-                onPick: (cell: string) => void showArea(api.area(cell, routes?.depart_at ?? view.depart, view.cond)),
-              }
-            : null
-        }
+        hex={hex}
       />
       {screen !== 'nav' && (
         <MapControls onLayers={() => actions.setPanel({ kind: 'options' })} onLocate={actions.locate} geoStatus={geo.status} />

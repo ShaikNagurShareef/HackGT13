@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { report, routes } from '../../test/fixtures'
@@ -73,7 +73,7 @@ describe('RouteSheet (RTE-04, mobile route sheet)', () => {
     const withReports = routes({ reports: [report(), report({ seg_id: 12, label: 'Sidewalk blocked' })] })
     const p = setup({ routes: withReports, explanation: 'LLM text', shareStatus: 'Link copied' })
 
-    expect(screen.getByTestId('route-explanation')).toHaveTextContent('LLM text')
+    await waitFor(() => expect(screen.getByTestId('route-explanation')).toHaveTextContent('LLM text'))
     expect(screen.getByRole('status')).toHaveTextContent('Link copied')
     const avoided = screen.getByLabelText('High-risk stretches the PathPro route avoids')
     await user.click(within(avoided).getByRole('button', { name: /Peachtree Place Northwest/ }))

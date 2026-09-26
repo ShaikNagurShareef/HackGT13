@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, memo } from 'react'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import type { MapViewProps } from '../map/MapView'
 
@@ -13,7 +13,8 @@ const MAP_UNAVAILABLE = (
   </div>
 )
 
-export function MapStage(props: MapViewProps) {
+/** Memoised so container re-renders (typing, sheets, timers) don't rebuild the WebGL layers. */
+export const MapStage = memo(function MapStage(props: MapViewProps) {
   return (
     <ErrorBoundary fallback={MAP_UNAVAILABLE}>
       <Suspense fallback={<div className="map map-fallback" aria-busy="true" />}>
@@ -21,4 +22,4 @@ export function MapStage(props: MapViewProps) {
       </Suspense>
     </ErrorBoundary>
   )
-}
+})

@@ -3,11 +3,14 @@ import { resolveOrigin, type ResolvedOrigin } from '../lib/origin'
 import type { Place, ViewState } from '../state/urlState'
 import type { Geolocation } from './useGeolocation'
 
+const WAITING: ResolvedOrigin = { place: null, status: 'locating' }
+
 export interface TripPlannerInput {
   view: ViewState
   update: (patch: Partial<ViewState>) => void
   geo: Geolocation
-  bbox: ReadonlyArray<number>
+  /** Street-routing coverage; null while the model bundle is still loading. */
+  bbox: ReadonlyArray<number> | null
 }
 
 export interface TripPlanner {
@@ -20,7 +23,7 @@ export interface TripPlanner {
 
 /** Google-Maps-style trip entry: pick a destination and the start defaults to "Your location". */
 export function useTripPlanner({ view, update, geo, bbox }: TripPlannerInput): TripPlanner {
-  const origin = resolveOrigin(geo, bbox)
+  const origin = bbox ? resolveOrigin(geo, bbox) : WAITING
   const gpsStart = origin.place
   const { request } = geo
 

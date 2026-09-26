@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, api, type Bbox } from '../api/client'
 import type { Report } from '../api/schemas'
 
+/** Stable empty list so a disabled layer doesn't change identity every render. */
+const NO_REPORTS: Report[] = []
+
 export const DEBOUNCE_MS = 400
 /** Matches the API's viewport limit; zoomed further out, reports are simply not drawn. */
 export const MAX_SPAN_DEG = 0.3
@@ -57,5 +60,5 @@ export function useViewportReports(enabled: boolean) {
   }, [active])
   useEffect(() => () => window.clearTimeout(timer.current), [])
 
-  return { reports: active ? reports : [], available: active, onViewport, refresh }
+  return { reports: active ? reports : NO_REPORTS, available: active, onViewport, refresh }
 }

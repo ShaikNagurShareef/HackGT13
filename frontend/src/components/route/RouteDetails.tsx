@@ -1,5 +1,6 @@
 import type { RefObject } from 'react'
 import type { Routes } from '../../api/schemas'
+import { useTypewriter } from '../../hooks/useTypewriter'
 import { cssColor } from '../../lib/bands'
 import { routeReportsLine } from '../../lib/reports'
 import { templateSummary } from '../../lib/routeSummary'
@@ -19,13 +20,15 @@ export interface RouteDetailsProps {
 /** Expanded route sheet: why, the evidence, and the preview walk. */
 export function RouteDetails({ routes, explanation, explanationRef, onPreview, onFocusSegment, onSelectSegment }: RouteDetailsProps) {
   const { fastest, pathpro } = routes
+  // Typing lives here, not in the app container, so each tick re-renders only this text.
+  const typed = useTypewriter(explanation)
   const avoided = routes.avoided
   const stretchWord = avoided.length === 1 ? 'stretch' : 'stretches'
   return (
     <>
       <h3 className="sheet-subhead">Why this route</h3>
       <p className="explanation" data-testid="route-explanation" ref={explanationRef} tabIndex={-1}>
-        {explanation ?? templateSummary(routes)}
+        {typed ?? templateSummary(routes)}
       </p>
       <p className="faint">
         Leaving {formatClock(new Date(routes.depart_at))} · {routes.condition_used.label}
