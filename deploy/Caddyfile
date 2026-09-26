@@ -39,8 +39,22 @@
 		file_server
 	}
 
+	# Access log without locations or search text (PRD NFR-09): coordinates, map bounds and
+	# queries are dropped from logged URLs; the app itself never logs them either.
 	log {
 		output file /var/log/caddy/pathpulse.log
-		format json
+		format filter {
+			wrap json
+			fields {
+				request>uri query {
+					delete lat
+					delete lon
+					delete bbox
+					delete q
+					delete t
+				}
+				request>headers>Cookie delete
+			}
+		}
 	}
 }

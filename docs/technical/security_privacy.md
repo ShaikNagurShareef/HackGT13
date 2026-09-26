@@ -31,7 +31,7 @@ Out of scope for a hackathon deployment: DDoS protection beyond the per-client l
 | Community reports (Atlas) | Segment id, one of six fixed categories, street name and point **from the bundle**, confirmation count, timestamps | Free text, reporter identity, the reporter's location. TTL removes a report 14 days after its last confirmation |
 | Analytics | None: no analytics or tracking scripts in the SPA, no cookies set by PathPro | |
 
-Known gap: Caddy's JSON access log (`/var/log/caddy/pathpulse.log`) records client IP, user agent, and full request URIs, including query strings such as `/api/areas/lookup?lat=…&lon=…`, `/api/geocode?q=…`, and map viewport boxes. Request bodies (route origins and destinations, walk positions) are not logged. The PRD's NFR-09 asked for coordinates in logs to be rounded to about 100 m; that rounding is not implemented. The log lives only on the VM.
+Access logs (PRD NFR-09): Caddy's JSON access log (`/var/log/caddy/pathpulse.log`) uses a `format filter` that deletes the `lat`, `lon`, `bbox`, `q`, and `t` query parameters and the `Cookie` header before writing. A location lookup is logged as `/api/areas/lookup?cond=live`. Request bodies (route origins and destinations, walk positions) are never logged. The log keeps client IP and user agent for abuse control, and lives only on the VM. Entries written before this filter shipped (Sep 26, 2026) still contain full query strings.
 
 ## 3. Input validation
 
