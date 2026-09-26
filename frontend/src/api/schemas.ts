@@ -98,3 +98,10 @@ export const geoResultsSchema = z.array(
 )
 export type Explanation = z.infer<typeof explainSchema>
 export type GeoResult = z.infer<typeof geoResultsSchema>[number]
+export const hourlySchema = z.object({
+  seg_id: z.number().int(),
+  crashes: z.array(z.number()).length(24),
+  ped_crashes: z.array(z.number()).length(24),
+  source: z.literal('tiger_data'),
+})
+export type Hourly = z.infer<typeof hourlySchema>

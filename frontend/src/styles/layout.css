@@ -494,3 +494,27 @@
   display: block;
   font-size: 12px;
 }
+
+.hourly {
+  margin: 10px 0;
+}
+.hourly-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 44px;
+  margin-top: 6px;
+}
+.hourly-bar {
+  flex: 1;
+  background: rgba(157, 180, 196, 0.45);
+  border-radius: 2px 2px 0 0;
+}
+.hourly-bar.now {
+  background: var(--focus);
+}
+.hourly-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
+}

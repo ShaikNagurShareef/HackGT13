@@ -29,13 +29,14 @@ BundleDep = Annotated[Bundle, Depends(get_bundle)]
 
 
 @api.get("/healthz", response_model=Envelope[HealthData])
-async def healthz(bundle: BundleDep) -> Envelope[HealthData]:
+async def healthz(request: Request, bundle: BundleDep) -> Envelope[HealthData]:
+    database = await request.app.state.history.ping()
     data = HealthData(
-        status="ok",
+        status="ok" if database != "unavailable" else "degraded",
         model_version=bundle.model_version,
         segments=bundle.n_segments,
         graph_nodes=len(bundle.graph.node_lon),
-        database="not_configured",
+        database=database,
     )
     return ok(data, bundle.model_version)
 

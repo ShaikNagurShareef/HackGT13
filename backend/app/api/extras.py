@@ -12,6 +12,7 @@ from app.api.envelope import AppError, Envelope, ok
 from app.api.schemas import Condition, ConditionUsed, RoutesData
 from app.domain.timeutil import cell_at, now_atlanta, parse_departure
 from app.repositories.artifacts import Bundle
+from app.repositories.history import HistoryRepository
 from app.services.explain.evidence import route_evidence, segment_evidence
 from app.services.explain.service import ExplainService
 from app.services.geocode import GeocodeService
@@ -113,3 +114,30 @@ async def geocode(
         for r in await service.search(q)
     ]
     return ok(results, bundle.model_version)
+
+
+class HourlyOut(BaseModel):
+    seg_id: int
+    crashes: list[float]
+    ped_crashes: list[float]
+    source: Literal["tiger_data"]
+
+
+@extras.get("/segments/{seg_id}/hourly", response_model=Envelope[HourlyOut])
+async def segment_hourly(seg_id: int, request: Request, bundle: BundleDep) -> Envelope[HourlyOut]:
+    """When crashes happened on this street, by hour (Tiger Data continuous aggregate)."""
+    if not 0 <= seg_id < bundle.n_segments:
+        raise AppError("NOT_FOUND", "That street segment is not in PathPulse coverage.", 404)
+    history: HistoryRepository = request.app.state.history
+    profile = await history.hourly(seg_id)
+    if profile is None:
+        raise AppError(
+            "HISTORY_UNAVAILABLE", "Crash history by hour is unavailable right now.", 503
+        )
+    data = HourlyOut(
+        seg_id=seg_id,
+        crashes=list(profile.crashes),
+        ped_crashes=list(profile.ped_crashes),
+        source="tiger_data",
+    )
+    return ok(data, bundle.model_version)

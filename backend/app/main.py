@@ -19,6 +19,7 @@ from app.config import Settings, get_settings
 from app.domain.router import Router
 from app.middleware import RateLimitMiddleware
 from app.repositories.artifacts import load_bundle
+from app.repositories.history import HistoryRepository
 from app.services.explain.providers import GeminiProvider, GroqProvider, Provider
 from app.services.explain.service import ExplainService
 from app.services.geocode import GeocodeService
@@ -62,6 +63,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.router = Router(bundle)
     app.state.settings = cfg
     app.state.routes_cache = LRUCache(maxsize=ROUTES_CACHE_SIZE)
+    db_url = cfg.database_url.get_secret_value() if cfg.database_url else None
+    app.state.history = HistoryRepository(db_url)
     app.add_middleware(RateLimitMiddleware, per_minute=cfg.rate_limit_per_minute)
     app.add_middleware(
         CORSMiddleware,

@@ -1,0 +1,29 @@
+[Unit]
+Description=PathPulse API (FastAPI/uvicorn)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pathpulse
+Group=pathpulse
+WorkingDirectory=/srv/pathpulse/app/backend
+EnvironmentFile=/srv/pathpulse/app/backend/.env
+Environment=APP_ENV=production
+Environment=ARTIFACTS_DIR=/srv/pathpulse/artifacts/current
+ExecStart=/srv/pathpulse/app/.venv/bin/uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --workers 2 --proxy-headers --forwarded-allow-ips 127.0.0.1
+Restart=always
+RestartSec=2
+
+# Hardening: the API only reads its code and artifacts.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/srv/pathpulse
+CapabilityBoundingSet=
+LockPersonality=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

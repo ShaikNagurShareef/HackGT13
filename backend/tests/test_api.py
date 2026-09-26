@@ -192,3 +192,14 @@ def test_live_conditions_and_geocode_without_key(client: TestClient) -> None:
 
     assert live["source"] == "assumed"
     assert geo["success"] and geo["data"] == []
+
+
+@pytest.mark.integration
+def test_hourly_history_unavailable_without_database(client: TestClient) -> None:
+    resp = client.get("/segments/2/hourly")
+    missing = client.get("/segments/9999/hourly")
+
+    assert resp.status_code == 503
+    assert resp.json()["error"]["code"] == "HISTORY_UNAVAILABLE"
+    assert missing.status_code == 404
+    assert client.get("/healthz").json()["data"]["database"] == "not_configured"

@@ -1,6 +1,7 @@
 import type { SegmentDetail } from '../api/schemas'
 import { cssColor } from '../lib/bands'
-import { formatClock } from '../lib/time'
+import { atlantaParts, formatClock } from '../lib/time'
+import { HourlyChart } from './HourlyChart'
 
 const CONFIDENCE_LABEL = { high: 'High confidence', medium: 'Medium confidence', limited: 'Limited data' }
 
@@ -112,6 +113,7 @@ export function SegmentSheet({ detail, explanation, onClose, onAbout }: SegmentS
           <dd className="num">{pct(h.wet_share)}</dd>
         </div>
       </dl>
+      <HourlyChart segId={detail.seg_id} highlightHour={atlantaParts(new Date(detail.at)).hour} />
       {detail.confidence === 'limited' && (
         <p className="faint">Few recorded crashes here — estimate based mostly on street characteristics.</p>
       )}
