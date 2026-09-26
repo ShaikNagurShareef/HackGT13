@@ -1,5 +1,7 @@
 import { act, renderHook } from '@testing-library/react'
+import { StrictMode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { SHARE_SESSION_KEY, loadShareSession, saveShareSession, type StoredShareSession } from '../lib/shareSession'
 import { sharedWalk } from '../test/walkFixtures'
 import { SHARE_UPDATE_MS, useShareWalk, type ShareWalkInput } from './useShareWalk'
 
@@ -291,5 +293,203 @@ describe('useShareWalk', () => {
     act(() => result.current.clearNotice())
 
     expect(result.current.notice).toBeNull()
+  })
+})
+
+describe('useShareWalk session persistence', () => {
+  const NOW = Date.parse('2026-09-27T02:45:00Z')
+  const STORED: StoredShareSession = { ...CREATED, destination: DEST }
+  let share: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(NOW)
+    share = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { share })
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+    window.sessionStorage.clear()
+    window.localStorage.clear()
+  })
+
+  async function startLive(over: Partial<ShareWalkInput> = {}) {
+    const fetcher = walkServer()
+    const hook = renderHook((p: ShareWalkInput) => useShareWalk(p), { initialProps: input(over) })
+    await act(async () => {
+      await hook.result.current.start()
+    })
+    return { fetcher, ...hook }
+  }
+
+  function failNextUpdates(fetcher: ReturnType<typeof walkServer>, code: string) {
+    fetcher.mockImplementation(
+      async () => new Response(JSON.stringify({ success: false, error: { code, message: 'x' } }), JSON_HEADERS),
+    )
+  }
+
+  it('remembers the live walk for this tab only', async () => {
+    await startLive()
+
+    expect(loadShareSession()).toEqual(STORED)
+    expect(JSON.stringify({ ...window.localStorage })).not.toContain('secret-token')
+    expect(window.location.href).not.toContain('secret-token')
+  })
+
+  it('does not remember a simulated demo walk', async () => {
+    await startLive({ demo: true })
+
+    expect(window.sessionStorage.getItem(SHARE_SESSION_KEY)).toBeNull()
+  })
+
+  it('forgets the session when sharing stops', async () => {
+    const { result } = await startLive()
+
+    act(() => result.current.stop())
+
+    expect(loadShareSession()).toBeNull()
+  })
+
+  it('forgets the session on arrival', async () => {
+    const { rerender } = await startLive()
+
+    rerender(input({ arrived: true }))
+    await flush()
+
+    expect(loadShareSession()).toBeNull()
+  })
+
+  it('forgets the session when navigation ends', async () => {
+    const { fetcher, unmount } = await startLive()
+
+    unmount()
+    await flush()
+
+    expect(loadShareSession()).toBeNull()
+    expect(puts(fetcher).at(-1)).toMatchObject({ status: 'ended' })
+  })
+
+  it('forgets the session when the link has expired (404)', async () => {
+    const { fetcher, result } = await startLive()
+    failNextUpdates(fetcher, 'WALK_NOT_FOUND')
+
+    await flush(SHARE_UPDATE_MS)
+
+    expect(loadShareSession()).toBeNull()
+    expect(result.current.phase).toBe('idle')
+  })
+
+  it('stops and forgets the session when the server refuses the token (403)', async () => {
+    const { fetcher, result } = await startLive()
+    failNextUpdates(fetcher, 'WALK_FORBIDDEN')
+
+    await flush(SHARE_UPDATE_MS)
+
+    expect(loadShareSession()).toBeNull()
+    expect(result.current.phase).toBe('idle')
+    expect(result.current.notice).toBe("This live link can't be updated anymore. Share again to start a new one.")
+  })
+
+  it('stops when the walk was already ended elsewhere', async () => {
+    const { fetcher, result } = await startLive()
+    fetcher.mockImplementation(
+      async () =>
+        new Response(JSON.stringify({ success: true, data: { ...sharedWalk({ status: 'ended' }), route: undefined } }), JSON_HEADERS),
+    )
+
+    await flush(SHARE_UPDATE_MS)
+
+    expect(loadShareSession()).toBeNull()
+    expect(result.current.phase).toBe('idle')
+  })
+
+  it('extends the stored expiry after each accepted update', async () => {
+    await startLive()
+
+    expect(loadShareSession()?.expires_at).toBe(sharedWalk().expires_at)
+  })
+
+  it('resumes a stored walk without creating a new one', async () => {
+    saveShareSession(STORED)
+    const fetcher = walkServer()
+
+    const { result } = renderHook(() => useShareWalk(input({ resume: true })))
+    await flush()
+
+    expect(result.current.phase).toBe('live')
+    expect(result.current.followUrl).toBe(`${window.location.origin}/follow/w1`)
+    expect(fetcher.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(0)
+    expect(puts(fetcher)[0]).toMatchObject({ owner_token: 'secret-token', lat: 33.7775, lon: -84.395, status: 'walking' })
+
+    await flush(SHARE_UPDATE_MS)
+    expect(puts(fetcher)).toHaveLength(2)
+  })
+
+  it('resumes under StrictMode without ending the walk', async () => {
+    saveShareSession(STORED)
+    const fetcher = walkServer()
+
+    const { result } = renderHook(() => useShareWalk(input({ resume: true })), { wrapper: StrictMode })
+    await flush(SHARE_UPDATE_MS)
+
+    expect(result.current.phase).toBe('live')
+    expect(puts(fetcher).map((b) => b.status)).not.toContain('ended')
+    expect(loadShareSession()?.walk_id).toBe('w1')
+  })
+
+  it('does not resume a walk to a different destination', async () => {
+    saveShareSession(STORED)
+    const fetcher = walkServer()
+
+    const { result } = renderHook(() =>
+      useShareWalk(input({ resume: true, destination: { label: 'Georgia Aquarium', lat: 33.7634, lon: -84.3951 } })),
+    )
+    await flush()
+
+    expect(result.current.phase).toBe('idle')
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+
+  it('does not resume in demo mode', async () => {
+    saveShareSession(STORED)
+    const fetcher = walkServer()
+
+    const { result } = renderHook(() => useShareWalk(input({ resume: true, demo: true })))
+    await flush()
+
+    expect(result.current.phase).toBe('idle')
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+
+  it('keeps the stored walk going when told not to end it on unmount (hand-off)', async () => {
+    saveShareSession(STORED)
+    const fetcher = walkServer()
+
+    const { unmount } = renderHook(() => useShareWalk(input({ resume: true, endOnUnmount: false })))
+    await flush()
+    unmount()
+    await flush(SHARE_UPDATE_MS)
+
+    expect(puts(fetcher).map((b) => b.status)).not.toContain('ended')
+    expect(loadShareSession()?.walk_id).toBe('w1')
+  })
+
+  it('omits the ETA when it is unknown', async () => {
+    const { fetcher } = await startLive({ remainingS: null })
+
+    expect(puts(fetcher)[0]).not.toHaveProperty('eta_s')
+  })
+
+  it('never logs the owner token', async () => {
+    const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((m) => vi.spyOn(console, m))
+    const { result, fetcher } = await startLive()
+    failNextUpdates(fetcher, 'WALK_FORBIDDEN')
+    await flush(SHARE_UPDATE_MS)
+    act(() => result.current.stop())
+
+    const logged = JSON.stringify(spies.flatMap((s) => s.mock.calls))
+    expect(logged).not.toContain('secret-token')
+    spies.forEach((s) => s.mockRestore())
   })
 })
