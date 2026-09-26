@@ -140,11 +140,18 @@ def test_bad_departure_rejected(client: TestClient) -> None:
 
 @pytest.mark.integration
 def test_rate_limit(bundle_dir: Path) -> None:
-    settings = Settings(artifacts_dir=bundle_dir, rate_limit_per_minute=2, _env_file=None)
+    settings = Settings(
+        artifacts_dir=bundle_dir,
+        rate_limit_per_minute=5,
+        paid_rate_limit_per_minute=1,
+        _env_file=None,
+    )
     with TestClient(create_app(settings)) as c:
-        codes = [c.get("/meta").status_code for _ in range(3)]
+        paid = [c.get("/geocode", params={"q": "abc"}).status_code for _ in range(2)]
+        general = [c.get("/meta").status_code for _ in range(4)]
 
-    assert codes == [200, 200, 429]
+    assert paid == [200, 429]
+    assert general == [200, 200, 200, 429]
 
 
 @pytest.mark.integration
@@ -162,7 +169,7 @@ def test_explain_route_uses_server_side_evidence(client: TestClient) -> None:
 
     assert first["source"] == "template"  # no API keys in tests
     assert "exposure" in first["text"]
-    assert again["source"] == "cache"
+    assert again == first  # templates are deterministic and deliberately not cached
 
 
 @pytest.mark.integration
@@ -203,3 +210,13 @@ def test_hourly_history_unavailable_without_database(client: TestClient) -> None
     assert resp.json()["error"]["code"] == "HISTORY_UNAVAILABLE"
     assert missing.status_code == 404
     assert client.get("/healthz").json()["data"]["database"] == "not_configured"
+
+
+@pytest.mark.unit
+def test_client_key_groups_ipv6_by_64() -> None:
+    from app.middleware import client_key
+
+    assert client_key("2001:db8:1:2:aaaa::1") == client_key("2001:db8:1:2:bbbb::9")
+    assert client_key("203.0.113.7") == "203.0.113.7"
+    assert client_key(None) == "unknown"
+    assert client_key("testclient") == "testclient"

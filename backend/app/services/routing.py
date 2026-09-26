@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 from datetime import datetime
 
@@ -92,7 +93,8 @@ async def plan_routes(
     dest, _ = _snap(router, req.destination.lat, req.destination.lon)
     resolved = await weather.resolve(req.cond, depart)
     try:
-        plan = router.plan(origin, dest, depart, resolved.wet)
+        # ~120 ms of CPU: keep the event loop free for other requests and LLM calls.
+        plan = await asyncio.to_thread(router.plan, origin, dest, depart, resolved.wet)
     except RoutingError as exc:
         raise AppError(exc.code, str(exc), status=422) from exc
     fastest, pp = plan.fastest, plan.pathpulse

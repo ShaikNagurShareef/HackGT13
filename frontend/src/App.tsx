@@ -6,7 +6,7 @@ import { About, FirstRun } from './components/About'
 import { ComparisonCard } from './components/ComparisonCard'
 import { ConditionsChip, DepartPicker, Legend } from './components/Controls'
 import { SearchBar } from './components/SearchBar'
-import { SegmentSheet } from './components/SegmentSheet'
+import { SegmentSheet, segmentSummary } from './components/SegmentSheet'
 import { Timeline } from './components/Timeline'
 import type { FrameSet } from './frames/frameStore'
 import { useBundle } from './hooks/useBundle'
@@ -92,8 +92,8 @@ export default function App() {
   const segExplain = useExplanation(segKey, () =>
     api.explainSegment(detail?.seg_id ?? 0, detail?.at ?? 'now', view.cond),
   )
-  const routeText = useTypewriter(routeExplain?.text ?? null)
-  const segText = useTypewriter(segExplain?.text ?? null)
+  const routeText = useTypewriter(routeExplain.result?.text ?? null)
+  const segText = useTypewriter(segExplain.result?.text ?? (segExplain.failed && detail ? segmentSummary(detail) : null))
 
   useEffect(() => {
     if (!data) return
@@ -115,6 +115,7 @@ export default function App() {
     }
     let cancelled = false
     setError(null)
+    setRoutes(null) // never show the previous trip's routes for new pins
     api
       .routes(view.from, view.to, view.depart, view.cond)
       .then((r) => {

@@ -75,3 +75,10 @@ def test_cell_at_bundles_all_keys() -> None:
 
     assert cell == Cell(day_group="friday", hour=22, light="dark", wet=True)
     assert cell.key == ("friday", 22, "dark", True)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("value", ["0001-01-01T00:00+14:00", "2099-01-01T00:00"])
+def test_parse_rejects_extreme_departures(value: str) -> None:
+    with pytest.raises(ValueError, match="departure"):
+        parse_departure(value, now=NOW)

@@ -17,7 +17,10 @@ class Settings(BaseSettings):
     app_env: str = "development"
     artifacts_dir: Path = BACKEND_DIR.parent / "artifacts" / "current"
     allowed_origins: str = "http://localhost:5173"
-    rate_limit_per_minute: int = Field(default=60, ge=1)
+    rate_limit_per_minute: int = Field(default=300, ge=1)
+    paid_rate_limit_per_minute: int = Field(default=30, ge=1)
+    llm_daily_budget: int = Field(default=3000, ge=0)
+    geocode_daily_budget: int = Field(default=2500, ge=0)
 
     groq_api_key: SecretStr | None = None
     groq_model: str = "openai/gpt-oss-120b"

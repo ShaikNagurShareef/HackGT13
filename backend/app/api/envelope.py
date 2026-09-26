@@ -58,3 +58,13 @@ async def unexpected_error_handler(request: Request, exc: Exception) -> JSONResp
         model_version=_version(request),
     )
     return JSONResponse(status_code=500, content=body.model_dump())
+
+
+async def validation_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Malformed requests get the same envelope as every other error (no raw 422 bodies)."""
+    body = Envelope[None](
+        success=False,
+        error=ApiError(code="BAD_REQUEST", message="That request was not valid."),
+        model_version=_version(request),
+    )
+    return JSONResponse(status_code=422, content=body.model_dump())

@@ -20,11 +20,16 @@ ROUTE = _with_numbers(
         "time": "10 PM",
         "conditions": "wet",
         "fastest": {"minutes": 18, "score": 93, "riskiest_streets": ["10th Street Northwest"]},
-        "pathpulse": {"minutes": 23, "score": 83, "extra_minutes": 4.3,
-                      "less_exposure_percent": 49, "avoids": ["Peachtree Place Northwest"]},
+        "pathpulse": {
+            "minutes": 23,
+            "score": 83,
+            "extra_minutes": 4.3,
+            "less_exposure_percent": 49,
+            "avoids": ["Peachtree Place Northwest"],
+        },
         "unavoidable": ["Fifth Street Northwest"],
     },
-)  # fmt: skip
+)
 SEGMENT = _with_numbers(
     "segment",
     {
@@ -80,9 +85,13 @@ def test_templates_always_validate(evidence: Evidence) -> None:
 def test_route_template_without_alternative() -> None:
     ev = _with_numbers(
         "route",
-        {"time": "1 PM", "conditions": "dry", "fastest_is_lower_risk": True,
-         "fastest": {"minutes": 8, "score": 50, "riskiest_streets": []}},
-    )  # fmt: skip
+        {
+            "time": "1 PM",
+            "conditions": "dry",
+            "fastest_is_lower_risk": True,
+            "fastest": {"minutes": 8, "score": 50, "riskiest_streets": []},
+        },
+    )
 
     assert template.render(ev) == "The fastest route is already the lower-risk option."
 
@@ -123,9 +132,11 @@ async def test_first_valid_provider_wins_and_is_cached() -> None:
 @pytest.mark.unit
 async def test_invalid_output_falls_through_to_next_provider() -> None:
     service = ExplainService(
-        [FakeProvider("groq", reply="Totally safe, 99% fewer crashes."),
-         FakeProvider("gemini", reply=GOOD)]
-    )  # fmt: skip
+        [
+            FakeProvider("groq", reply="Totally safe, 99% fewer crashes."),
+            FakeProvider("gemini", reply=GOOD),
+        ]
+    )
 
     result = await service.explain("k2", ROUTE)
 
@@ -158,7 +169,9 @@ async def test_no_providers_uses_template() -> None:
 @respx.mock
 async def test_groq_and_gemini_wire_formats() -> None:
     respx.post(GROQ_URL).mock(
-        return_value=httpx.Response(200, json={"choices": [{"message": {"content": f" {GOOD} "}}]})
+        return_value=httpx.Response(
+            200, json={"choices": [{"finish_reason": "stop", "message": {"content": f" {GOOD} "}}]}
+        )
     )
     respx.post(GEMINI_URL.format(model="gemini-3.8-flash")).mock(
         return_value=httpx.Response(
@@ -174,3 +187,52 @@ async def test_groq_and_gemini_wire_formats() -> None:
     sent = respx.calls[0].request
     assert sent.headers["Authorization"] == "Bearer k"
     assert b"Evidence (route)" in sent.content
+
+
+@pytest.mark.unit
+async def test_template_fallbacks_are_not_cached_and_budget_caps_calls() -> None:
+    flaky = FakeProvider("groq", fail=True)
+    service = ExplainService([flaky], daily_budget=1)
+
+    first = await service.explain("k5", ROUTE)
+    second = await service.explain("k5", ROUTE)
+
+    assert (first.source, second.source) == ("template", "template")
+    assert flaky.calls == 1  # second call skipped providers: daily budget spent
+
+
+@pytest.mark.unit
+async def test_concurrent_requests_share_one_provider_call() -> None:
+    groq = FakeProvider("groq", reply=GOOD, delay=0.05)
+    service = ExplainService([groq])
+
+    results = await asyncio.gather(*(service.explain("k6", ROUTE) for _ in range(5)))
+
+    assert groq.calls == 1
+    assert {r.text for r in results} == {GOOD}
+
+
+@pytest.mark.unit
+@respx.mock
+async def test_truncated_or_empty_completions_are_rejected() -> None:
+    respx.post(GROQ_URL).mock(
+        side_effect=[
+            httpx.Response(
+                200,
+                json={
+                    "choices": [
+                        {"finish_reason": "length", "message": {"content": "The PathPulse"}}
+                    ]
+                },
+            ),
+            httpx.Response(
+                200, json={"choices": [{"finish_reason": "stop", "message": {"content": None}}]}
+            ),
+        ]
+    )
+    async with httpx.AsyncClient() as client:
+        groq = GroqProvider(client, "k", "openai/gpt-oss-120b")
+        with pytest.raises(ValueError, match="incomplete"):
+            await groq.complete(ROUTE, 1.0)
+        with pytest.raises(ValueError, match="empty"):
+            await groq.complete(ROUTE, 1.0)

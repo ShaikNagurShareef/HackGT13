@@ -3,6 +3,13 @@ import { cssColor } from '../lib/bands'
 import { atlantaParts, formatClock } from '../lib/time'
 import { HourlyChart } from './HourlyChart'
 
+/** Local one-line summary used when the explanation service is unreachable. */
+export function segmentSummary(detail: SegmentDetail): string {
+  const top = detail.factors.find((f) => f.points > 0)
+  const driver = top ? ` The biggest contributor is ${top.label.toLowerCase()}.` : ''
+  return `${detail.name} scores ${detail.score} (${detail.band}) for traffic risk at this time.${driver}`
+}
+
 const CONFIDENCE_LABEL = { high: 'High confidence', medium: 'Medium confidence', limited: 'Limited data' }
 
 export function ScoreDial({ score, band }: { score: number; band: string }) {

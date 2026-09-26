@@ -1,17 +1,22 @@
 import { useEffect, useState } from 'react'
 import type { Explanation } from '../api/schemas'
 
-/** Fetch an explanation for `key`; null while loading, or if the request fails (template shows). */
-export function useExplanation(key: string | null, load: () => Promise<Explanation>): Explanation | null {
-  const [result, setResult] = useState<Explanation | null>(null)
+export interface ExplanationState {
+  result: Explanation | null
+  failed: boolean
+}
+
+/** Fetch an explanation for `key`; on failure the caller shows a local summary instead. */
+export function useExplanation(key: string | null, load: () => Promise<Explanation>): ExplanationState {
+  const [state, setState] = useState<ExplanationState>({ result: null, failed: false })
 
   useEffect(() => {
-    setResult(null)
+    setState({ result: null, failed: false })
     if (key == null) return
     let cancelled = false
     load()
-      .then((r) => !cancelled && setResult(r))
-      .catch(() => undefined)
+      .then((r) => !cancelled && setState({ result: r, failed: false }))
+      .catch(() => !cancelled && setState({ result: null, failed: true }))
     return () => {
       cancelled = true
     }
@@ -19,5 +24,5 @@ export function useExplanation(key: string | null, load: () => Promise<Explanati
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
 
-  return result
+  return state
 }

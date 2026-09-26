@@ -18,6 +18,7 @@ ATLANTA = ZoneInfo("America/New_York")
 OBSERVER = Observer(latitude=33.7756, longitude=-84.3963)
 SUNRISE_ELEVATION_DEG = -0.833
 CIVIL_TWILIGHT_DEG = -6.0
+MAX_DEPARTURE_OFFSET = timedelta(days=400)
 _RELATIVE = re.compile(r"^\+(\d{1,3})([mh])$")
 _DAY_GROUPS = {4: "friday", 5: "saturday", 6: "sunday"}
 
@@ -50,11 +51,14 @@ def parse_departure(value: str, now: datetime | None = None) -> datetime:
         return current + (timedelta(minutes=amount) if unit == "m" else timedelta(hours=amount))
     try:
         parsed = datetime.fromisoformat(value.strip())
-    except ValueError as exc:
+        local = (
+            parsed.replace(tzinfo=ATLANTA) if parsed.tzinfo is None else parsed.astimezone(ATLANTA)
+        )
+    except (ValueError, OverflowError) as exc:
         raise ValueError(f"invalid departure time: {value!r}") from exc
-    if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=ATLANTA)
-    return parsed.astimezone(ATLANTA)
+    if abs(local - current) > MAX_DEPARTURE_OFFSET:
+        raise ValueError(f"departure too far from now: {value!r}")
+    return local
 
 
 def day_group(ts: datetime) -> str:

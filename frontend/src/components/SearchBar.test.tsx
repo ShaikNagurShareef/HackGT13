@@ -27,7 +27,7 @@ describe('SearchBar (SRCH-01..04)', () => {
   })
 
   it('autocompletes MARTA stations from the gazetteer and picks with Enter', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ success: true, data: [] }))))
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ success: true, data: [] }), { headers: { 'content-type': 'application/json' } })))
     const h = setup({ lat: 1, lon: 2, label: 'Here' })
     const to = screen.getByRole('combobox', { name: 'To' })
 
@@ -42,7 +42,7 @@ describe('SearchBar (SRCH-01..04)', () => {
     const results = [
       { label: 'Ponce City Market', address: 'Ponce de Leon Ave', lat: 33.772, lon: -84.365, in_coverage: false },
     ]
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ success: true, data: results }))))
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ success: true, data: results }), { headers: { 'content-type': 'application/json' } })))
     setup()
 
     await userEvent.type(screen.getByRole('combobox', { name: 'From' }), 'Ponce City')
@@ -51,7 +51,7 @@ describe('SearchBar (SRCH-01..04)', () => {
   })
 
   it('says so when nothing matches (EC-03)', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ success: true, data: [] }))))
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ success: true, data: [] }), { headers: { 'content-type': 'application/json' } })))
     setup()
 
     await userEvent.type(screen.getByRole('combobox', { name: 'From' }), 'zzzz')

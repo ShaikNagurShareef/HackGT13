@@ -34,14 +34,14 @@ describe('useExplanation', () => {
     const load = vi.fn().mockResolvedValue({ text: 'why', source: 'groq' })
     const { result, rerender } = renderHook(({ k }) => useExplanation(k, load), { initialProps: { k: 'a' as string | null } })
 
-    await waitFor(() => expect(result.current?.text).toBe('why'))
+    await waitFor(() => expect(result.current.result?.text).toBe('why'))
     rerender({ k: null })
-    expect(result.current).toBeNull()
+    expect(result.current).toEqual({ result: null, failed: false })
 
     const failing = vi.fn().mockRejectedValue(new Error('down'))
     const second = renderHook(() => useExplanation('b', failing))
-    await waitFor(() => expect(failing).toHaveBeenCalled())
-    expect(second.result.current).toBeNull()
+    await waitFor(() => expect(second.result.current.failed).toBe(true))
+    expect(second.result.current.result).toBeNull()
   })
 })
 

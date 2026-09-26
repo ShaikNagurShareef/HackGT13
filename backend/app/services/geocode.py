@@ -8,6 +8,8 @@ from dataclasses import dataclass
 import httpx
 from cachetools import TTLCache
 
+from app.services.explain.service import DailyBudget
+
 log = logging.getLogger(__name__)
 AUTOCOMPLETE_URL = "https://api.geoapify.com/v1/geocode/autocomplete"
 CITY_RECT = "rect:-84.56,33.64,-84.28,33.89"
@@ -24,9 +26,12 @@ class GeoResult:
 
 
 class GeocodeService:
-    def __init__(self, client: httpx.AsyncClient, api_key: str | None) -> None:
+    def __init__(
+        self, client: httpx.AsyncClient, api_key: str | None, daily_budget: int = 2500
+    ) -> None:
         self._client = client
         self._key = api_key
+        self._budget = DailyBudget(daily_budget)
         self._cache: TTLCache[str, tuple[GeoResult, ...]] = TTLCache(maxsize=2048, ttl=3600)
 
     @property
@@ -40,6 +45,8 @@ class GeocodeService:
         cached = self._cache.get(q.lower())
         if cached is not None:
             return cached
+        if not self._budget.take():
+            return ()  # free tier protected; the curated gazetteer still works client-side
         params = {
             "text": q,
             "filter": CITY_RECT,

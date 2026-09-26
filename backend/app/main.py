@@ -9,11 +9,17 @@ from contextlib import asynccontextmanager
 import httpx
 from cachetools import LRUCache
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.api.core import api
-from app.api.envelope import AppError, app_error_handler, unexpected_error_handler
+from app.api.envelope import (
+    AppError,
+    app_error_handler,
+    unexpected_error_handler,
+    validation_error_handler,
+)
 from app.api.extras import extras
 from app.config import Settings, get_settings
 from app.domain.router import Router
@@ -29,17 +35,22 @@ ROUTES_CACHE_SIZE = 512
 
 
 def build_providers(cfg: Settings, client: httpx.AsyncClient) -> list[Provider]:
-    """Groq first (fast), Gemini second; missing keys simply drop a provider."""
+    """Groq gpt-oss-120b, then Gemini, then Groq gpt-oss-20b; missing keys drop a provider."""
     providers: list[Provider] = []
-    if cfg.groq_api_key:
-        providers.append(GroqProvider(client, cfg.groq_api_key.get_secret_value(), cfg.groq_model))
+    groq_key = cfg.groq_api_key.get_secret_value() if cfg.groq_api_key else None
+    if groq_key:
+        providers.append(GroqProvider(client, groq_key, cfg.groq_model))
     if cfg.gemini_api_key:
         key = cfg.gemini_api_key.get_secret_value()
         providers.append(GeminiProvider(client, key, cfg.gemini_model))
+    if groq_key:
+        providers.append(GroqProvider(client, groq_key, cfg.groq_fallback_model, name="groq-20b"))
     return providers
 
 
 log = logging.getLogger(__name__)
+# httpx logs full URLs at INFO; Geoapify requires its key in the query string.
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -52,10 +63,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             app.state.weather = WeatherService(client)
             app.state.http = client
             app.state.explainer = ExplainService(
-                build_providers(cfg, client), cfg.explain_budget_s, cfg.groq_budget_s
+                build_providers(cfg, client),
+                cfg.explain_budget_s,
+                cfg.groq_budget_s,
+                daily_budget=cfg.llm_daily_budget,
             )
             geo_key = cfg.geoapify_api_key.get_secret_value() if cfg.geoapify_api_key else None
-            app.state.geocoder = GeocodeService(client, geo_key)
+            app.state.geocoder = GeocodeService(client, geo_key, cfg.geocode_daily_budget)
             yield
 
     app = FastAPI(title="PathPulse API", version=bundle.model_version, lifespan=lifespan)
@@ -65,7 +79,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.routes_cache = LRUCache(maxsize=ROUTES_CACHE_SIZE)
     db_url = cfg.database_url.get_secret_value() if cfg.database_url else None
     app.state.history = HistoryRepository(db_url)
-    app.add_middleware(RateLimitMiddleware, per_minute=cfg.rate_limit_per_minute)
+    app.add_middleware(
+        RateLimitMiddleware,
+        per_minute=cfg.rate_limit_per_minute,
+        paid_per_minute=cfg.paid_rate_limit_per_minute,
+    )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=cfg.origins,
@@ -74,6 +92,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_credentials=False,
     )
     app.add_exception_handler(AppError, app_error_handler)
+    app.add_exception_handler(RequestValidationError, validation_error_handler)
     app.add_exception_handler(Exception, unexpected_error_handler)
     app.include_router(api)
     app.include_router(extras)

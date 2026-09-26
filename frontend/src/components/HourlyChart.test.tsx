@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { HourlyChart } from './HourlyChart'
 
+const JSON_HEADERS = { headers: { 'content-type': 'application/json' } }
+
 const hourly = (crashes: number[]) => ({
   success: true,
   data: { seg_id: 3, crashes, ped_crashes: crashes.map(() => 0), source: 'tiger_data' },
@@ -12,7 +14,7 @@ describe('HourlyChart', () => {
 
   it('renders 24 bars from Tiger Data and names the peak hour', async () => {
     const crashes = Array.from({ length: 24 }, (_, h) => (h === 17 ? 10 : 1))
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(hourly(crashes)))))
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(hourly(crashes)), JSON_HEADERS)))
 
     render(<HourlyChart segId={3} highlightHour={22} />)
 
@@ -24,7 +26,7 @@ describe('HourlyChart', () => {
 
   it('hides when the database is unavailable', async () => {
     const body = { success: false, error: { code: 'HISTORY_UNAVAILABLE', message: 'x' } }
-    const fetcher = vi.fn(async () => new Response(JSON.stringify(body)))
+    const fetcher = vi.fn(async () => new Response(JSON.stringify(body), JSON_HEADERS))
     vi.stubGlobal('fetch', fetcher)
 
     const { container } = render(<HourlyChart segId={3} highlightHour={1} />)

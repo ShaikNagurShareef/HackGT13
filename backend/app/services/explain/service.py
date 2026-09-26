@@ -7,6 +7,7 @@ import logging
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import date
 
 import httpx
 from cachetools import LRUCache
@@ -26,29 +27,58 @@ class Explanation:
     source: str  # groq | gemini | template | cache
 
 
+class DailyBudget:
+    """Caps paid provider calls per calendar day; past the cap, callers fall back."""
+
+    def __init__(self, limit: int) -> None:
+        self._limit = limit
+        self._day = date.today()
+        self._used = 0
+
+    def take(self) -> bool:
+        today = date.today()
+        if today != self._day:
+            self._day, self._used = today, 0
+        if self._used >= self._limit:
+            return False
+        self._used += 1
+        return True
+
+
 class ExplainService:
     def __init__(
         self,
         providers: Sequence[Provider],
         total_budget_s: float = 3.0,
         first_budget_s: float = 1.6,
+        daily_budget: int = 3000,
     ) -> None:
         self._providers = tuple(providers)
         self._total = total_budget_s
         self._first = first_budget_s
+        self._budget = DailyBudget(daily_budget)
         self._cache: LRUCache[str, Explanation] = LRUCache(maxsize=CACHE_SIZE)
+        self._inflight: dict[str, asyncio.Lock] = {}
 
     async def explain(self, key: str, evidence: Evidence) -> Explanation:
         cached = self._cache.get(key)
         if cached is not None:
             return Explanation(cached.text, "cache")
-        result = await self._generate(evidence)
-        self._cache[key] = result
+        lock = self._inflight.setdefault(key, asyncio.Lock())
+        async with lock:  # single-flight: concurrent taps on one street make one LLM call
+            cached = self._cache.get(key)
+            if cached is not None:
+                return Explanation(cached.text, "cache")
+            result = await self._generate(evidence)
+            if result.source != "template":  # a transient outage should not stick forever
+                self._cache[key] = result
+        self._inflight.pop(key, None)
         return result
 
     async def _generate(self, evidence: Evidence) -> Explanation:
         deadline = time.monotonic() + self._total
-        for i, provider in enumerate(self._providers):
+        providers = self._providers if self._budget.take() else ()
+        for i, provider in enumerate(providers):
             remaining = deadline - time.monotonic()
             if remaining <= 0.2:
                 break

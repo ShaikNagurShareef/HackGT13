@@ -1,36 +1,74 @@
-"""Per-IP sliding-window rate limit (NFR-11: 60 requests/min/IP) without extra services."""
+"""Per-client sliding-window rate limits (NFR-11) without extra services.
+
+- General limit is generous: at the expo, every judge shares one venue NAT address.
+- Paid endpoints (/explain, /geocode) get a tighter per-client limit.
+- The client key is `request.client.host`, which uvicorn's --proxy-headers sets from Caddy's
+  X-Forwarded-For only for trusted proxies, so raw headers cannot spoof it.
+- State lives in a bounded TTL cache so rotating addresses cannot exhaust memory.
+"""
 
 from __future__ import annotations
 
+import ipaddress
 import time
-from collections import defaultdict, deque
+from collections import deque
 
+from cachetools import TTLCache
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.types import ASGIApp
 
 WINDOW_S = 60.0
+MAX_CLIENTS = 50_000
 EXEMPT_PREFIXES = ("/healthz", "/static")
+PAID_PREFIXES = ("/explain", "/geocode")
+IPV6_PREFIX = 64
+
+
+def client_key(host: str | None) -> str:
+    """IPv4 as-is; IPv6 grouped by /64 so one household cannot rotate past the limit."""
+    if not host:
+        return "unknown"
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return host
+    if ip.version == 6:
+        return str(ipaddress.ip_network(f"{ip}/{IPV6_PREFIX}", strict=False))
+    return str(ip)
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app: ASGIApp, per_minute: int) -> None:
+    def __init__(self, app: ASGIApp, per_minute: int, paid_per_minute: int) -> None:
         super().__init__(app)
         self.per_minute = per_minute
-        self._hits: dict[str, deque[float]] = defaultdict(deque)
+        self.paid_per_minute = paid_per_minute
+        self._hits: TTLCache[str, deque[float]] = TTLCache(maxsize=MAX_CLIENTS, ttl=WINDOW_S)
 
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
-        if request.url.path.startswith(EXEMPT_PREFIXES):
-            return await call_next(request)
-        client = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (
-            request.client.host if request.client else "unknown"
-        )
-        now = time.monotonic()
-        hits = self._hits[client]
+    def _allow(self, key: str, limit: int, now: float) -> bool:
+        hits = self._hits.get(key)
+        if hits is None:
+            hits = deque()
         while hits and now - hits[0] > WINDOW_S:
             hits.popleft()
-        if len(hits) >= self.per_minute:
+        if len(hits) >= limit:
+            self._hits[key] = hits
+            return False
+        hits.append(now)
+        self._hits[key] = hits
+        return True
+
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        path = request.url.path
+        if path.startswith(EXEMPT_PREFIXES):
+            return await call_next(request)
+        client = client_key(request.client.host if request.client else None)
+        now = time.monotonic()
+        allowed = self._allow(client, self.per_minute, now)
+        if allowed and path.startswith(PAID_PREFIXES):
+            allowed = self._allow(f"paid:{client}", self.paid_per_minute, now)
+        if not allowed:
             return JSONResponse(
                 status_code=429,
                 content={
@@ -43,5 +81,4 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     },
                 },
             )
-        hits.append(now)
         return await call_next(request)

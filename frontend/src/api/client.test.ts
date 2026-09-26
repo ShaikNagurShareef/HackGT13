@@ -3,7 +3,9 @@ import { routes, segment } from '../test/fixtures'
 import { ApiError, api } from './client'
 
 function respond(body: unknown) {
-  const fetcher = vi.fn(async () => new Response(JSON.stringify(body)))
+  const fetcher = vi.fn(
+    async () => new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json' } }),
+  )
   vi.stubGlobal('fetch', fetcher)
   return fetcher
 }
@@ -32,6 +34,12 @@ describe('api client', () => {
     respond({ success: true, data: { score: 'high' } })
 
     await expect(api.segment(1, 'now', 'live')).rejects.toMatchObject({ code: 'BAD_RESPONSE' })
+  })
+
+  it('treats non-JSON gateway errors as busy, not offline', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('<html>502</html>', { status: 502 })))
+
+    await expect(api.meta()).rejects.toMatchObject({ code: 'SERVER' })
   })
 
   it('reports network failures as offline', async () => {

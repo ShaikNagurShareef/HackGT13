@@ -23,6 +23,16 @@ Rules:
 - Do not invent scores, times, or percentages. Output only the explanation text."""
 
 
+# Reasoning models spend tokens before answering; leave room so answers are never truncated.
+MAX_TOKENS = 600
+
+
+def require_text(value: object) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("empty completion")
+    return value.strip()
+
+
 class Provider(Protocol):
     name: str
 
@@ -44,7 +54,8 @@ class GroqProvider:
         body = {
             "model": self.model,
             "temperature": 0.2,
-            "max_tokens": 160,
+            "max_tokens": MAX_TOKENS,
+            "reasoning_effort": "low",
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_message(evidence)},
@@ -57,7 +68,10 @@ class GroqProvider:
             timeout=timeout_s,
         )
         resp.raise_for_status()
-        return str(resp.json()["choices"][0]["message"]["content"]).strip()
+        choice = resp.json()["choices"][0]
+        if choice.get("finish_reason") != "stop":
+            raise ValueError(f"incomplete completion: {choice.get('finish_reason')}")
+        return require_text(choice["message"].get("content"))
 
 
 @dataclass(frozen=True)
@@ -71,7 +85,7 @@ class GeminiProvider:
         body = {
             "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
             "contents": [{"role": "user", "parts": [{"text": user_message(evidence)}]}],
-            "generationConfig": {"temperature": 0.2, "maxOutputTokens": 160},
+            "generationConfig": {"temperature": 0.2, "maxOutputTokens": MAX_TOKENS},
         }
         resp = await self.client.post(
             GEMINI_URL.format(model=self.model),
@@ -80,5 +94,8 @@ class GeminiProvider:
             timeout=timeout_s,
         )
         resp.raise_for_status()
-        parts = resp.json()["candidates"][0]["content"]["parts"]
-        return "".join(str(p.get("text", "")) for p in parts).strip()
+        candidate = resp.json()["candidates"][0]
+        if candidate.get("finishReason", "STOP") != "STOP":
+            raise ValueError(f"incomplete completion: {candidate.get('finishReason')}")
+        parts = candidate["content"]["parts"]
+        return require_text("".join(str(p.get("text", "")) for p in parts if not p.get("thought")))
