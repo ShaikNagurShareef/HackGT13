@@ -1266,6 +1266,7 @@ source = { editable = "backend" }
 dependencies = [
     { name = "astral" },
     { name = "cachetools" },
+    { name = "certifi" },
     { name = "fastapi" },
     { name = "h3" },
     { name = "httpx" },
@@ -1285,6 +1286,7 @@ dependencies = [
 requires-dist = [
     { name = "astral", specifier = ">=3.2" },
     { name = "cachetools", specifier = ">=5.5" },
+    { name = "certifi", specifier = ">=2024.2" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "h3", specifier = ">=4.1" },
     { name = "httpx", specifier = ">=0.28" },

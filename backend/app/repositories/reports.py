@@ -9,13 +9,15 @@ network for a short cooldown so routes never wait on a dead cluster.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
+from contextlib import AbstractContextManager, nullcontext
 from datetime import UTC, datetime
 from typing import Any, Literal
 
+import certifi
+import pymongo
 from pymongo import ASCENDING, DESCENDING, GEOSPHERE, AsyncMongoClient, IndexModel, ReturnDocument
 from pymongo.errors import DuplicateKeyError, PyMongoError
 
@@ -82,6 +84,25 @@ def _parse_many(docs: Iterable[Mapping[str, Any]]) -> list[StreetReport]:
     return [r for r in (parse_report(d) for d in docs) if r is not None]
 
 
+def tls_options(uri: str) -> dict[str, Any]:
+    """Verify Atlas certificates against certifi's CA bundle.
+
+    Some Python builds (python.org on macOS) ship without a usable system trust store, so
+    TLS to Atlas fails with CERTIFICATE_VERIFY_FAILED. Passing tlsCAFile also switches TLS
+    on, so plain local URIs (mongodb://host without tls=true) are left alone.
+    """
+    lowered = uri.lower()
+    uses_tls = lowered.startswith("mongodb+srv://") or any(
+        flag in lowered for flag in ("tls=true", "ssl=true")
+    )
+    return {"tlsCAFile": certifi.where()} if uses_tls else {}
+
+
+def _deadline(budget_s: float | None) -> AbstractContextManager[None]:
+    """A driver-level deadline (pymongo.timeout) rather than cancelling the coroutine."""
+    return pymongo.timeout(budget_s) if budget_s is not None else nullcontext()
+
+
 def bbox_polygon(min_lon: float, min_lat: float, max_lon: float, max_lat: float) -> dict[str, Any]:
     ring = [[min_lon, min_lat], [max_lon, min_lat], [max_lon, max_lat], [min_lon, max_lat]]
     return {"type": "Polygon", "coordinates": [[*ring, ring[0]]]}
@@ -117,14 +138,16 @@ class ReportsRepository:
         if not self.configured or self._clock() < self._down_until:
             return None
         if self._coll is None:
+            uri = self._uri or ""
             try:
                 self._client = AsyncMongoClient(
-                    self._uri,
+                    uri,
                     serverSelectionTimeoutMS=SERVER_SELECTION_TIMEOUT_MS,
                     connectTimeoutMS=SERVER_SELECTION_TIMEOUT_MS,
                     timeoutMS=OPERATION_TIMEOUT_MS,
                     tz_aware=True,
                     appname="pathpulse",
+                    **tls_options(uri),
                 )
             except PyMongoError as exc:  # e.g. InvalidURI
                 self._failed("connect", exc)
@@ -221,8 +244,9 @@ class ReportsRepository:
             return None
         cursor = coll.find(query, PROJECTION).sort("confirmations", DESCENDING).limit(limit)
         try:
-            docs = await asyncio.wait_for(cursor.to_list(None), timeout=budget_s)
-        except (PyMongoError, TimeoutError) as exc:
+            with _deadline(budget_s):
+                docs = await cursor.to_list(None)
+        except PyMongoError as exc:  # includes the driver's own deadline-exceeded errors
             self._failed(op, exc)
             return None
         return _parse_many(docs)

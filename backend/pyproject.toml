@@ -19,6 +19,7 @@ dependencies = [
   "psycopg[binary]>=3.2",
   "psycopg-pool>=3.2",
   "pymongo>=4.10",
+  "certifi>=2024.2",
 ]
 
 [build-system]

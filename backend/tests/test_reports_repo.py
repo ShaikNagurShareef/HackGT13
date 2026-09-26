@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
+import time
 from datetime import UTC, datetime, timedelta
 
+import certifi
 import pytest
 from app.domain.reports import CATEGORY_LABELS, REPORT_TTL
 from app.repositories.reports import (
     BBOX_LIMIT,
+    COLLECTION,
     INDEX_NAMES,
     ReportsRepository,
 )
@@ -238,24 +240,55 @@ async def test_each_operation_degrades_on_its_own_failure(op: str) -> None:
 
 
 @pytest.mark.unit
-async def test_slow_cluster_hits_the_budget_and_cools_down() -> None:
-    repo, fake = _repo()
+async def test_route_budget_is_a_driver_deadline_and_trips_the_cooldown() -> None:
+    repo = ReportsRepository("mongodb://127.0.0.1:1/")
 
-    async def stall(length: int | None = None) -> list[dict[str, object]]:
-        await asyncio.sleep(1)
-        return []
+    started = time.monotonic()
+    first = await repo.for_segments([1], budget_s=0.2)
+    elapsed = time.monotonic() - started
+    again_started = time.monotonic()
+    second = await repo.for_segments([1], budget_s=0.2)
 
-    original = fake.find
+    assert first is None and second is None
+    assert elapsed < 1.0  # well under the 2 s server-selection timeout
+    assert time.monotonic() - again_started < 0.05  # cooling down: no second wait
+    await repo.close()
 
-    def slow_find(query: dict[str, object], projection: object = None) -> object:
-        cursor = original(query, projection)
-        cursor.to_list = stall  # type: ignore[method-assign]
-        return cursor
 
-    fake.find = slow_find  # type: ignore[method-assign]
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("uri", "expects_ca"),
+    [
+        ("mongodb+srv://user:pw@cluster0.example.mongodb.net/?retryWrites=true", True),
+        ("mongodb://host1:27017,host2:27017/?tls=true&replicaSet=rs0", True),
+        ("mongodb://127.0.0.1:27017/", False),
+    ],
+)
+async def test_client_uses_certifi_ca_bundle_for_tls_uris(
+    monkeypatch: pytest.MonkeyPatch, uri: str, expects_ca: bool
+) -> None:
+    captured: dict[str, object] = {}
 
-    assert await repo.for_segments([1], budget_s=0.01) is None
-    assert await repo.for_segments([1]) is None  # cooling down: no second wait
+    class RecordingClient:
+        def __init__(self, target: str, **kwargs: object) -> None:
+            captured.update(kwargs, uri=target)
+
+        def __getitem__(self, name: str) -> dict[str, FakeCollection]:
+            return {COLLECTION: FakeCollection()}
+
+        async def close(self) -> None:
+            captured["closed"] = True
+
+    monkeypatch.setattr("app.repositories.reports.AsyncMongoClient", RecordingClient)
+    repo = ReportsRepository(uri)
+
+    assert await repo.ping() == "ok"
+    await repo.close()
+
+    assert captured["uri"] == uri
+    assert captured["tz_aware"] is True and captured["timeoutMS"] == 1500
+    assert (captured.get("tlsCAFile") == certifi.where()) is expects_ca
+    assert captured["closed"] is True
 
 
 @pytest.mark.unit
