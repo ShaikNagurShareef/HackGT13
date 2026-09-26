@@ -16,6 +16,14 @@ describe('statusLabel (home status chip)', () => {
   })
 })
 
+describe('statusLabel (personal safety)', () => {
+  it('names the safety map mode and a non-default route preference', () => {
+    expect(statusLabel({ ...DEFAULTS, safetyMode: true })).toBe('Personal safety')
+    expect(statusLabel({ ...DEFAULTS, prefer: 'lit_and_busy' })).toBe('Well-lit & busier')
+    expect(statusLabel({ ...DEFAULTS, prefer: 'lower_traffic_risk' })).toBeNull()
+  })
+})
+
 describe('departLabel', () => {
   it('reads relative and Atlanta wall-clock departures', () => {
     expect(departLabel('now')).toBe('Now')

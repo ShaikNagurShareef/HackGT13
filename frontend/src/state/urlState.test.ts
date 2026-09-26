@@ -12,6 +12,7 @@ describe('url state', () => {
       day: 'friday',
       seg: 1234,
       demo: true,
+      prefer: 'lit_and_busy',
     }
 
     expect(parseState(serializeState(view))).toEqual(view)
@@ -37,5 +38,11 @@ describe('url state', () => {
     const s = parseState(`?to=33.78,-84.38,${'x'.repeat(200)}`)
 
     expect(s.to?.label.length).toBe(80)
+  })
+
+  it('keeps the route preference short in the URL and ignores unknown values', () => {
+    expect(serializeState({ ...DEFAULT_STATE, prefer: 'lit_and_busy' })).toBe('?pref=lit')
+    expect(parseState('?pref=lit').prefer).toBe('lit_and_busy')
+    expect(parseState('?pref=crime').prefer).toBe('lower_traffic_risk')
   })
 })

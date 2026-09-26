@@ -1,4 +1,5 @@
 import type { Meta, Report, Route, Routes, SegmentDetail } from '../api/schemas'
+import type { HelpPoint, SafetyHex, SafetyMeta } from '../api/safetySchemas'
 
 export const route = (over: Partial<Route> = {}): Route => ({
   coords: [
@@ -18,6 +19,7 @@ export const route = (over: Partial<Route> = {}): Route => ({
     { seg_id: 11, name: 'Fifth Street Northwest', score: 96 },
     { seg_id: 12, name: 'Peachtree Place Northwest', score: 98 },
   ],
+  safety: null,
   ...over,
 })
 
@@ -94,5 +96,43 @@ export const report = (over: Partial<Report> = {}): Report => ({
   confirmations: 2,
   updated_at: '2026-09-26T12:00:00Z',
   expires_at: '2026-10-10T12:00:00Z',
+  ...over,
+})
+
+const range = (from: number, to: number) => Array.from({ length: to - from }, (_, i) => from + i)
+
+export const safetyMeta = (over: Partial<SafetyMeta> = {}): SafetyMeta => ({
+  data_through: '2026-09-19',
+  sources: [
+    { name: 'Atlanta Police Department Open Data', url: 'https://opendata.atlantapd.org/', license: 'Public records' },
+    { name: 'OpenStreetMap', url: 'https://www.openstreetmap.org/copyright', license: 'ODbL' },
+  ],
+  crime_categories: ['Aggravated assault', 'Robbery'],
+  day_parts: [
+    { key: 'morning', label: 'Morning', hours: range(6, 11) },
+    { key: 'midday', label: 'Midday', hours: range(11, 17) },
+    { key: 'evening', label: 'Evening', hours: range(17, 22) },
+    { key: 'night', label: 'Late night', hours: [22, 23, ...range(0, 6)] },
+  ],
+  ...over,
+})
+
+export const safetyHex = (over: Partial<SafetyHex> = {}): SafetyHex => ({
+  h3: '8944c0a3003ffff',
+  lat: 33.777,
+  lon: -84.39,
+  crimes_persons_12mo: 6,
+  crime_band: 'typical',
+  lit_share: 0.78,
+  activity_band: 'busy',
+  help_points: 2,
+  ...over,
+})
+
+export const helpPoint = (over: Partial<HelpPoint> = {}): HelpPoint => ({
+  kind: 'blue_light',
+  name: 'Tech Green',
+  lat: 33.7745,
+  lon: -84.3973,
   ...over,
 })

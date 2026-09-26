@@ -12,7 +12,7 @@ import { useSegmentDetail } from './useSegmentDetail'
 
 const KLAUS = { lat: 33.7771, lon: -84.3962, label: 'Klaus' }
 const MIDTOWN = { lat: 33.781, lon: -84.3863, label: 'Midtown MARTA' }
-const TRIP = { from: KLAUS, to: MIDTOWN, depart: 'now', cond: 'wet' as const }
+const TRIP = { from: KLAUS, to: MIDTOWN, depart: 'now', cond: 'wet' as const, prefer: 'lower_traffic_risk' as const }
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -33,7 +33,7 @@ describe('useRoutes', () => {
     await waitFor(() => expect(result.current.routes).toBe(r))
     expect(result.current.loading).toBe(false)
     expect(onLoaded).toHaveBeenCalledWith(r)
-    expect(api.routes).toHaveBeenCalledWith(KLAUS, MIDTOWN, 'now', 'wet')
+    expect(api.routes).toHaveBeenCalledWith(KLAUS, MIDTOWN, 'now', 'wet', 'lower_traffic_risk')
   })
 
   it('surfaces errors and hands an out-of-coverage destination to the area fallback', async () => {
@@ -52,6 +52,22 @@ describe('useRoutes', () => {
     const onError = vi.fn()
     renderHook(() => useRoutes(TRIP, { onError, onOutside: vi.fn(), onLoaded: vi.fn() }))
     await waitFor(() => expect(onError).toHaveBeenLastCalledWith('Could not compute routes.'))
+  })
+
+  it('refetches when the route preference changes and never shows the other preference\'s routes', async () => {
+    const first = routes()
+    const lit = routes({ route_key: 'bbbbbbbbbbbbbbbb' })
+    const spy = vi.spyOn(api, 'routes').mockResolvedValueOnce(first).mockResolvedValueOnce(lit)
+    const handlers = { onError: vi.fn(), onOutside: vi.fn(), onLoaded: vi.fn() }
+    const { result, rerender } = renderHook(({ prefer }) => useRoutes({ ...TRIP, prefer }, handlers), {
+      initialProps: { prefer: 'lower_traffic_risk' as 'lower_traffic_risk' | 'lit_and_busy' },
+    })
+    await waitFor(() => expect(result.current.routes).toBe(first))
+
+    rerender({ prefer: 'lit_and_busy' })
+    expect(result.current).toEqual({ routes: null, loading: true })
+    await waitFor(() => expect(result.current.routes).toBe(lit))
+    expect(spy).toHaveBeenLastCalledWith(KLAUS, MIDTOWN, 'now', 'wet', 'lit_and_busy')
   })
 })
 
