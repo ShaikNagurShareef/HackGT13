@@ -71,7 +71,7 @@ test.describe('demo mode (DEMO-01)', () => {
     await page.getByRole('button', { name: 'Back to map' }).click()
 
     const sidebar = page.getByRole('complementary', { name: 'PathPro' })
-    await expect(sidebar).toContainText('See traffic risk before you walk into it.')
+    await expect(sidebar).toContainText('See the risks on your way, before you go.')
     await expect(sidebar.getByRole('combobox', { name: 'Search places' })).toBeVisible()
     await expect(sidebar.getByRole('heading', { name: 'Popular near Georgia Tech' })).toBeVisible()
     await expect(sidebar.getByRole('button', { name: /Wet/ })).toHaveAttribute('aria-pressed', 'true')

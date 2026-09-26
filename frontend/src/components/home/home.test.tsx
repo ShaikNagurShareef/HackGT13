@@ -63,7 +63,7 @@ describe('home chrome', () => {
     const { rerender } = render(<WelcomeToast dataThrough="2026-09-19" safetyAvailable={false} onDismiss={onDismiss} />)
 
     const toast = screen.getByRole('region', { name: 'Welcome to PathPro' })
-    expect(toast).toHaveTextContent('See traffic risk before you walk into it.')
+    expect(toast).toHaveTextContent('See the risks on your way, before you go.')
     expect(toast).toHaveTextContent('Traffic risk from crash history. Crash data through 2026-09-19.')
     rerender(<WelcomeToast dataThrough="2026-09-19" safetyAvailable onDismiss={onDismiss} />)
     expect(toast).toHaveTextContent(

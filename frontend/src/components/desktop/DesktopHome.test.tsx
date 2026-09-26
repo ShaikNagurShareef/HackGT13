@@ -47,7 +47,7 @@ describe('DesktopHome (persistent sidebar)', () => {
     const sidebar = screen.getByRole('complementary', { name: 'PathPro' })
 
     expect(within(sidebar).getByRole('heading', { level: 1, name: 'PathPro' })).toBeInTheDocument()
-    expect(sidebar).toHaveTextContent('See traffic risk before you walk into it.')
+    expect(sidebar).toHaveTextContent('See the risks on your way, before you go.')
     expect(within(sidebar).getByRole('combobox', { name: 'Search places' })).toBeInTheDocument()
     expect(within(sidebar).getByRole('heading', { name: 'Popular near Georgia Tech' })).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).toBeNull()
