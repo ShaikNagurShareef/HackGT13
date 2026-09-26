@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.domain.route_metrics import EdgeStep
+from app.domain.route_metrics import UNNAMED, EdgeStep
+
+SPOKEN_UNNAMED = "a side street"
 
 ALERT_SCORE = 90
 MERGE_WITHIN_M = 100.0
@@ -28,6 +30,7 @@ def walk_alerts(steps: tuple[EdgeStep, ...], names: list[str]) -> list[Alert]:
         hot = step.seg_id >= 0 and step.score >= ALERT_SCORE
         if hot:
             name = names[step.seg_id]
+            name = SPOKEN_UNNAMED if name == UNNAMED else name
             prev = raw[-1] if raw else None
             if prev and walked - prev.end_m < 1.0 and name in prev.names:
                 raw[-1] = Alert(
@@ -74,7 +77,7 @@ def avoided_segments(
         if s.seg_id < 0 or s.score < AVOID_SCORE:
             continue
         name = names[s.seg_id]
-        if name in used_names:
+        if name in used_names or name == UNNAMED:
             continue
         if name not in best or s.score > best[name].score:
             best[name] = s

@@ -21,6 +21,7 @@ from app.domain.router import RoutePlan, Router, RoutingError
 from app.domain.scoring import band_for
 from app.domain.timeutil import parse_departure
 from app.repositories.artifacts import Bundle
+from app.repositories.hexes import HexBundle
 from app.services.weather import WeatherService
 
 SNAP_LIMIT_M = 150.0
@@ -31,14 +32,20 @@ def _in_bbox(bbox: list[float], lat: float, lon: float) -> bool:
     return west <= lon <= east and south <= lat <= north
 
 
-def _check_coverage(bundle: Bundle, req: RouteRequest) -> None:
-    bbox = bundle.manifest["coverage_bbox"]
+def in_coverage(bundle: Bundle, hexes: HexBundle | None, lat: float, lon: float) -> bool:
+    """City hexes when available (follows the real city line), else the bounding box."""
+    if hexes is not None:
+        return hexes.cell_for(lat, lon) is not None
+    return _in_bbox(bundle.manifest["coverage_bbox"], lat, lon)
+
+
+def _check_coverage(bundle: Bundle, req: RouteRequest, hexes: HexBundle | None) -> None:
     for point in (req.origin, req.destination):
-        if not _in_bbox(bbox, point.lat, point.lon):
+        if not in_coverage(bundle, hexes, point.lat, point.lon):
             raise AppError(
                 "OUT_OF_COVERAGE",
-                "PathPulse covers Midtown, Georgia Tech, and Downtown for now. "
-                "Route to the edge of coverage?",
+                "PathPulse covers the City of Atlanta for now. "
+                "Pick a starting point and destination inside city limits.",
                 status=422,
             )
 
@@ -101,13 +108,17 @@ def _route_key(req: RouteRequest, depart: datetime, cond: str) -> str:
 
 
 async def plan_routes(
-    bundle: Bundle, router: Router, weather: WeatherService, req: RouteRequest
+    bundle: Bundle,
+    router: Router,
+    weather: WeatherService,
+    req: RouteRequest,
+    hexes: HexBundle | None = None,
 ) -> RoutesData:
     try:
         depart = parse_departure(req.depart_at)
     except ValueError as exc:
         raise AppError("BAD_DEPARTURE", "Pick a valid departure time.", status=422) from exc
-    _check_coverage(bundle, req)
+    _check_coverage(bundle, req, hexes)
     origin, _ = _snap(router, req.origin.lat, req.origin.lon)
     dest, _ = _snap(router, req.destination.lat, req.destination.lon)
     resolved = await weather.resolve(req.cond, depart)

@@ -16,10 +16,11 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from pathpulse_data.config import CORE_BBOX, INTERIM_DIR, RAW_DIR
+from pathpulse_data.config import INTERIM_DIR, RAW_DIR
 from pathpulse_data.ingest.clean import NORMALIZERS, drop_invalid_coords, normalize_source
 from pathpulse_data.ingest.dedupe import dedupe_timed
 from pathpulse_data.ingest.snap import RoadIndex, snap_points
+from pathpulse_data.network.coverage import contains
 
 log = logging.getLogger(__name__)
 UTM = "EPSG:32616"
@@ -38,8 +39,8 @@ def load_normalized() -> tuple[pd.DataFrame, dict[str, dict[str, int]]]:
 
 
 def in_core(df: pd.DataFrame) -> pd.Series:
-    west, south, east, north = CORE_BBOX
-    return df["lon"].between(west, east) & df["lat"].between(south, north)
+    """Inside street-level coverage (the buffered City of Atlanta boundary)."""
+    return pd.Series(contains(df["lon"].to_numpy(), df["lat"].to_numpy()), index=df.index)
 
 
 def to_utm_xy(lon: pd.Series, lat: pd.Series) -> np.ndarray:

@@ -73,3 +73,23 @@ def test_same_origin_and_destination_rejected(router: Router) -> None:
     with pytest.raises(RoutingError) as err:
         router.plan(3, 3, NIGHT, wet=False)
     assert err.value.code == "TOO_CLOSE"
+
+
+@pytest.mark.unit
+def test_search_area_covers_small_trips(router: Router) -> None:
+    area = router._search_area(node_id(HOT_ROW, 0), node_id(HOT_ROW, COLS - 1))
+
+    assert area.all()  # the tiny grid is well inside the 1.2 km minimum padding
+
+
+@pytest.mark.unit
+def test_falls_back_to_full_graph_when_search_area_cuts_the_route(
+    router: Router, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import numpy as np
+
+    monkeypatch.setattr(router, "_search_area", lambda o, d: np.zeros(len(router.src), bool))
+
+    plan = router.plan(node_id(HOT_ROW, 0), node_id(HOT_ROW, COLS - 1), NIGHT, wet=False)
+
+    assert plan.fastest.nodes[0] == node_id(HOT_ROW, 0)

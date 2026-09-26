@@ -40,19 +40,41 @@ def conflate_lines(
     out = pd.DataFrame(np.nan, index=target.index, columns=fields, dtype=object)
     if len(t_idx) == 0:
         return _numeric_where_possible(out)
-    t_bear = np.array([bearing_deg(g) for g in target.geometry])
-    best: dict[int, tuple[float, int]] = {}
-    for t, s in zip(t_idx, s_idx, strict=True):
-        src_line = source.geometry.iloc[s]
-        local = shapely.shortest_line(mids[t], src_line)
-        if _angle_diff(t_bear[t], _local_bearing(src_line, mids[t])) > max_angle_deg:
-            continue
-        dist = local.length
-        if t not in best or dist < best[t][0]:
-            best[t] = (dist, s)
-    for t, (_, s) in best.items():
-        out.iloc[t] = source.iloc[s][fields].to_numpy()
+    src = source.geometry.to_numpy()[s_idx]
+    t_bear = _chord_bearings(target.geometry.to_numpy())[t_idx]
+    s_bear = _local_bearings(src, mids[t_idx])
+    diff = np.abs(t_bear - s_bear) % 180.0
+    ok = np.minimum(diff, 180.0 - diff) <= max_angle_deg
+    if not ok.any():
+        return _numeric_where_possible(out)
+    pairs = pd.DataFrame(
+        {"t": t_idx[ok], "s": s_idx[ok], "d": shapely.distance(mids[t_idx[ok]], src[ok])}
+    )
+    best = pairs.loc[pairs.groupby("t")["d"].idxmin()]
+    values = source.iloc[best["s"].to_numpy()][fields].to_numpy()
+    out.iloc[best["t"].to_numpy()] = values
     return _numeric_where_possible(out)
+
+
+def _chord_bearings(lines: np.ndarray) -> np.ndarray:
+    """Undirected chord bearing of each line, vectorized."""
+    first = shapely.get_point(lines, 0)
+    last = shapely.get_point(lines, -1)
+    dx = shapely.get_x(last) - shapely.get_x(first)
+    dy = shapely.get_y(last) - shapely.get_y(first)
+    return np.degrees(np.arctan2(dy, dx)) % 180.0
+
+
+def _local_bearings(lines: np.ndarray, near: np.ndarray) -> np.ndarray:
+    """Bearing of each source line within 10 m of its closest point to `near` (curves)."""
+    lengths = shapely.length(lines)
+    pos = shapely.line_locate_point(lines, near)
+    a = shapely.line_interpolate_point(lines, np.maximum(pos - 10.0, 0.0))
+    b = shapely.line_interpolate_point(lines, np.minimum(pos + 10.0, lengths))
+    dx, dy = shapely.get_x(b) - shapely.get_x(a), shapely.get_y(b) - shapely.get_y(a)
+    local = np.degrees(np.arctan2(dy, dx)) % 180.0
+    degenerate = np.hypot(dx, dy) < 1e-9
+    return np.where(degenerate, _chord_bearings(lines), local)
 
 
 def _numeric_where_possible(frame: pd.DataFrame) -> pd.DataFrame:
@@ -62,16 +84,6 @@ def _numeric_where_possible(frame: pd.DataFrame) -> pd.DataFrame:
         keep_numeric = numeric.notna().sum() == frame[col].notna().sum()
         converted[col] = numeric.astype(float) if keep_numeric else frame[col]
     return pd.DataFrame(converted, index=frame.index)
-
-
-def _local_bearing(line: LineString, near: shapely.Point) -> float:
-    """Bearing of the source line around the point closest to `near` (handles curves)."""
-    pos = line.project(near)
-    a = line.interpolate(max(pos - 10.0, 0.0))
-    b = line.interpolate(min(pos + 10.0, line.length))
-    if a.equals(b):
-        return bearing_deg(line)
-    return bearing_deg(LineString([a, b]))
 
 
 def count_points_near(

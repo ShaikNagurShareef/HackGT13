@@ -20,6 +20,15 @@ def load_hours() -> pd.DataFrame:
     return hours.assign(year=pd.to_datetime(hours["time"]).dt.year)
 
 
+def hour_start(ts: pd.Series) -> pd.Series:
+    """Start of the hour in Atlanta time, exact across DST (EC-22).
+
+    Flooring in local time is ambiguous in the repeated fall-back hour; flooring in UTC is
+    not, and every Atlanta UTC offset is a whole number of hours.
+    """
+    return ts.dt.tz_convert("UTC").dt.floor("h").dt.tz_convert(TZ)
+
+
 def crash_cells(hours: pd.DataFrame) -> pd.DataFrame:
     """Snapped timed crashes annotated with the *same* cell definitions as exposure."""
     snaps = pd.read_parquet(INTERIM_DIR / "crash_segments.parquet")
@@ -28,7 +37,7 @@ def crash_cells(hours: pd.DataFrame) -> pd.DataFrame:
         INTERIM_DIR / "segment_features.parquet", columns=["seg_id", "road_group"]
     )
     timed = timed.merge(segs, on="seg_id")
-    ts = pd.to_datetime(timed["ts"]).dt.tz_convert(TZ).dt.floor("h")
+    ts = hour_start(pd.to_datetime(timed["ts"]))
     lookup = hours.set_index(pd.to_datetime(hours["time"]))[["hour", "day_group", "light", "wet"]]
     lookup = lookup[~lookup.index.duplicated()]
     joined = lookup.reindex(ts)

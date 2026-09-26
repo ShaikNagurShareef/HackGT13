@@ -93,7 +93,7 @@ def test_out_of_coverage_is_a_clear_error(client: TestClient) -> None:
 
     assert resp.status_code == 422
     assert resp.json()["error"]["code"] == "OUT_OF_COVERAGE"
-    assert "Midtown" in resp.json()["error"]["message"]
+    assert "City of Atlanta" in resp.json()["error"]["message"]
 
 
 @pytest.mark.integration

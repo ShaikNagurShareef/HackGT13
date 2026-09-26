@@ -13,9 +13,9 @@ from enum import StrEnum
 import geopandas as gpd
 import networkx as nx
 import osmnx as ox
-from shapely.geometry import box
 
-from pathpulse_data.config import CITY_NAME, CORE_BBOX, INTERIM_DIR
+from pathpulse_data.config import CITY_NAME, INTERIM_DIR
+from pathpulse_data.network.coverage import buffered_polygon
 
 log = logging.getLogger(__name__)
 
@@ -77,10 +77,9 @@ def largest_component_share(graph: nx.MultiDiGraph) -> float:
 
 
 def build_walk_graph() -> nx.MultiDiGraph:
-    """Download the core-area walk network and keep its largest component."""
-    west, south, east, north = CORE_BBOX
+    """Download the citywide walk network and keep its largest component."""
     ox.settings.useful_tags_way = [*ox.settings.useful_tags_way, "footway", "sidewalk", "lit"]
-    graph = ox.graph.graph_from_polygon(box(west, south, east, north), network_type="walk")
+    graph = ox.graph.graph_from_polygon(buffered_polygon(), network_type="walk")
     share = largest_component_share(graph)
     log.info("walk graph: %d nodes, largest component %.3f", graph.number_of_nodes(), share)
     if share < MIN_COMPONENT_SHARE:
@@ -129,16 +128,15 @@ ROAD_FILTER = (
 
 
 def build_core_road_graph() -> nx.MultiDiGraph:
-    """Road centerlines in the core area: the unit of analysis for risk.
+    """Road centerlines across the city: the unit of analysis for risk.
 
     OSMnx's walk network omits roads whose sidewalks are mapped separately (most of Midtown),
     so crashes -- which are geocoded to centerlines -- must snap to this graph instead.
     Interstates are excluded: pedestrians are not on them.
     """
-    west, south, east, north = CORE_BBOX
     ox.settings.useful_tags_way = [*ox.settings.useful_tags_way, "lit", "sidewalk"]
     graph = ox.graph.graph_from_polygon(
-        box(west, south, east, north), custom_filter=ROAD_FILTER, retain_all=True
+        buffered_polygon(), custom_filter=ROAD_FILTER, retain_all=True
     )
     return ox.convert.to_undirected(graph)
 
@@ -171,13 +169,13 @@ def _load_or_build(name: str, builder: Callable[[], nx.MultiDiGraph]) -> nx.Mult
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
     INTERIM_DIR.mkdir(parents=True, exist_ok=True)
-    walk = _load_or_build("walk", build_walk_graph)
+    walk = _load_or_build("city_walk", build_walk_graph)
     nodes = ox.convert.graph_to_gdfs(walk, edges=False).reset_index()
     stringify_lists(nodes).to_parquet(INTERIM_DIR / "walk_nodes.parquet")
     # Walk edges are undirected for inheritance; the router rebuilds both directions.
     walk_edges = edges_frame(ox.convert.to_undirected(walk))
     walk_edges.to_parquet(INTERIM_DIR / "walk_edges.parquet")
-    roads = _load_or_build("core_roads", build_core_road_graph)
+    roads = _load_or_build("city_roads", build_core_road_graph)
     road_nodes = ox.convert.graph_to_gdfs(roads, edges=False).reset_index()
     stringify_lists(road_nodes).to_parquet(INTERIM_DIR / "road_nodes.parquet")
     road_segments = road_segments_frame(roads)

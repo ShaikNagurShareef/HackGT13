@@ -65,3 +65,12 @@ def test_contiguous_hot_stretches_on_different_streets_merge() -> None:
 
     assert len(alerts) == 1
     assert alerts[0].names == ("B Ave", "C Blvd")
+
+
+@pytest.mark.unit
+def test_unnamed_streets_are_spoken_generically_and_not_listed() -> None:
+    names = ["Unnamed street", "B Ave"]
+    steps = (step(0, 40, 95),)
+
+    assert walk_alerts(steps, names)[0].names == ("a side street",)
+    assert avoided_segments((step(0, 10, 99), step(1, 10, 99)), (), names) == [1]

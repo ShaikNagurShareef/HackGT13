@@ -3,8 +3,8 @@
 **Isn't this just "busy streets are risky"?**
 Partly, and we say so. It's called exposure bias.
 - We include pedestrian activity (StreetLight) and traffic volume (AADT) as features.
-- The model beats plain past-crash ranking on two separate future years (2023: +8.9 points, 2024: +4.4 points).
-- It beats the City's High Injury Network at the HIN's own coverage (69% vs 54%).
+- The model beats plain past-crash ranking on two separate future years (2023: +22.6 points, 2024: +24.5 points, 95% CI +20 to +29).
+- It beats the City's High Injury Network (74% vs 54% of next-year crashes in the top 10% of street length).
 - The score means "where and when crashes concentrate", not "your personal odds".
 
 **Why not crime?**
@@ -35,19 +35,19 @@ Speed. Explanations must appear in under 3 seconds on a phone. Gemini is the fal
 
 The demo never depends on the database: it has tight timeouts and the chart hides if the DB is down.
 
-**Why is rain such a small effect?**
-- It is in Atlanta's data: about ×1.04–1.08 for pedestrian crashes.
-- Rain also keeps people indoors, so there are fewer pedestrians exposed.
-- On held-out data, light and rain don't beat a smoothed hour × day baseline. We report that instead of inflating it.
+**Why is rain such a modest effect?**
+- It is in Atlanta's data: wet pavement is about ×1.12 for pedestrian crashes; darkness about ×1.6.
+- Rain also keeps people indoors, so fewer pedestrians are exposed.
+- On held-out data, light and rain add a small but real gain (+1.3% deviance) beyond a smoothed hour × day baseline. We report it at that size.
 
 **How accurate is the route claim?**
-- "49% less exposure" = expected crashes along the path (risk density × length), re-scored at the time you'd actually walk each street.
+- "54% less exposure" = expected crashes along the path (risk density × length), re-scored at the time you'd actually walk each street.
 - The detour budget is capped at min(1.25× the fastest time, +6 min).
 
 **What's the data?**
 - About 250k public crash records from the Atlanta Regional Commission, City of Atlanta, Central Atlanta Progress, and Georgia Tech, 2013–2026.
 - Merged across sources.
-- 96% of pedestrian crashes snapped to streets.
+- 95% of pedestrian crashes snapped to streets (2,228 in 2020–24 across the city).
 - Personal fields in the raw data are dropped at ingest.
 
 **What's next?**

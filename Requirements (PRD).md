@@ -420,7 +420,7 @@ Public repo with README (setup, architecture diagram, model card); 2–3 minute 
 
 | # | Question | Owner | Decide by |
 | --- | --- | --- | --- |
-| Q1 | Exact coverage polygon (Midtown + GT + Downtown vs. GT + Midtown only) based on graph size and data density | Data/ML | Fri 11 PM — **Resolved:** Midtown + GT + Downtown, bbox −84.415,33.745 → −84.370,33.795 |
+| Q1 | Exact coverage polygon (Midtown + GT + Downtown vs. GT + Midtown only) based on graph size and data density | Data/ML | **Resolved (expanded Fri 11:50 PM):** the whole City of Atlanta boundary — 49,915 road segments, 84,758 walk nodes; routing p95 ~130 ms via a per-trip search box |
 | Q2 | Which GDOT endpoint and date range give the cleanest pedestrian fields | Data/ML | **Resolved:** GEARS needs an agreement; use public ARC / City of Atlanta / CAP ArcGIS layers (timed crashes 2017–2025, year-only 2019–2024) plus StreetLight pedestrian activity and 2023 AADT |
 | Q3 | ~~Grok model id~~ LLM provider | GenAI | **Resolved:** Groq `openai/gpt-oss-120b` → `gpt-oss-20b` → Gemini `gemini-3.8-flash` → template; voice via ElevenLabs |
 | Q4 | Which MLH prizes are live this weekend | Any | **Resolved:** Tiger Data, ElevenLabs, Vultr, .tech, MongoDB, Solana, backboard.io; Gemini listed on MLH page — confirm at table |

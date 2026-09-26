@@ -22,6 +22,18 @@ export const PLACES: ReadonlyArray<NamedPlace> = [
   { label: 'Piedmont Park', lat: 33.7851, lon: -84.3738, quick: false, keywords: 'piedmont park' },
   { label: 'Fox Theatre', lat: 33.7725, lon: -84.3858, quick: false, keywords: 'fox theatre theater' },
   { label: 'Centennial Olympic Park', lat: 33.7603, lon: -84.3933, quick: false, keywords: 'centennial olympic park downtown' },
+  { label: 'Five Points MARTA', lat: 33.7539, lon: -84.3916, quick: false, keywords: 'five points marta station train downtown' },
+  { label: 'West End MARTA', lat: 33.7359, lon: -84.4132, quick: false, keywords: 'west end marta station train' },
+  { label: 'Atlanta University Center', lat: 33.7496, lon: -84.4136, quick: false, keywords: 'auc atlanta university center spelman morehouse clark' },
+  { label: 'Mercedes-Benz Stadium', lat: 33.7554, lon: -84.4008, quick: false, keywords: 'mercedes benz stadium falcons' },
+  { label: 'State Farm Arena', lat: 33.7573, lon: -84.3963, quick: false, keywords: 'state farm arena hawks' },
+  { label: 'Ponce City Market', lat: 33.7726, lon: -84.3655, quick: false, keywords: 'ponce city market beltline' },
+  { label: 'Little Five Points', lat: 33.7645, lon: -84.3495, quick: false, keywords: 'little five points l5p' },
+  { label: 'Grant Park', lat: 33.7373, lon: -84.3706, quick: false, keywords: 'grant park zoo' },
+  { label: 'Inman Park MARTA', lat: 33.7575, lon: -84.3526, quick: false, keywords: 'inman park reynoldstown marta station train' },
+  { label: 'Buckhead MARTA', lat: 33.8479, lon: -84.3673, quick: false, keywords: 'buckhead marta station train' },
+  { label: 'Lindbergh Center MARTA', lat: 33.8231, lon: -84.3695, quick: false, keywords: 'lindbergh center marta station train' },
+  { label: 'Atlantic Station', lat: 33.7918, lon: -84.3969, quick: false, keywords: 'atlantic station' },
 ]
 
 export const QUICK_PICKS = PLACES.filter((p) => p.quick)

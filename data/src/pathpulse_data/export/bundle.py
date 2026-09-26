@@ -27,6 +27,7 @@ from pathpulse_data.model.temporal_data import (
     fit_final,
     load_hours,
 )
+from pathpulse_data.network.coverage import city_polygon, outline_geojson
 
 log = logging.getLogger(__name__)
 SPATIAL_TEST = (range(2020, 2024), 2024)
@@ -120,6 +121,7 @@ def main() -> None:
         "ingest": report,
     }
     writers._dump(out / "metrics.json", metrics)
+    writers._dump(out / "coverage.geojson", outline_geojson())
     writers.write_manifest(
         out,
         {
@@ -131,7 +133,9 @@ def main() -> None:
             "conditions": list(CONDITIONS),
             "reference_dates": asm.reference_dates,
             "frame_light": asm.frame_light,
-            "coverage_bbox": CORE_BBOX,
+            "coverage_bbox": [round(v, 5) for v in city_polygon().bounds],
+            "coverage_name": "City of Atlanta",
+            "focus_bbox": CORE_BBOX,
             "walk_graph": graph_stats,
             "hotspot_nodes": n_hotspots,
             "spatial_train_years": [SPATIAL_FINAL.start, SPATIAL_FINAL.stop - 1],

@@ -11,6 +11,7 @@ const CENTER: [number, number] = [-84.3905, 33.7765]
 
 export interface MapViewProps {
   bbox: ReadonlyArray<number>
+  outlineUrl?: string
   segments: ReadonlyArray<SegmentPath>
   frame: Uint8Array | null
   frameKey: string
@@ -43,6 +44,7 @@ export function MapView(props: MapViewProps) {
   const mapRef = useRef<MlMap | null>(null)
   const overlayRef = useRef<MapLibreOverlay | null>(null)
   const pickRef = useRef(props.onMapPick)
+  const outlineRef = useRef<string | undefined>(props.outlineUrl)
   const [supported] = useState(webglAvailable)
   pickRef.current = props.onMapPick
 
@@ -65,17 +67,16 @@ export function MapView(props: MapViewProps) {
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right')
     map.on('contextmenu', (e) => pickRef.current(e.lngLat.lat, e.lngLat.lng))
     map.on('load', () => {
-      map.addSource('coverage', {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'Polygon',
-            coordinates: [[[west, south], [east, south], [east, north], [west, north], [west, south]]],
-          },
+      const rectangle = {
+        type: 'Feature' as const,
+        properties: {},
+        geometry: {
+          type: 'Polygon' as const,
+          coordinates: [[[west, south], [east, south], [east, north], [west, north], [west, south]]],
         },
-      })
+      }
+      // Prefer the real city boundary; fall back to the coverage rectangle.
+      map.addSource('coverage', { type: 'geojson', data: outlineRef.current ?? rectangle })
       map.addLayer({
         id: 'coverage-outline',
         type: 'line',

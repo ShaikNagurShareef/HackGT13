@@ -37,7 +37,7 @@ test('quick picks route between two covered places', async ({ page }) => {
 test('destination outside coverage gets an honest message (EC-01)', async ({ page }) => {
   await page.goto('/?from=33.77710,-84.39620,Klaus&to=33.77480,-84.29630,Decatur')
 
-  await expect(page.getByRole('alert')).toContainText('PathPulse covers Midtown, Georgia Tech, and Downtown')
+  await expect(page.getByRole('alert')).toContainText('PathPulse covers the City of Atlanta')
 })
 
 test('origin equal to destination is handled (EC-02)', async ({ page }) => {
@@ -70,11 +70,10 @@ test('City Pulse: toggle to citywide hexes and open an area card (CITY-01/02)', 
   expect(total).toBe(Number(await card.locator('.dial-score').textContent()))
 })
 
-test('in-city destination outside street coverage shows its area score (CITY-03)', async ({ page }) => {
-  await page.goto('/?from=33.77710,-84.39620,Klaus&to=33.75370,-84.41670,West%20End&cond=wet')
+test('citywide coverage: West End gets street-level routes', async ({ page }) => {
+  await page.goto('/?from=33.74960,-84.41360,AUC&to=33.73590,-84.41320,West%20End%20MARTA&t=2026-09-25T22:30&cond=wet')
 
-  await expect(page.getByRole('alert')).toContainText('PathPulse covers Midtown')
-  const card = page.getByRole('region', { name: 'Area traffic risk' })
-  await expect(card).toBeVisible()
-  await expect(card.getByTestId('coverage-note')).toContainText('Street-level routing covers')
+  const card = page.getByRole('region', { name: 'Route comparison' })
+  await expect(card).toContainText(/min/)
+  await expect(page.getByRole('alert')).toHaveCount(0)
 })

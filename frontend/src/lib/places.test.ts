@@ -5,7 +5,8 @@ describe('places', () => {
   it('surfaces MARTA stations for "MARTA" (SRCH-01)', () => {
     const labels = searchPlaces('MARTA').map((p) => p.label)
 
-    expect(labels).toEqual(expect.arrayContaining(['Midtown MARTA', 'North Ave MARTA', 'Arts Center MARTA']))
+    expect(labels).toHaveLength(5)
+    expect(labels.every((l) => l.includes('MARTA'))).toBe(true)
     expect(labels.length).toBeLessThanOrEqual(5)
   })
 

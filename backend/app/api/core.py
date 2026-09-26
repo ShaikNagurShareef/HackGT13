@@ -73,7 +73,7 @@ async def routes(
     router: Annotated[Router, Depends(get_router)],
     weather: Annotated[WeatherService, Depends(get_weather)],
 ) -> Envelope[RoutesData]:
-    data = await plan_routes(bundle, router, weather, req)
+    data = await plan_routes(bundle, router, weather, req, request.app.state.hexes)
     request.app.state.routes_cache[data.route_key] = data  # evidence for /explain stays server-side
     return ok(data, bundle.model_version)
 

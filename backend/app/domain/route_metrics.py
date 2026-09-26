@@ -12,6 +12,7 @@ from app.domain.timeutil import cell_at
 from app.repositories.artifacts import Bundle
 
 TOP_SEGMENTS = 3
+UNNAMED = "Unnamed street"
 
 
 @dataclass(frozen=True)
@@ -108,6 +109,8 @@ def _top_segments(
         if step.seg_id < 0:
             continue
         name = meta["name"][step.seg_id]
+        if name == UNNAMED:
+            continue  # alleys and driveways: counted in scores, not listed by name
         exposure = dens * step.length_m
         prev = by_name.get(name)
         total = exposure + (prev[0] if prev else 0.0)

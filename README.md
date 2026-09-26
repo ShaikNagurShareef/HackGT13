@@ -20,8 +20,8 @@ Every score is explainable: a trained model produces it, the score is split exac
 
 ## What it does
 
-- **Risk Tides.** Scrub or play 24 hours and switch Dry/Wet or the day of the week. About 6,900 street segments in Georgia Tech, Midtown, and Downtown re-color on one fixed 0–100 citywide scale. The top 5% of intersections glow.
-- **Fastest vs PathPulse route.** *Klaus → Midtown MARTA, Friday 10:30 PM, rain:* **+4.3 min, 49% less traffic-risk exposure**, avoiding Peachtree Place and Williams St. If the fastest route is already the lower-risk one, PathPulse says so plainly.
+- **Risk Tides.** Scrub or play 24 hours and switch Dry/Wet or the day of the week. About 50,000 street segments across the whole City of Atlanta re-color on one fixed 0–100 citywide scale. The top 5% of intersections glow.
+- **Fastest vs PathPulse route.** *Klaus → Midtown MARTA, Friday 10:30 PM, rain:* **+4.2 min, 54% less traffic-risk exposure**, avoiding Peachtree Place and Williams St. If the fastest route is already the lower-risk one, PathPulse says so plainly.
 - **"Why?" on every street.** A score dial, a confidence badge, and factor bars that add up exactly to the score. The sheet also shows the street's crash history and when crashes happened by hour (from Tiger Data).
 - **City Pulse.** Area-level traffic-risk scores for 3,537 hexes covering the whole City of Atlanta. Any address in the city gets a score, even outside street-level routing coverage.
 - **Grounded AI explanations.** The chain is Groq, then Gemini, then a deterministic template. A validator rejects any sentence containing a number that isn't in the evidence, or the words "safe" or "crime".
@@ -33,21 +33,22 @@ Every score is explainable: a trained model produces it, the score is split exac
 
 ## How well it works
 
-The data runs 2020–2024. The model was trained on 2020–2023 and **tested on 2024 pedestrian crashes**, ranking streets by predicted risk.
+The data runs 2020–2024 across the whole City of Atlanta (2,228 pedestrian crashes snapped to streets). The model was trained on 2020–2023 and **tested on 543 pedestrian crashes from 2024**, ranking streets by predicted risk.
 
-| Method | Crashes in the top 10% of street length | At the City HIN's own 20% of length | ROC-AUC |
+| Method | Crashes in the top 10% of street length | At the City HIN's own 10% of length | ROC-AUC |
 | --- | --- | --- | --- |
-| **PathPulse** | **45.8%** (95% CI 37–56%) | **69.2%** | **0.87** |
-| Ranking by past pedestrian crashes | 41.4% | 58.4% | 0.74 |
-| City of Atlanta High Injury Network (2025) | 33.9% | 53.8% | 0.68 |
-| ARC structural risk flags | 29.2% | 50.7% | 0.78 |
-| Random | 11.4% | 23.6% | 0.53 |
+| **PathPulse** | **74.3%** (95% CI 70–78%) | **73.9%** | **0.89** |
+| Ranking by past pedestrian crashes | 49.8% | 49.8% | 0.72 |
+| City of Atlanta High Injury Network (2025) | 53.8% | 53.7% | 0.69 |
+| ARC structural risk flags | 51.2% | 50.1% | 0.79 |
+| Random | 11.9% | 11.6% | 0.49 |
 
-- **Second holdout (train 2020–22, test 2023):** 56.2% vs 47.3% for past-crash ranking.
+- **Second holdout (train 2020–22, test 2023):** 68.1% vs 45.5% for past-crash ranking and 54.2% for the HIN.
 - **City Pulse (2024, 3,537 hexes):** the top 10% of hexes held **74.5%** of pedestrian crashes, vs 66.1% for past-crash ranking and 13% at random. ROC-AUC is 0.92.
 - **What these numbers do and do not show:**
   - The confidence interval resamples 47 spatial blocks, so nearby streets are not treated as independent.
-  - The gain over past-crash ranking in 2024 is +4.4 points (CI −0.1 to +9.6). It is suggestive on its own, and it repeats on 2023.
+  - The gain over past-crash ranking in 2024 is +24.5 points (95% CI +20.4 to +28.8), and it repeats on 2023 (+22.6).
+  - Citywide ranking includes many quiet residential streets, which makes it easier than ranking within dense Downtown alone.
   - We report ranking, not calibrated counts, because 2024 recorded more pedestrian crashes than earlier years.
   - Full details are in the [model card](docs/model_card.md).
 
@@ -84,14 +85,14 @@ flowchart LR
 
 - **Data:** about 250k crash records from 8 public ArcGIS layers are cleaned into one schema. Personal fields in the source data are dropped.
   - The same crash reported by several sources is merged (by collision id, or within 20 m and 30 min).
-  - Each crash is snapped to a road segment, with intersection crashes split across their approaches. 96% of pedestrian crashes snap.
+  - Each crash is snapped to a road segment, with intersection crashes split across their approaches. 95% of pedestrian crashes snap.
 - **Model:**
   - An exposure-aware safety performance function uses traffic volume, speed limit, lanes, intersection complexity, pedestrian activity, transit, sidewalks, and vehicle-crash density. It is a log-space ensemble of a Poisson GLM and a monotone LightGBM, cross-validated on spatial blocks.
   - It is blended with each street's own history using Empirical Bayes, the Highway Safety Manual method.
   - A multi-task Poisson GLM adds hour, day, light, and rain effects.
   - No demographic, income, or crime features are used anywhere.
 - **Explanations:** every score splits exactly into factors by telescoping through the percentile curve. The LLM only sees server-built JSON evidence.
-- **Routing:** Dijkstra runs on 19k walk nodes with a density-weighted cost ladder, inside a detour budget of min(1.25× the fastest time, +6 min). Every edge is re-scored at the time you'd actually walk it. p95 latency is about 120 ms.
+- **Routing:** Dijkstra runs on an 85k-node citywide walk graph, searched in a padded box around each trip, with a density-weighted cost ladder, inside a detour budget of min(1.25× the fastest time, +6 min). Every edge is re-scored at the time you'd actually walk it. p95 latency is about 120 ms.
 
 ## Run it locally
 

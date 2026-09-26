@@ -40,7 +40,7 @@
 **Snapping:**
 - A crash within 15 m of an intersection is split across that intersection's road segments.
 - Otherwise it goes to the nearest road within 30 m.
-- 96% of pedestrian crashes snap. Most of the rest are on interstates, which are excluded by design.
+- 95% of pedestrian crashes snap. Most of the rest are on interstates, which are excluded by design.
 
 ## Models
 
@@ -71,29 +71,31 @@
 **Protocol:**
 - Train on 2020–2023, test on 2024 pedestrian crashes. A second check trains on 2020–2022 and tests on 2023.
 - The headline metric is the share of held-out pedestrian crashes on the top X% of **street length** ranked by predicted risk. Ranking by length stops a model from looking good by picking long segments.
-- 95% confidence intervals come from 400 bootstrap resamples of 47 H3 res-8 spatial blocks.
+- 95% confidence intervals come from 400 bootstrap resamples of 614 H3 res-8 spatial blocks.
 
-| 2024 holdout (225 pedestrian crashes) | Top 10% length | Top 5% length | At HIN's 20.3% | ROC-AUC | PR-AUC |
+| 2024 holdout (543 pedestrian crashes, whole city) | Top 10% length | Top 5% length | At HIN's 9.8% | ROC-AUC | PR-AUC |
 | --- | --- | --- | --- | --- | --- |
-| PathPulse (Empirical Bayes ensemble) | **45.8%** [37.2, 55.6] | 28.9% | **69.2%** | **0.866** | **0.397** |
-| Model only (no EB) | 45.8% | 28.9% | 70.7% | 0.867 | 0.397 |
-| Past pedestrian crash density | 41.4% | 26.6% | 58.4% | 0.743 | 0.279 |
-| City High Injury Network 2025 | 33.9% | 16.3% | 53.8% | 0.680 | 0.194 |
-| ARC structural flags (demographic flags removed) | 29.2% | 14.2% | 50.7% | 0.776 | 0.198 |
-| Random | 11.4% | 6.0% | 23.6% | 0.529 | 0.093 |
+| PathPulse (Empirical Bayes ensemble) | **74.3%** [70.5, 78.3] | **61.1%** | **73.9%** | **0.889** | **0.277** |
+| Model only (no EB) | 74.3% | 61.2% | 73.8% | 0.889 | 0.276 |
+| Past pedestrian crash density | 49.8% | 44.4% | 49.8% | 0.716 | 0.160 |
+| City High Injury Network 2025 | 53.8% | 39.3% | 53.7% | 0.694 | 0.088 |
+| ARC structural flags (demographic flags removed) | 51.2% | 26.2% | 50.1% | 0.792 | 0.085 |
+| Random | 11.9% | 6.1% | 11.6% | 0.494 | 0.027 |
 
-- **2023 check (train 2020–2022):** PathPulse 56.2% vs past-crash ranking 47.3% vs HIN 30.7%. ROC-AUC 0.868.
+- **Confidence intervals** resample 614 H3 res-8 spatial blocks across the city.
+- **Gain over past-crash ranking:** +24.5 points on 2024 (95% CI +20.4 to +28.8).
+- **2023 check (train 2020–2022):** PathPulse 68.1% vs HIN 54.2% vs past-crash ranking 45.5%. ROC-AUC 0.869.
 - **City Pulse:**
   - 2024: top 10% of cells held **74.5%** (past crashes 66.1%, random 13.1%). ROC-AUC 0.916.
   - 2023: 69.2% vs 58.8%.
-- **Temporal model:** 12.5% lower Poisson deviance than a flat time profile on held-out 2022–2023 pedestrian crashes. Against a fair smoothed hour × day baseline, light and rain add **no measurable improvement** (−0.4%). Their effects are small in Atlanta's data: rain about ×1.04–1.08, darkness about ×1.3 relative to daytime at the same hour group. The Dry/Wet toggle is therefore subtle, and we say so.
+- **Temporal model:** 24.5% lower Poisson deviance than a flat time profile on held-out 2022–2023 pedestrian crashes (889 crashes). Against a smoothed hour × day baseline, light and rain add a small gain (+1.3%). Effects: darkness ×1.6, wet pavement ×1.12, with pedestrians more affected by darkness than all crashes (×1.11).
 
 ### Honest caveats
 
-- **2024 was looked at during development.** Neighborhood features were added after reviewing results, so treat the 2023 check as the cleaner second opinion.
-- **Gain over past-crash ranking.** On 2024 it is +4.4 points, with a spatial-block CI of −0.1 to +9.6. It is consistent across both holdout years but not significant on 2024 alone.
+- **Citywide ranking is easier than ranking a dense core.** Citywide includes many quiet residential streets. Within Downtown/Midtown alone (the earlier core-only model), the top 10% of length held 45.8% of 2024 crashes vs 41.4% for past-crash ranking.
+- **2024 was looked at during development.** Treat the 2023 check as the cleaner second opinion.
 - **The HIN comparison is conservative against us.** The HIN targets killed and serious crashes of all modes and was likely built with 2023–2024 data.
-- **Counts are under-predicted.** 2024 recorded more pedestrian crashes (140 predicted vs 225 observed). Pedestrian share rose from 1.8% to 2.5% while total crashes stayed flat, which suggests a coding change. We claim **ranking**, not calibrated counts.
+- **Counts are under-predicted** (411 predicted vs 543 observed in 2024). Pedestrian share rose while total crashes stayed flat, which suggests a coding change. We claim **ranking**, not calibrated counts.
 - **Post-period infrastructure.** Street features (OSM signals and crossings, 2023 AADT, current speed limits) are snapshots taken after or during the test period.
 
 ## Explanations and responsible AI
@@ -112,5 +114,5 @@
 - **Exposure bias:** busy streets look riskier partly because more people walk there.
 - **Under-reporting:** crash reports under-count minor pedestrian crashes.
 - **Post-crash changes:** streets change after crashes (road diets, new signals).
-- **Coverage:** street-level routing covers Georgia Tech, Midtown, and Downtown. City Pulse covers the City of Atlanta at area level.
+- **Coverage:** street-level scores and routing cover the whole City of Atlanta (49,915 road segments). City Pulse adds area-level scores for the same area.
 - **Pedestrian activity data:** StreetLight activity is from 2021.

@@ -15,8 +15,9 @@ import pandas as pd
 import shapely
 from scipy.spatial import cKDTree
 
-from pathpulse_data.config import CORE_BBOX, INTERIM_DIR
+from pathpulse_data.config import INTERIM_DIR
 from pathpulse_data.network.conflate import conflate_lines, count_points_near, mean_points_near
+from pathpulse_data.network.coverage import buffered_polygon
 from pathpulse_data.network.layers import UTM, load_lines, load_points, load_streetlight
 
 log = logging.getLogger(__name__)
@@ -55,8 +56,8 @@ def coalesce(*series: pd.Series) -> pd.Series:
 
 
 def _osm_features() -> gpd.GeoDataFrame:
-    west, south, east, north = CORE_BBOX
-    pad = 0.005
+    west, south, east, north = buffered_polygon().bounds
+    pad = 0.002
     tags = {
         "amenity": sorted(NIGHTLIFE | FOOD),
         "highway": ["traffic_signals", "crossing"],

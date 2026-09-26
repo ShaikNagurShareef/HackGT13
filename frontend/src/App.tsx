@@ -221,6 +221,7 @@ export default function App() {
       <Suspense fallback={<div className="map map-fallback" aria-busy="true" />}>
         <MapView
         bbox={data.meta.coverage_bbox}
+        outlineUrl={`${data.meta.static_base}/coverage.geojson`}
         segments={data.segments}
         frame={frame}
         frameKey={`${day}-${mapCond}-${hour}-${frames ? "ready" : "empty"}`}

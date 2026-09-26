@@ -108,3 +108,17 @@ def test_reference_dates_cover_every_day_group() -> None:
         "sunday": date(2026, 9, 27),
         "weekday": date(2026, 9, 28),
     }
+
+
+@pytest.mark.unit
+def test_hour_start_handles_repeated_fall_back_hour() -> None:
+    from pathpulse_data.model.temporal_data import hour_start
+
+    # 2023-11-05 01:30 EDT and 01:30 EST are different instants in the repeated hour.
+    ts = pd.Series(pd.to_datetime(["2023-11-05T05:30:00Z", "2023-11-05T06:30:00Z"], utc=True))
+
+    out = hour_start(ts)
+
+    assert [t.hour for t in out] == [1, 1]
+    assert out.iloc[0] != out.iloc[1]
+    assert str(out.iloc[0].tz) == "America/New_York"

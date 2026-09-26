@@ -11,8 +11,8 @@ export function FirstRun({ dataThrough, onDone }: { dataThrough: string; onDone:
         <h1 id="firstrun-title">PathPulse</h1>
         <p className="lede">See traffic risk before you walk into it.</p>
         <p>
-          The map shows where and when <strong>pedestrian traffic crashes</strong> have concentrated around Georgia
-          Tech, Midtown, and Downtown — by hour and weather — and suggests walking routes with less exposure.
+          The map shows where and when <strong>pedestrian traffic crashes</strong> have concentrated across the
+          City of Atlanta — street by street, by hour and weather — and suggests walking routes with less exposure.
         </p>
         <p className="faint">
           Traffic risk only — not crime or personal safety. Crash data through {dataThrough}.

@@ -40,12 +40,12 @@ describe('SearchBar (SRCH-01..04)', () => {
 
   it('merges geocoder results and flags places outside coverage', async () => {
     const results = [
-      { label: 'Ponce City Market', address: 'Ponce de Leon Ave', lat: 33.772, lon: -84.365, in_coverage: false },
+      { label: 'Stone Mountain Park', address: 'Stone Mountain, GA', lat: 33.806, lon: -84.145, in_coverage: false },
     ]
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ success: true, data: results }), { headers: { 'content-type': 'application/json' } })))
     setup()
 
-    await userEvent.type(screen.getByRole('combobox', { name: 'From' }), 'Ponce City')
+    await userEvent.type(screen.getByRole('combobox', { name: 'From' }), 'Stone Mountain')
 
     await waitFor(() => expect(screen.getByText('Outside routing coverage')).toBeInTheDocument())
   })

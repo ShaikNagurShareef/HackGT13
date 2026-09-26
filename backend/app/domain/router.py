@@ -26,7 +26,9 @@ LAMBDA_LADDER = (0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 4.0)
 DETOUR_RATIO, DETOUR_EXTRA_S = 1.25, 360.0
 MIN_RISK_GAIN = 10
 MIN_EXPOSURE_GAIN = 0.15
-HIGH_SCORE_QUANTILE = 750  # index into the 1001-point quantile table
+HIGH_SCORE_QUANTILE = 750
+MIN_SEARCH_PAD_M = 1200.0
+SEARCH_PAD_RATIO = 0.6  # index into the 1001-point quantile table
 MIN_TRIP_M = 60.0
 LONG_TRIP_M, LONG_TRIP_S = 5000.0, 3600.0
 M_PER_DEG = 111_320.0
@@ -88,9 +90,25 @@ class Router:
         pa, pb = self._tree.data[a], self._tree.data[b]
         return float(np.hypot(*(pa - pb)))
 
-    def _shortest(self, origin: int, dest: int, cost: np.ndarray) -> list[int]:
+    def _search_area(self, origin: int, dest: int) -> np.ndarray:
+        """Directed edges inside a padded box around the trip (citywide graphs stay fast).
+
+        Any route within the 1.25x detour budget stays well inside this box.
+        """
+        xy = self._tree.data
+        a, b = xy[origin], xy[dest]
+        pad = max(MIN_SEARCH_PAD_M, SEARCH_PAD_RATIO * float(np.hypot(*(a - b))))
+        lo, hi = np.minimum(a, b) - pad, np.maximum(a, b) + pad
+        inside = np.all((xy >= lo) & (xy <= hi), axis=1)
+        return inside[self.src] & inside[self.dst]
+
+    def _shortest(
+        self, origin: int, dest: int, cost: np.ndarray, area: np.ndarray | None = None
+    ) -> list[int]:
         """Directed-edge ids of the cheapest path (parallel edges resolved by min cost)."""
-        order = np.lexsort((cost, self.dst, self.src))
+        candidates = np.flatnonzero(area) if area is not None else np.arange(len(cost))
+        sub = np.lexsort((cost[candidates], self.dst[candidates], self.src[candidates]))
+        order = candidates[sub]
         s, d = self.src[order], self.dst[order]
         first = np.ones(len(order), bool)
         first[1:] = (s[1:] != s[:-1]) | (d[1:] != d[:-1])
@@ -127,12 +145,18 @@ class Router:
     def plan(self, origin: int, dest: int, depart: datetime, wet: bool) -> RoutePlan:
         if origin == dest or self.node_distance_m(origin, dest) < MIN_TRIP_M:
             raise RoutingError("TOO_CLOSE", "You're already there — here's the risk on this block.")
-        fastest = self._measure(self._shortest(origin, dest, self.time_s), depart, wet)
+        area = self._search_area(origin, dest)
+        try:
+            fast_path = self._shortest(origin, dest, self.time_s, area)
+        except RoutingError:
+            area = None  # the box cut the only connection; search everything
+            fast_path = self._shortest(origin, dest, self.time_s)
+        fastest = self._measure(fast_path, depart, wet)
         budget = min(fastest.duration_s * DETOUR_RATIO, fastest.duration_s + DETOUR_EXTRA_S)
         density = self._relative_density(depart, wet)
         candidates = []
         for lam in LAMBDA_LADDER:
-            path = self._shortest(origin, dest, self.time_s * (1 + lam * density))
+            path = self._shortest(origin, dest, self.time_s * (1 + lam * density), area)
             candidates.append(self._measure(path, depart, wet))
         within = [c for c in candidates if c.duration_s <= budget + 1e-6]
         best = min(within, key=lambda c: (c.exposure, c.duration_s), default=fastest)
