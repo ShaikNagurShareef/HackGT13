@@ -5,6 +5,7 @@ import {
   explainSchema,
   geoResultsSchema,
   hourlySchema,
+  areaSchema,
   metaSchema,
   routesSchema,
   segmentSchema,
@@ -12,6 +13,7 @@ import {
   type Explanation,
   type GeoResult,
   type Hourly,
+  type Area,
   type Meta,
   type Routes,
   type SegmentDetail,
@@ -92,6 +94,10 @@ export const api = {
       body: JSON.stringify({ kind: 'segment', seg_id: id, t, cond }),
     }),
   segmentHourly: (id: number): Promise<Hourly> => request(`/segments/${id}/hourly`, hourlySchema),
+  areaAt: (lat: number, lon: number, t: string, cond: Condition): Promise<Area> =>
+    request(`/areas/lookup?lat=${lat}&lon=${lon}&t=${encodeURIComponent(t)}&cond=${cond}`, areaSchema),
+  area: (cell: string, t: string, cond: Condition): Promise<Area> =>
+    request(`/areas/${cell}?t=${encodeURIComponent(t)}&cond=${cond}`, areaSchema),
   liveConditions: (): Promise<ConditionUsed> => request('/conditions/live', conditionUsedSchema),
   geocode: (q: string): Promise<GeoResult[]> =>
     request(`/geocode?q=${encodeURIComponent(q)}`, geoResultsSchema),

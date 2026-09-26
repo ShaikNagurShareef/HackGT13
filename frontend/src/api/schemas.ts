@@ -105,3 +105,21 @@ export const hourlySchema = z.object({
   source: z.literal('tiger_data'),
 })
 export type Hourly = z.infer<typeof hourlySchema>
+export const areaSchema = z.object({
+  cell: z.string(),
+  lat: z.number(),
+  lon: z.number(),
+  score: z.number().int(),
+  band: z.string(),
+  confidence: z.enum(['high', 'medium', 'limited']),
+  baseline_points: z.number().int(),
+  factors: z.array(factorSchema),
+  remainder_points: z.number().int(),
+  crashes: z.number(),
+  ped_crashes: z.number(),
+  period: z.string(),
+  in_street_coverage: z.boolean(),
+  condition_used: conditionUsedSchema,
+  at: z.string(),
+})
+export type Area = z.infer<typeof areaSchema>

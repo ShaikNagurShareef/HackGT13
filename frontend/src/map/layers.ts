@@ -3,11 +3,19 @@ import type { Layer, PickingInfo } from '@deck.gl/core'
 import type { Route } from '../api/schemas'
 import { RAMP, widthFor } from '../lib/bands'
 import type { Hotspot } from '../lib/hotspots'
+import { buildHexLayer } from './hexLayer'
 
 export interface SegmentPath {
   id: number
   path: [number, number][]
   name: string
+}
+
+export interface HexInput {
+  cells: ReadonlyArray<string>
+  frame: Uint8Array | null
+  frameKey: string
+  onPick: (cell: string) => void
 }
 
 interface LayerInput {
@@ -20,6 +28,7 @@ interface LayerInput {
   selectedSeg: number | null
   reducedMotion: boolean
   onSegment: (id: number) => void
+  hex?: HexInput | null
 }
 
 const FAST_GREY: [number, number, number, number] = [154, 166, 178, 235]
@@ -28,6 +37,11 @@ const TEAL_HALO: [number, number, number, number] = [63, 209, 198, 70]
 
 export function buildLayers(input: LayerInput): Layer[] {
   const { frame, frameKey, reducedMotion } = input
+  if (input.hex) {
+    const h = input.hex
+    const hexLayer = buildHexLayer(h.cells, h.frame, h.frameKey, reducedMotion, h.onPick)
+    return [hexLayer, ...routeLayers(input.fastest, input.pathpulse)]
+  }
   const routing = input.fastest != null
   const alpha = routing ? 110 : 230
   const duration = reducedMotion ? 0 : 400

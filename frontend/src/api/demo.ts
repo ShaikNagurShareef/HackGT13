@@ -35,6 +35,7 @@ export function fixtureKey(method: string, path: string, body?: string): string 
   const [route, query = ''] = path.split('?')
   const q = new URLSearchParams(query)
   if (method === 'GET' && (route === '/meta' || route === '/conditions/live')) return `GET ${route}`
+  if (method === 'GET' && route === '/areas/lookup') return `GET /areas/lookup|${q.get('cond') ?? 'live'}`
   const seg = route.match(/^\/segments\/(\d+)$/)
   if (method === 'GET' && seg) return `GET /segments/${seg[1]}|${q.get('cond') ?? 'live'}`
   if (method === 'POST' && body) {

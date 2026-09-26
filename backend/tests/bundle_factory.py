@@ -141,3 +141,46 @@ def write_bundle(root: Path) -> Path:
 
 def _write_json(path: Path, obj: object) -> None:
     path.write_text(json.dumps(obj))
+
+
+def write_hexes(root: Path) -> list[str]:
+    """Add a 7-hex City Pulse bundle around the grid (one center + its ring)."""
+    import h3
+
+    center = h3.latlng_to_cell(LAT0, LON0, 9)
+    cells = [center, *sorted(c for c in h3.grid_disk(center, 1) if c != center)]
+    latlng = [h3.cell_to_latlng(c) for c in cells]
+    n = len(cells)
+    keys = ["history", "vehicle_crashes"]
+    np.save(root / "hex_factors.npy", np.array([[1.0, 0.5]] + [[-0.2, 0.0]] * (n - 1), np.float32))
+    groups = ("arterial", "collector", "local")
+    mult_rows = [
+        (rg, dg, h, lt, wet, 1.3 if lt == "dark" else 1.0)
+        for rg in groups
+        for dg in ("weekday", "friday", "saturday", "sunday")
+        for h in range(24)
+        for lt in ("day", "twilight", "dark")
+        for wet in (False, True)
+    ]
+    _write_json(
+        root / "hex_meta.json",
+        {
+            "cells": cells,
+            "lat": [p[0] for p in latlng],
+            "lon": [p[1] for p in latlng],
+            "share": {"arterial": [0.5] * n, "collector": [0.2] * n, "local": [0.3] * n},
+            "crashes": [40.0] + [2.0] * (n - 1),
+            "ped_crashes": [3.0] + [0.0] * (n - 1),
+            "confidence": ["high"] + ["limited"] * (n - 1),
+            "base": -0.5,
+            "quantiles": np.linspace(-3.0, 3.0, 1001).tolist(),
+            "factors": [{"key": k, "label": k.title()} for k in keys],
+            "temporal": {"key": "time_conditions", "label": "Time of day and conditions"},
+            "multipliers": {
+                k: [r[i] for r in mult_rows]
+                for i, k in enumerate(["road_group", "day_group", "hour", "light", "wet", "mult"])
+            },
+            "metrics": {},
+        },
+    )
+    return cells

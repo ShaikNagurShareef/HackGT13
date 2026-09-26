@@ -1,7 +1,8 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react'
 import { ApiError, api } from './api/client'
 import { DEMO_DEPART, DEMO_ROUTE, loadFixtures } from './api/demo'
-import type { Routes, SegmentDetail } from './api/schemas'
+import type { Area, Routes, SegmentDetail } from './api/schemas'
+import { AreaCard } from './components/AreaCard'
 import { About, FirstRun } from './components/About'
 import { ComparisonCard } from './components/ComparisonCard'
 import { ConditionsChip, DepartPicker, Legend } from './components/Controls'
@@ -51,6 +52,9 @@ export default function App() {
   const [firstRun, setFirstRun] = useState(() => !readSeen() && !view.demo)
   const [liveWet, setLiveWet] = useState(false)
   const [liveLabel, setLiveLabel] = useState<string | null>(null)
+  const [cityMode, setCityMode] = useState(false)
+  const [hexFrames, setHexFrames] = useState<FrameSet | null>(null)
+  const [area, setArea] = useState<Area | null>(null)
 
   const now = useMemo(() => new Date(), [])
 
@@ -117,6 +121,26 @@ export default function App() {
   }, [data, day, mapCond])
 
   useEffect(() => {
+    if (!data?.hexFrames || !cityMode) return
+    let cancelled = false
+    data.hexFrames
+      .get(day, mapCond)
+      .then((f) => !cancelled && setHexFrames(f))
+      .catch(() => !cancelled && setError('City Pulse frames could not load.'))
+    return () => {
+      cancelled = true
+    }
+  }, [data, day, mapCond, cityMode])
+
+  const showArea = useCallback(
+    (load: Promise<Area>, silent = false) =>
+      load.then(setArea).catch((e: unknown) => {
+        if (!silent) setError(e instanceof ApiError ? e.message : 'Area unavailable.')
+      }),
+    [],
+  )
+
+  useEffect(() => {
     if (!view.from || !view.to) {
       setRoutes(null)
       return
@@ -132,11 +156,19 @@ export default function App() {
         if (view.cond === 'live') setLiveWet(r.condition_used.cond === 'wet')
         update({ hour: null, day: null })
       })
-      .catch((e: unknown) => !cancelled && setError(e instanceof ApiError ? e.message : 'Could not compute routes.'))
+      .catch((e: unknown) => {
+        if (cancelled) return
+        setError(e instanceof ApiError ? e.message : 'Could not compute routes.')
+        // CITY-03: an out-of-coverage destination inside Atlanta still gets an area score.
+        if (e instanceof ApiError && e.code === 'OUT_OF_COVERAGE' && view.to) {
+          // Silent: outside the city the routing message above is the right answer.
+          void showArea(api.areaAt(view.to.lat, view.to.lon, view.depart, view.cond), true)
+        }
+      })
     return () => {
       cancelled = true
     }
-  }, [view.from, view.to, view.depart, view.cond, update])
+  }, [view.from, view.to, view.depart, view.cond, update, showArea])
 
   useEffect(() => {
     if (view.seg == null) {
@@ -193,6 +225,16 @@ export default function App() {
         selectedSeg={view.seg}
         onSegment={onSegment}
         onMapPick={onMapPick}
+        hex={
+          cityMode && data.hexCells
+            ? {
+                cells: data.hexCells,
+                frame: hexFrames?.hour(hour) ?? null,
+                frameKey: `hex-${day}-${mapCond}-${hour}-${hexFrames ? 'ready' : 'empty'}`,
+                onPick: (cell: string) => void showArea(api.area(cell, routes?.depart_at ?? view.depart, view.cond)),
+              }
+            : null
+        }
         />
       </Suspense>
       </ErrorBoundary>
@@ -207,6 +249,16 @@ export default function App() {
         <div className="top-controls panel">
           <ConditionsChip cond={view.cond} label={routes?.condition_used.label ?? condLabel} onChange={(c) => update({ cond: c })} />
           <DepartPicker value={view.depart} onChange={(d) => update({ depart: d })} />
+          {data.hexCells && (
+            <div className="conditions" role="group" aria-label="Map scale">
+              <button type="button" className="chip" aria-pressed={!cityMode} onClick={() => setCityMode(false)}>
+                Streets
+              </button>
+              <button type="button" className="chip" aria-pressed={cityMode} onClick={() => setCityMode(true)}>
+                City Pulse
+              </button>
+            </div>
+          )}
         </div>
         <button type="button" className="icon-btn about-btn" aria-label="About PathPulse" onClick={() => setAboutOpen(true)}>
           i
@@ -221,7 +273,9 @@ export default function App() {
         </div>
       )}
       <aside className="side">
-        {detail ? (
+        {area ? (
+          <AreaCard area={area} onClose={() => setArea(null)} onAbout={() => setAboutOpen(true)} />
+        ) : detail ? (
           <SegmentSheet
             detail={detail}
             explanation={segText}

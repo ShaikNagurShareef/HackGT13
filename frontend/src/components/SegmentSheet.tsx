@@ -37,7 +37,9 @@ export function ScoreDial({ score, band }: { score: number; band: string }) {
   )
 }
 
-export function FactorBars({ detail }: { detail: SegmentDetail }) {
+type Attribution = Pick<SegmentDetail, 'baseline_points' | 'factors' | 'remainder_points' | 'score'>
+
+export function FactorBars({ detail }: { detail: Attribution }) {
   const rows = [
     { key: 'baseline', label: 'Typical street at a typical hour', points: detail.baseline_points },
     ...detail.factors,

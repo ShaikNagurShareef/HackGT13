@@ -41,8 +41,8 @@ export function median(values: Uint8Array): number {
   return 100
 }
 
-export function frameUrl(staticBase: string, day: DayGroup, cond: Cond): string {
-  return `${staticBase}/frames_${day}_${cond}.bin`
+export function frameUrl(staticBase: string, day: DayGroup, cond: Cond, prefix = 'frames'): string {
+  return `${staticBase}/${prefix}_${day}_${cond}.bin`
 }
 
 type Fetcher = (url: string) => Promise<ArrayBuffer>
@@ -60,14 +60,17 @@ export class FrameStore {
   private readonly nSegments: number
   private readonly fetcher: Fetcher
 
-  constructor(staticBase: string, nSegments: number, fetcher: Fetcher = defaultFetcher) {
+  private readonly prefix: string
+
+  constructor(staticBase: string, nSegments: number, fetcher: Fetcher = defaultFetcher, prefix = 'frames') {
     this.staticBase = staticBase
     this.nSegments = nSegments
     this.fetcher = fetcher
+    this.prefix = prefix
   }
 
   get(day: DayGroup, cond: Cond): Promise<FrameSet> {
-    const url = frameUrl(this.staticBase, day, cond)
+    const url = frameUrl(this.staticBase, day, cond, this.prefix)
     let entry = this.cache.get(url)
     if (!entry) {
       entry = this.fetcher(url).then((buf) => new FrameSet(new Uint8Array(buf), this.nSegments))

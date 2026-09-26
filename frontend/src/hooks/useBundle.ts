@@ -10,6 +10,8 @@ export interface BundleData {
   segments: SegmentPath[]
   hotspotNodes: HotspotNode[]
   frames: FrameStore
+  hexCells: string[] | null
+  hexFrames: FrameStore | null
 }
 
 interface GeoJsonLine {
@@ -38,13 +40,23 @@ export function useBundle(): { data: BundleData | null; error: string | null } {
           getJson<{ features: GeoJsonLine[] }>(`${meta.static_base}/segments.geojson`),
           getJson<HotspotNode[]>(`${meta.static_base}/hotspot_nodes.json`),
         ])
+        const hexCells = await getJson<string[]>(`${meta.static_base}/hex_cells.json`).catch(() => null)
         const segments = geo.features.map((f) => ({
           id: f.id,
           path: f.geometry.coordinates,
           name: f.properties.n,
         }))
         if (!cancelled) {
-          setData({ meta, segments, hotspotNodes, frames: new FrameStore(meta.static_base, meta.n_segments) })
+          setData({
+            meta,
+            segments,
+            hotspotNodes,
+            frames: new FrameStore(meta.static_base, meta.n_segments),
+            hexCells,
+            hexFrames: hexCells
+              ? new FrameStore(meta.static_base, hexCells.length, undefined, 'hex_frames')
+              : null,
+          })
         }
       } catch {
         if (!cancelled) setError("Couldn't load the PathPulse map data. Check your connection and refresh.")

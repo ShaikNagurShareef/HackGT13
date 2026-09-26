@@ -13,6 +13,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from app.api.areas import areas
 from app.api.core import api
 from app.api.envelope import (
     AppError,
@@ -25,6 +26,7 @@ from app.config import Settings, get_settings
 from app.domain.router import Router
 from app.middleware import RateLimitMiddleware
 from app.repositories.artifacts import load_bundle
+from app.repositories.hexes import load_hexes
 from app.repositories.history import HistoryRepository
 from app.services.explain.providers import GeminiProvider, GroqProvider, Provider
 from app.services.explain.service import ExplainService
@@ -75,6 +77,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="PathPulse API", version=bundle.model_version, lifespan=lifespan)
     app.state.bundle = bundle
     app.state.router = Router(bundle)
+    app.state.hexes = load_hexes(bundle.root)  # City Pulse is optional (P1)
     app.state.settings = cfg
     app.state.routes_cache = LRUCache(maxsize=ROUTES_CACHE_SIZE)
     db_url = cfg.database_url.get_secret_value() if cfg.database_url else None
@@ -96,6 +99,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_exception_handler(Exception, unexpected_error_handler)
     app.include_router(api)
     app.include_router(extras)
+    app.include_router(areas)
     app.mount(
         f"/static/{bundle.model_version}",
         StaticFiles(directory=bundle.root),

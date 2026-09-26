@@ -4,7 +4,7 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { MapLibreOverlay } from '@deck.gl/maplibre'
 import type { Route } from '../api/schemas'
 import type { Hotspot } from '../lib/hotspots'
-import { buildLayers, type SegmentPath } from './layers'
+import { buildLayers, type HexInput, type SegmentPath } from './layers'
 
 const DARK_STYLE = 'https://tiles.openfreemap.org/styles/dark'
 const CENTER: [number, number] = [-84.3905, 33.7765]
@@ -20,6 +20,7 @@ export interface MapViewProps {
   selectedSeg: number | null
   onSegment: (id: number) => void
   onMapPick: (lat: number, lon: number) => void
+  hex?: HexInput | null
 }
 
 function prefersReducedMotion(): boolean {
@@ -51,12 +52,12 @@ export function MapView(props: MapViewProps) {
       style: DARK_STYLE,
       center: CENTER,
       zoom: 14.2,
-      minZoom: 11,
+      minZoom: 10,
       maxZoom: 18,
       attributionControl: { compact: true },
       maxBounds: [
-        [west - 0.08, south - 0.06],
-        [east + 0.08, north + 0.06],
+        [west - 0.25, south - 0.2],
+        [east + 0.2, north + 0.2],
       ],
     })
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right')
@@ -98,6 +99,15 @@ export function MapView(props: MapViewProps) {
       layers: buildLayers({ ...props, reducedMotion: prefersReducedMotion(), onSegment: props.onSegment }),
     })
   }, [props])
+
+  const cityMode = Boolean(props.hex)
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    const duration = prefersReducedMotion() ? 0 : 900
+    if (cityMode) map.flyTo({ center: [-84.42, 33.765], zoom: 11.2, duration })
+    else map.flyTo({ center: CENTER, zoom: 14.2, duration })
+  }, [cityMode])
 
   useEffect(() => {
     const map = mapRef.current

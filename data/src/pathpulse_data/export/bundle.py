@@ -12,6 +12,7 @@ import subprocess
 from datetime import UTC, date, datetime
 from typing import Any
 
+from pathpulse_data.citywide import export as citywide_export
 from pathpulse_data.config import ARTIFACTS_DIR, CORE_BBOX, INTERIM_DIR
 from pathpulse_data.export import writers
 from pathpulse_data.export.assemble import CONDITIONS, DAY_GROUPS, assemble
@@ -141,6 +142,7 @@ def main() -> None:
         current.unlink() if current.is_symlink() else shutil.rmtree(current)
     current.symlink_to(version)
     log.info("bundle written: %s | headline %s", out, json.dumps(metrics["headline"]))
+    citywide_export.main()  # City Pulse hexes join the same versioned bundle
 
 
 if __name__ == "__main__":

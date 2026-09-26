@@ -55,3 +55,26 @@ test('About shows the model card and emergency numbers (TRUST-01/03)', async ({ 
   await expect(about.getByRole('link', { name: 'Call 911' })).toHaveAttribute('href', 'tel:911')
   await expect(about).toContainText('No demographic, income, or crime data')
 })
+
+test('City Pulse: toggle to citywide hexes and open an area card (CITY-01/02)', async ({ page }) => {
+  await page.goto('/?h=22&day=friday&cond=wet')
+  await page.getByRole('button', { name: 'City Pulse' }).click()
+  await expect(page.getByRole('button', { name: 'City Pulse' })).toHaveAttribute('aria-pressed', 'true')
+  await page.waitForTimeout(2500) // fly-to animation settles
+  await page.mouse.click(700, 450)
+
+  const card = page.getByRole('region', { name: 'Area traffic risk' })
+  await expect(card).toBeVisible()
+  const points = await card.locator('.factor:not(.factor-total) .factor-points').allTextContents()
+  const total = points.reduce((sum, p) => sum + Number(p.replace('−', '-').replace('+', '')), 0)
+  expect(total).toBe(Number(await card.locator('.dial-score').textContent()))
+})
+
+test('in-city destination outside street coverage shows its area score (CITY-03)', async ({ page }) => {
+  await page.goto('/?from=33.77710,-84.39620,Klaus&to=33.75370,-84.41670,West%20End&cond=wet')
+
+  await expect(page.getByRole('alert')).toContainText('PathPulse covers Midtown')
+  const card = page.getByRole('region', { name: 'Area traffic risk' })
+  await expect(card).toBeVisible()
+  await expect(card.getByTestId('coverage-note')).toContainText('Street-level routing covers')
+})

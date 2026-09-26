@@ -23,7 +23,8 @@ TRIPS = (
     ({"lat": 33.7771, "lon": -84.3962}, {"lat": 33.7810, "lon": -84.3863}),  # Klaus -> Midtown
     ({"lat": 33.7765, "lon": -84.3893}, {"lat": 33.7716, "lon": -84.3872}),  # Tech Sq -> North Ave
 )
-STATIC_FILES = ("segments.geojson", "hotspot_nodes.json")
+STATIC_FILES = ("segments.geojson", "hotspot_nodes.json", "hex_cells.json")
+WEST_END = {"lat": 33.7537, "lon": -84.4167}
 
 
 def _ok(resp: Any) -> Any:
@@ -68,6 +69,9 @@ def record(client: TestClient) -> dict[str, Any]:
             fixtures[f"POST /explain segment:{seg}|{cond}"] = _ok(
                 client.post("/explain", json=body)
             )
+    for cond in ("wet", "dry", "live"):
+        params = {**WEST_END, "t": DEPART, "cond": cond}
+        fixtures[f"GET /areas/lookup|{cond}"] = _ok(client.get("/areas/lookup", params=params))
     return fixtures
 
 
@@ -78,13 +82,15 @@ def copy_static(version: str, artifacts: Path) -> str:
     target.mkdir(parents=True)
     for name in STATIC_FILES:
         shutil.copy2(artifacts / name, target / name)
-    for frames in artifacts.glob("frames_*.bin"):
+    for frames in [*artifacts.glob("frames_*.bin"), *artifacts.glob("hex_frames_*.bin")]:
         shutil.copy2(frames, target / frames.name)
     return f"/demo/static/{version}"
 
 
 def main() -> None:
-    settings = get_settings().model_copy(update={"rate_limit_per_minute": 1_000_000})
+    settings = get_settings().model_copy(
+        update={"rate_limit_per_minute": 1_000_000, "paid_rate_limit_per_minute": 1_000_000}
+    )
     app = create_app(settings)
     with TestClient(app) as client:
         fixtures = record(client)
