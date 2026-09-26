@@ -4,7 +4,8 @@
 
 **Live app: [pathpro.tech](https://pathpro.tech)**, hosted on Vultr (Atlanta) behind Caddy with automatic HTTPS.
 
-- **Offline demo:** add `?demo=1` for the scripted Klaus → Midtown MARTA scenario.
+- **Modes:** Walk · Bike · E-bike · Scooter (a separate cyclist-risk model on OpenStreetMap's bike network), plus a MARTA hand-off for long walks. No car routing, by design.
+- **Offline demo:** add `?demo=1` for the scripted Klaus → Midtown MARTA scenario (walk and ride).
 - **Deploy:** `deploy/go.sh pathpro.tech` provisions the Vultr VM, installs Caddy + systemd, ships the app, and smoke-tests it.
 
 PathPro is a pedestrian traffic-risk forecaster for Atlanta. It learns from public crash records where and when people on foot get hit by vehicles. It turns that into a map that changes by hour and weather (**Risk Tides**). It also offers a walking route that trades a few minutes for much less exposure to high-risk streets.

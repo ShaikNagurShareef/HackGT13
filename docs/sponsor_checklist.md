@@ -76,9 +76,15 @@ Job: community street reports. Tiger Data stays the system of record for crashes
 - [x] Model card, PRD and CLAUDE.md amended; independent code review: no critical issues, all findings fixed
 - [ ] In the demo video and Devpost: show the fairness safeguards explicitly (judges will ask)
 
+## Ride mode (added Sep 26 evening)
+- [x] Walk · Bike · E-bike · Scooter live on pathpro.tech (bundle pp-20260926-1902-f49c0d2); ride model 69.9% [64.0–76.1] vs HIN 43.6%, past bike crashes 30.4%, random 12.0% (2024, 174 cyclist crashes)
+- [x] MARTA hand-off + "Try Bike" on long walks; 28 rail stations
+- [x] Offline demo includes ride routes
+
 ## Submission
 - [ ] Devpost: every category above, the AI-tool disclosure (Claude Code + ECC) and data credits (already in `docs/devpost.md`)
-- [ ] Demo video (2–3 min): live route, Risk Tides, "Why?" sheet with Tiger history, Listen (ElevenLabs), pathpro.tech in the address bar
+- [ ] Demo video v2 (3–5 min, narration + captions + music, sponsor section) — in progress; v1 at media/pathpro_demo.mp4.
+- [ ] (old) Demo video (2–3 min): live route, Risk Tides, "Why?" sheet with Tiger history, Listen (ElevenLabs), pathpro.tech in the address bar
 - [ ] Submit the Devpost link at expo.hexlabs.org
 - [ ] Expo kit: laptop on `?demo=1`, phone on pathpro.tech, QR code, model card, judge Q&A (`docs/judge_qa.md`)
 - [ ] Afterwards: turn off Chrome's View → Developer → "Allow JavaScript from Apple Events"

@@ -2,7 +2,7 @@
 
 **Tagline:** See traffic risk before you walk into it.
 
-**Live:** https://pathpro.tech (Vultr, Atlanta) · offline demo: https://pathpro.tech/?demo=1 · code: https://github.com/ShaikNagurShareef/PathPro
+**Live:** https://pathpro.tech (Vultr, Atlanta) · offline demo: https://pathpro.tech/?demo=1 · code: https://github.com/ShaikNagurShareef/PathPro · video: <YouTube link>
 
 **Tracks and prizes to select:**
 - Oracle of the Deep
@@ -28,6 +28,7 @@ A mentor tried our first version on his phone and told us it wasn't intuitive: G
 - **Two taps to a lower-risk route.** Open PathPro, tap "Where to?", and pick a place. GPS fills in "Your location". The route card reads like a map app's: **"23 min · 54% less traffic risk · +4 min vs fastest · arrive 10:52 PM"**, with a big **Start** button.
 - **Walking navigation.** The map follows you and a banner warns **"High traffic risk ahead · 10th St NW in 120 m"**, spoken once per stretch with ElevenLabs. It detects arrival. Without GPS, "Preview walk" plays the same experience, so it works at the expo table and offline.
 - **Learns your routine, on your phone only.** After a couple of walks it offers "Heading back to Klaus? · lower-risk route one tap away". Walk history never leaves the device, and one tap clears it.
+- **Walk · Bike · E-bike · Scooter.** Walking 45 minutes across Atlanta isn't realistic, so PathPro also routes bikes, e-bikes, and scooters on OpenStreetMap's bike network with its own cyclist-risk model: Georgia Tech → Inman Park at 9 PM is **"28 min ride · 72% less traffic risk"** for +4 min. Long walks get a **MARTA hand-off** ("walk 8 min to North Ave station…") and a "Try Bike" shortcut. We deliberately don't route cars: risk-aware driving routes push traffic onto the neighborhood streets where people walk.
 - **Risk Tides:** hour-by-hour, dry/wet, weekday/weekend traffic risk on about 50,000 street segments across the City of Atlanta.
 - **"Why?" on every street:** factor bars that add up exactly to the score, crash history, and when crashes happened by hour (Tiger Data). A grounded LLM explanation (Groq, with Gemini as fallback) can be read aloud.
 - **Personal-safety layer:**
@@ -50,6 +51,9 @@ A mentor tried our first version on his phone and told us it wasn't intuitive: G
   - The 10% of street length PathPro ranks highest held **74.3%** of 2024 pedestrian crashes (95% spatial-block CI 70.5–78.3%).
   - That compares with 49.8% for ranking by past crashes, 53.8% for the City's High Injury Network, and 11.9% for a random ranking. ROC-AUC is 0.89.
   - Our score also captures more on the City High Injury Network's own share of street length.
+  - **Ride model** (174 cyclist crashes in 2024): **69.9%** of them fell on the 10% of street length it ranks highest (95% CI 64.0–76.1%). That compares with 43.6% for the High Injury Network, 30.4% for past bike crashes, and 12.0% at random. On the 2023 validation year it scored 69.0%.
+    - It is trained on pedestrian + cyclist crashes pooled, because 2023 validation favored that over cyclist-only labels, but it is scored on cyclist crashes only. So we claim ranking, not calibrated cyclist counts.
+    - Exposure uses a Strava proxy. Removing Strava gives 69.5%.
 - **Personal safety, with fairness designed in:**
   - Crime is **never** used in routing or in the traffic model. A test multiplies crime counts by 1,000 and checks that routes don't change.
   - The layer covers crimes against persons only (homicide, robbery, aggravated assault, simple assault). It excludes residences, jails, and shelters, fetches no addresses or victim fields, and aggregates to H3 hexes by time of day.
@@ -66,7 +70,7 @@ A mentor tried our first version on his phone and told us it wasn't intuitive: G
   - **Groq** (gpt-oss-120b/20b) with **Gemini** as fallback: grounded explanations. A validator rejects any sentence with a number not in the evidence, and any crime framing.
 - **App:** React + MapLibre + deck.gl, FastAPI, and scipy Dijkstra routing. Both route plans take about 150 ms at the median.
 - **Engineering:** test-first throughout (RED and GREEN commits), with independent code, ML, and security review passes.
-  - About 850 automated tests: 157 data, 247 API, 427 web, and 19 end-to-end, including an offline demo and a GPS navigation flow.
+  - About 1,060 automated tests: 222 data, 277 API, 541 web, and 19 end-to-end, including an offline demo and a GPS navigation flow.
   - 90%+ coverage per package.
 - **AI tools (disclosed):**
   - Built with Claude Code following the ECC workflow: plan, test first, implement, independent review, verify.
@@ -98,7 +102,7 @@ A mentor tried our first version on his phone and told us it wasn't intuitive: G
 
 ## What's next for PathPro
 
-- Cycling and wheelchair profiles
+- Wheelchair and stroller profiles
 - Citywide lighting data through a partnership with the City or Georgia Power
 - Push notifications and background location for navigation
 - A Vision Zero planning dashboard for the city and campus
