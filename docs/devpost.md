@@ -7,6 +7,7 @@
 **Live:** https://pathpro.tech (Vultr, Atlanta) · offline demo: https://pathpro.tech/?demo=1 · code: https://github.com/ShaikNagurShareef/PathPro · video: <YouTube link>
 
 **Tracks and prizes to select:**
+- SpaceXAI "Make it Legendary"
 - Oracle of the Deep
 - Aramco "A Marina's Mission"
 - Best Overall
@@ -54,6 +55,21 @@ A mentor tried our first version on his phone and told us it wasn't intuitive: G
 - **Community street reports** (sidewalk blocked, signal out, construction detour, …) show on the map and routes for 14 days. They never change a score.
 - **City Pulse:** area traffic-risk scores for all 3,537 hexes of the city.
 - Works on phone and desktop. No login. The demo works offline.
+
+<!-- Publish this section only after Grok is verified live on pathpro.tech (explanation source "grok", Grok Voice audio, one Imagine image). -->
+## Make it Legendary: mission control for every walk home
+
+We built PathPro the way a launch team works: start from first principles, test the way you fly, plan for engine-out, and reuse everything. Grok is part of the flight computer.
+
+- **First principles, not vibes.** We didn't start from which streets *feel* risky. We started from about 250,000 real crash outcomes and pedestrian exposure, and let the data rank the streets. On a year the model never saw, the top 10% of street length held 74.3% of pedestrian crashes, against 53.8% for the City's own High Injury Network.
+- **A launch window for your walk.** Risk Tides works like a weather-and-window board: traffic risk hour by hour, dry or wet, weekday or weekend. The route card is a go/no-go with the trade stated plainly: **+4 min buys 54% less traffic-risk exposure**.
+- **Mission callouts with Grok Voice.** During navigation, PathPro calls out "High traffic risk ahead · 10th St NW in 120 m" in an expressive Grok Voice, so walkers keep their eyes on the street, not the screen.
+- **Grok on the flight computer.** Grok writes the "Why?" explanation for each street, grounded in that street's own evidence. It can't add a number: a validator rejects any sentence with a figure that isn't in the evidence, and the risk score always comes from the model, never from the LLM.
+- **Simulate before you build, with Grok Imagine.** On any street, a city or campus planner taps **"Imagine this street redesigned"**. PathPro builds the prompt on the server from that street's real factors: lanes, speed limit, crossings, lighting, and its top risk drivers. Grok Imagine then renders the evidence-based fixes: high-visibility crosswalks, curb extensions, a refuge island, a protected bike lane, street lighting, or a road diet. Every image is labeled "AI illustration by Grok Imagine — not a real photo". It's a way to see a Vision Zero fix before spending a dollar on concrete.
+- **Engine-out capability.** Explanations fail over from Grok to Groq to Gemini to a deterministic template. Voice fails over from Grok Voice to ElevenLabs to the device. The offline demo (`?demo=1`) keeps flying with no network at all.
+- **Test like you fly.** We trained on 2020–23, tested on 2024, and report 95% spatial-block confidence intervals. About 1,060 automated tests run, including end-to-end GPS navigation.
+- **Reusable by design.** A new city needs one coverage polygon plus its public crash layers. The pipeline, models, and app fly again unchanged.
+- **The mission is public health.** Traffic crashes kill more than 7,000 people walking in the U.S. each year. PathPro gives walkers a lower-risk way home tonight, and gives cities a ranked, visual plan for where fixes reach the most future crashes.
 
 ## How we built it
 
@@ -131,4 +147,4 @@ A mentor tried our first version on his phone and told us it wasn't intuitive: G
 
 ## Built with
 
-Python · FastAPI · LightGBM · scikit-learn · statsmodels · OSMnx · GeoPandas · H3 · SciPy · React · TypeScript · Vite · MapLibre GL · deck.gl · Groq · Gemini API · ElevenLabs · Tiger Data (TimescaleDB, PostGIS) · MongoDB Atlas · Vultr · Caddy · Playwright
+Grok (xAI) · Grok Imagine · Grok Voice · Python · FastAPI · LightGBM · scikit-learn · statsmodels · OSMnx · GeoPandas · H3 · SciPy · React · TypeScript · Vite · MapLibre GL · deck.gl · Groq · Gemini API · ElevenLabs · Tiger Data (TimescaleDB, PostGIS) · MongoDB Atlas · Vultr · Caddy · Playwright

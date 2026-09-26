@@ -142,3 +142,17 @@ The 30-second cut is `media/pathpro_30s.mp4`, with captions burned in and in `me
 | 0:13 | Phone route card: **54% less traffic risk**, +4 min | Klaus to Midtown MARTA on a rainy Friday night: a route four minutes longer, with 54% less traffic risk. |
 | 0:20 | 2024 holdout chart: PathPro 74.3% [70.5–78.3] vs HIN 53.8% | On 2024 crashes it never saw, the 10% of streets it ranks highest held 74% of pedestrian crashes. The City's High Injury Network: 54%. |
 | 0:30 | End card: tagline, pathpro.tech, GitHub, CodingClaws credits | PathPro. See the risks on your way, before you go. |
+
+# v3 (planned): Grok Voice narration and a "Make it Legendary" scene
+
+- **Voice:** Grok Voice TTS (`POST /v1/tts`). Audition the `eve`, `ara`, `sal`, `rex` and `leo` voices, and use speech tags (`[pause]`, `[breath]`, `<soft>`) for natural pacing. The team picks the voice. Captions are timed with `with_timestamps`.
+- **Framing:** SpaceX engineering culture (first principles, test like you fly, engine-out redundancy, reusability, public-health mission). Show no SpaceX or xAI logos beyond "Grok" as the name of the model, and imply no partnership.
+- **Labels:** every Grok Imagine frame carries "AI illustration by Grok Imagine — not a real photo".
+- **Gate:** record only after Grok is live on pathpro.tech.
+
+| Time | Scene | On screen | Narration |
+| --- | --- | --- | --- |
+| after 0:55 | legendary | "Mission control for every walk home." Risk Tides scrubbing through the night as a launch-window board, then the route card as a go/no-go: +4 min · 54% less traffic risk. | We built PathPro like a launch team: first principles, test like you fly, and a clear go/no-go. Four extra minutes, 54% less traffic risk. |
+| after 1:40 | callout | Navigation banner with the Grok Voice callout. | *High traffic risk ahead. Tenth Street Northwest, in 120 m.* Callouts keep your eyes on the street. |
+| before 4:35 | imagine | Street sheet → "Imagine this street redesigned" → the Grok Imagine image (labeled), then a short Grok Imagine video of the redesign. | For city planners: simulate before you build. Grok Imagine renders evidence-based fixes for this exact street, like crosswalks, curb extensions, and lighting, before a dollar is spent on concrete. |
+| 5:57 | llm | Pipeline card: Grok → Groq → Gemini → template, then the validator. | Grok writes each explanation from the street's own evidence, and if any engine fails, the next one takes over. The risk score always comes from the model. |
