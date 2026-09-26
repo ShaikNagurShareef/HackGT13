@@ -206,3 +206,12 @@ def test_transit_stations_are_inside_the_coverage_bbox(walk_client: TestClient) 
     assert all(west <= s["lon"] <= east and south <= s["lat"] <= north for s in data)
     assert all(isinstance(s["lines"], list) for s in data)
     assert abs(LAT0 - 33.776) < 0.01 and abs(LON0 + 84.396) < 0.01
+
+
+@pytest.mark.integration
+def test_ride_segment_history_reports_bike_crashes(ride_client: TestClient) -> None:
+    hot = ride_client.get("/segments/0", params={"mode": "bike", "t": "2026-09-25T22:30"})
+    walk = ride_client.get("/segments/0", params={"t": "2026-09-25T22:30"})
+
+    assert hot.json()["data"]["history"]["bike_crashes"] == 3.0
+    assert walk.json()["data"]["history"]["bike_crashes"] is None

@@ -178,6 +178,10 @@ def write_bundle(root: Path) -> Path:
 def write_ride_bundle(root: Path) -> Path:
     """Add a mirrored ride model (ride_* files + manifest["modes"]["ride"]) to a walk bundle."""
     n_seg = _write_mode(root, RIDE_PREFIX, "ride_graph.npz", RIDE_COLS, RIDE_HEADLINE)
+    meta_path = root / f"{RIDE_PREFIX}seg_meta.json"
+    meta = json.loads(meta_path.read_text())
+    bike = [3.0 if name == f"Row {HOT_ROW} St" else 0.0 for name in meta["name"]]
+    _write_json(meta_path, {**meta, "bike_crashes": bike, "bike_infra": [0] * n_seg})
     manifest = json.loads((root / "manifest.json").read_text())
     manifest["files"] = _file_hashes(root)
     manifest["modes"] = {"ride": {"prefix": RIDE_PREFIX, "n_segments": n_seg}}

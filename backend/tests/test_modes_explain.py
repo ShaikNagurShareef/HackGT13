@@ -76,3 +76,17 @@ def test_ride_fastest_is_lower_risk_template_mentions_the_ride() -> None:
 
     assert "ride" in text.lower()
     assert validation_errors(text, ev) == []
+
+
+@pytest.mark.unit
+def test_ride_segment_template_names_bike_crashes_when_known() -> None:
+    payload = {
+        **RIDE_SEGMENT.payload,
+        "history": {"crashes": 40, "bike_crashes": 3, "period": "2020-2024"},
+    }
+    ev = _with_numbers("segment", payload)
+
+    text = template.render(ev)
+
+    assert "3 involving people on bikes" in text
+    assert validation_errors(text, ev) == []
