@@ -44,6 +44,18 @@ def test_osm_help_points_classify_kinds_and_skip_lamps() -> None:
 
 
 @pytest.mark.unit
+def test_osm_help_points_handle_missing_string_tags() -> None:
+    raw = _osm(
+        [{"railway": "station", "network": "MARTA", "name": "Five Points"}, {"amenity": "police"}]
+    ).astype("string")
+    raw = raw.assign(lat=float(LAT), lon=float(LON))
+
+    out = osm_help_points(raw)
+
+    assert list(out["kind"]) == ["marta", "police"]
+
+
+@pytest.mark.unit
 def test_callbox_points_keep_active_outdoor_boxes_only() -> None:
     raw = pd.DataFrame(
         {

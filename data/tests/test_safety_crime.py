@@ -8,7 +8,7 @@ import h3
 import numpy as np
 import pandas as pd
 import pytest
-from pathpulse_data.safety.banding import CRIME_BANDS, eb_relative_rate, tercile_bands
+from pathpulse_data.safety.banding import CRIME_BANDS, eb_relative_rate, posterior_bands
 from pathpulse_data.safety.crime import clean_crimes, hex_counts, in_window
 from pathpulse_data.safety.dayparts import DAY_PART_KEYS
 
@@ -125,20 +125,48 @@ def test_eb_zero_crimes_everywhere_is_flat() -> None:
     assert np.allclose(rel, rel[0])
 
 
+def _city(n: int = 60, seed: int = 0) -> tuple[np.ndarray, np.ndarray]:
+    rng = np.random.default_rng(seed)
+    exposure = rng.uniform(5, 50, n)
+    return rng.poisson(0.2 * exposure).astype(float), exposure
+
+
 @pytest.mark.unit
-def test_tercile_bands_split_the_city_into_thirds() -> None:
-    values = np.arange(9, dtype=float)
+def test_posterior_bands_flag_strong_excess_as_higher() -> None:
+    counts, exposure = _city()
+    counts[0], exposure[0] = 60.0, 20.0  # ~15x the citywide rate on solid exposure
 
-    bands = tercile_bands(values)
+    bands = posterior_bands(counts, exposure)
 
-    assert list(bands) == ["lower"] * 3 + ["typical"] * 3 + ["higher"] * 3
+    assert bands[0] == "higher"
     assert CRIME_BANDS == ("lower", "typical", "higher")
+    assert set(bands) <= set(CRIME_BANDS)
 
 
 @pytest.mark.unit
-def test_tercile_bands_ties_never_inflate_the_higher_band() -> None:
-    values = np.array([1.0] * 8 + [5.0])
+def test_posterior_bands_never_mark_a_hex_without_reports_higher() -> None:
+    counts, exposure = _city()
+    counts[:5] = 0.0
+    exposure[:5] = [0.01, 0.1, 1.0, 10.0, 500.0]
 
-    bands = tercile_bands(values)
+    bands = posterior_bands(counts, exposure)
 
-    assert (bands == "higher").sum() <= 1
+    assert "higher" not in set(bands[:5])
+    assert bands[4] == "lower"  # lots of foot traffic and no reports: clearly below
+
+
+@pytest.mark.unit
+def test_posterior_bands_keep_thin_evidence_typical() -> None:
+    counts, exposure = _city()
+    counts[0], exposure[0] = 1.0, 0.5  # one report where almost nobody walks
+
+    bands = posterior_bands(counts, exposure)
+
+    assert bands[0] == "typical"
+
+
+@pytest.mark.unit
+def test_posterior_bands_all_zero_is_typical() -> None:
+    bands = posterior_bands(np.zeros(3), np.ones(3))
+
+    assert list(bands) == ["typical"] * 3
