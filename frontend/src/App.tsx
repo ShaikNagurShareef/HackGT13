@@ -5,6 +5,7 @@ import type { Routes, SegmentDetail } from './api/schemas'
 import { About, FirstRun } from './components/About'
 import { ComparisonCard } from './components/ComparisonCard'
 import { ConditionsChip, DepartPicker, Legend } from './components/Controls'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { SearchBar } from './components/SearchBar'
 import { SegmentSheet, segmentSummary } from './components/SegmentSheet'
 import { Timeline } from './components/Timeline'
@@ -17,8 +18,15 @@ import { hotspotsFor } from './lib/hotspots'
 import { atlantaParts, dayGroupOf } from './lib/time'
 import type { Place } from './state/urlState'
 
-// Map libraries (MapLibre + deck.gl) are the bulk of the JS; load them in parallel with the shell.
-const MapView = lazy(() => import('./map/MapView').then((m) => ({ default: m.MapView })))
+// Map libraries (MapLibre + deck.gl) are the bulk of the JS. Start downloading them at page
+// load, in parallel with the data, and contain a failed download (offline) to the map area.
+const mapModule = import('./map/MapView')
+const MapView = lazy(() => mapModule.then((m) => ({ default: m.MapView })))
+const MAP_UNAVAILABLE = (
+  <div className="map map-fallback" role="img" aria-label="Map unavailable">
+    <p>The map couldn't load. Route comparisons and street details still work.</p>
+  </div>
+)
 
 const SEEN_KEY = 'pathpulse:first-run-seen'
 const PLAY_MS = 1000
@@ -172,6 +180,7 @@ export default function App() {
   const lights = data.meta.frame_light[day] ?? []
   return (
     <main className="app">
+      <ErrorBoundary fallback={MAP_UNAVAILABLE}>
       <Suspense fallback={<div className="map map-fallback" aria-busy="true" />}>
         <MapView
         bbox={data.meta.coverage_bbox}
@@ -186,6 +195,7 @@ export default function App() {
         onMapPick={onMapPick}
         />
       </Suspense>
+      </ErrorBoundary>
       <div className="top-bar">
         <SearchBar
           from={view.from}
