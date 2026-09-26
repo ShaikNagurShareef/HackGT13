@@ -13,7 +13,7 @@ from app.main import create_app
 from app.services.weather import FORECAST_URL
 from fastapi.testclient import TestClient
 
-from tests.bundle_factory import COLS, HOT_ROW, LAT0, LON0, node_id
+from tests.bundle_factory import COLS, HOT_ROW, LAT0, LON0, RIDE_COLS, node_id
 
 
 def _client(root: Path) -> Iterator[TestClient]:
@@ -210,8 +210,9 @@ def test_transit_stations_are_inside_the_coverage_bbox(walk_client: TestClient) 
 
 @pytest.mark.integration
 def test_ride_segment_history_reports_bike_crashes(ride_client: TestClient) -> None:
-    hot = ride_client.get("/segments/0", params={"mode": "bike", "t": "2026-09-25T22:30"})
-    walk = ride_client.get("/segments/0", params={"t": "2026-09-25T22:30"})
+    hot_seg = (RIDE_COLS - 1) * HOT_ROW  # first horizontal segment on the hot row
+    hot = ride_client.get(f"/segments/{hot_seg}", params={"mode": "bike", "t": "2026-09-25T22:30"})
+    walk = ride_client.get(f"/segments/{hot_seg}", params={"t": "2026-09-25T22:30"})
 
     assert hot.json()["data"]["history"]["bike_crashes"] == 3.0
     assert walk.json()["data"]["history"]["bike_crashes"] is None

@@ -21,6 +21,11 @@ def _history_tail(p: dict[str, Any], ride: bool) -> str:
     hist = p["history"]
     if p["confidence"] == "limited":
         return "Few crashes are recorded here, so this estimate leans on street characteristics."
+    if ride and "bike_crashes" in hist:
+        return (
+            f"It recorded {hist['crashes']} crashes in {hist['period']}, "
+            f"{hist['bike_crashes']} involving people on bikes."
+        )
     if ride:
         return f"It recorded {hist['crashes']} crashes in {hist['period']}."
     return (

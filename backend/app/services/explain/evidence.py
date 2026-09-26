@@ -50,14 +50,23 @@ def _time_label(iso: str) -> str:
     return f"{hour12} {'AM' if ts.hour < 12 else 'PM'}"
 
 
+def _involving(detail: SegmentDetail) -> dict[str, int]:
+    """Crashes involving this mode's travellers: pedestrians for walk, bikes for ride."""
+    if detail.mode == "walk":
+        return {"pedestrian_crashes": round(detail.history.ped_crashes)}
+    if detail.history.bike_crashes is not None:
+        return {"bike_crashes": round(detail.history.bike_crashes)}
+    return {}
+
+
 def segment_evidence(detail: SegmentDetail) -> Evidence:
     ups = [f for f in detail.factors if f.points > 0][:MAX_FACTORS]
     downs = [f for f in detail.factors if f.points < 0][:1]
-    # Walker crash counts do not describe riding, so ride evidence carries only the total.
-    walker = (
-        {"pedestrian_crashes": round(detail.history.ped_crashes)} if detail.mode == "walk" else {}
-    )
-    history = {"crashes": round(detail.history.crashes), **walker, "period": detail.history.period}
+    history = {
+        "crashes": round(detail.history.crashes),
+        **_involving(detail),
+        "period": detail.history.period,
+    }
     payload = {
         "mode": detail.mode,
         "street": detail.name,

@@ -61,6 +61,9 @@ def segment_detail(
             dark_share=_meta_float(meta, "dark_share", seg_id),
             wet_share=_meta_float(meta, "wet_share", seg_id),
             period=HISTORY_PERIOD,
+            bike_crashes=_meta_float(meta, "bike_crashes", seg_id)
+            if mode != "walk" and "bike_crashes" in meta
+            else None,
         ),
         condition_used=ConditionUsed(
             cond="wet" if resolved.wet else "dry",

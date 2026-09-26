@@ -131,6 +131,7 @@ class HistoryOut(BaseModel):
     dark_share: float
     wet_share: float
     period: str
+    bike_crashes: float | None = None  # ride model only: crashes involving people on bikes
 
 
 class SegmentDetail(BaseModel):
