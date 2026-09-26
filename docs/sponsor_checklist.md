@@ -18,15 +18,16 @@ Status as of Sat Sep 26, 2026, 7:00 AM ET. Submit on Devpost by **Sun 07:30** (h
 - [x] $100 MLH gift code applied (credit expires Oct 27, 2026); API access enabled; `VULTR_API_KEY` in `backend/.env`
 - [x] VM `pathpulse`: Atlanta (`atl`), Ubuntu 24.04, 1 vCPU / 2 GB, IP 155.138.233.35
 - [x] Caddy (automatic HTTPS, security headers) + hardened systemd unit + ufw; deployed with `deploy/go.sh`
-- [x] Live and verified end to end at https://155-138-233-35.sslip.io: routes, Groq explanations, ElevenLabs audio, Geoapify search, Tiger hourly history, MongoDB reports
+- [x] Live and verified end to end at https://pathpro.tech (also https://155-138-233-35.sslip.io): routes, Groq explanations, ElevenLabs audio, Geoapify search, Tiger hourly history, MongoDB reports
 - [x] Laptop tunnel retired; Vultr is the only host
 - [ ] Delete the leaked "Default" API key in Vultr → Account → API (the deploy uses the `pathpro-deploy` key)
 
 ### .tech domains: Best .tech Domain
 - [x] .tech promo code claimed on MLH (free for 1 year; **expires Mon Sep 28, 8 PM ET**; redeem at get.tech)
-- [ ] Register **pathpro.tech** ("path protect", a pun as the MLH coach asked) at get.tech with the code from the MLH email. Checked Sep 26: available; backups `walkpro.tech`, `pathde.tech` ("path detect")
-- [ ] Add an A record `@` → 155.138.233.35 (and `www` → same); Caddy issues HTTPS automatically once DNS resolves
-- [ ] Confirm https://pathpro.tech loads the app
+- [x] Registered **pathpro.tech** ("path protect", a pun as the MLH coach asked) with the MLH .tech code, valid until Sep 26, 2027
+- [ ] **Verify the registrant email** (get.tech dashboard → "Resend Email"), or the registrar can deactivate the domain
+- [x] A records `@` and `www` → 155.138.233.35; Caddy issued Let's Encrypt certificates for both
+- [x] https://pathpro.tech loads the app (map, tiles, live API) in the browser
 
 ### ElevenLabs: Best Use of ElevenLabs
 - [x] Free-tier key, restricted to text-to-speech, voices (read), models and user

@@ -2,7 +2,7 @@
 
 **See traffic risk before you walk into it.**
 
-**Live app:** [pathpro.tech](https://pathpro.tech), hosted on Vultr (Atlanta). Until the domain's DNS is live, use [155-138-233-35.sslip.io](https://155-138-233-35.sslip.io), the same server with real HTTPS.
+**Live app: [pathpro.tech](https://pathpro.tech)**, hosted on Vultr (Atlanta) behind Caddy with automatic HTTPS.
 
 - **Offline demo:** add `?demo=1` for the scripted Klaus → Midtown MARTA scenario.
 - **Deploy:** `deploy/go.sh pathpro.tech` provisions the Vultr VM, installs Caddy + systemd, ships the app, and smoke-tests it.

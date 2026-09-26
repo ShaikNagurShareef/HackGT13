@@ -18,7 +18,7 @@ echo "==> 2/6 provisioning Vultr"
 [ -f "$ROOT/deploy/.host" ] || bash "$ROOT/deploy/provision_vultr.sh"
 IP="$(cat "$ROOT/deploy/.host")"
 HOST="root@$IP"
-SITES="$DOMAIN, ${IP//./-}.sslip.io"
+SITES="$DOMAIN, www.$DOMAIN, ${IP//./-}.sslip.io"
 SSH=(ssh -i "$KEY_PATH" -o StrictHostKeyChecking=accept-new "$HOST")
 for _ in $(seq 1 30); do "${SSH[@]}" true 2>/dev/null && break; sleep 5; done
 
