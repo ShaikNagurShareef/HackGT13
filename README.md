@@ -2,7 +2,7 @@
 
 **See traffic risk before you walk into it.**
 
-**Try it: [shaiknagurshareef.github.io/HackGT13](https://shaiknagurshareef.github.io/HackGT13/)**
+**Try it: [shaiknagurshareef.github.io/PathPulse](https://shaiknagurshareef.github.io/PathPulse/)**
 
 - **Full live app** when the live server is running: any route in the City of Atlanta, City Pulse, and live weather. The page reads `live.json`, health-checks the live API, and connects to it.
 - **Offline demo** otherwise: the scripted Klaus → Midtown MARTA scenario. Add `?demo=1` to force it.

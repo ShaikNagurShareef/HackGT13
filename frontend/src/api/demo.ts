@@ -15,7 +15,7 @@ let fixturesPromise: Promise<Fixtures> | null = null
 export const FORCE_DEMO = import.meta.env.VITE_FORCE_DEMO === '1'
 const BASE = import.meta.env.BASE_URL ?? '/'
 
-/** Prefix an absolute app path with the deploy base (e.g. /HackGT13/ on GitHub Pages). */
+/** Prefix an absolute app path with the deploy base (e.g. /PathPulse/ on GitHub Pages). */
 export function withBase(path: string): string {
   return `${BASE.replace(/\/$/, '')}${path}`
 }

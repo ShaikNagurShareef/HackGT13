@@ -6,7 +6,7 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PAGES_DIR="$ROOT/deploy/.ghpages"
-REPO="https://github.com/ShaikNagurShareef/HackGT13.git"
+REPO="https://github.com/ShaikNagurShareef/PathPulse.git"
 INTERVAL_S=60
 
 publish() {

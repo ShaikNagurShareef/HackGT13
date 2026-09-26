@@ -10,7 +10,7 @@ Build **PathPulse** (domain **pathpulse.tech**, verified available) from `Requir
 
 The goal is to win: Oracle of the Deep, Best Overall, the social-good track, and MLH prizes.
 
-**Environment.** 8 GB M1, Python 3.12, uv, Node 22 and npm, **no Docker**. `gh` is logged in; the remote is `ShaikNagurShareef/HackGT13`. The ECC plugin is installed at project scope.
+**Environment.** 8 GB M1, Python 3.12, uv, Node 22 and npm, **no Docker**. `gh` is logged in; the remote is `ShaikNagurShareef/PathPulse`. The ECC plugin is installed at project scope.
 
 **Decisions confirmed with the user**
 - Team: solo, with Claude.

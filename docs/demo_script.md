@@ -1,6 +1,6 @@
 # PathPulse demo script
 
-**Setup:** laptop on `https://shaiknagurshareef.github.io/HackGT13/` (scripted demo, works offline). Phone on the live app (current URL from `deploy/.tunnel_url`). Printed QR code and model card on the table.
+**Setup:** laptop on `https://shaiknagurshareef.github.io/PathPulse/` (scripted demo, works offline). Phone on the live app (current URL from `deploy/.tunnel_url`). Printed QR code and model card on the table.
 **Demo shortcuts:** `D` reload the scripted route · `T` jump to 10 PM · `R` toggle rain.
 
 ## 30-second version (for judges walking by)
