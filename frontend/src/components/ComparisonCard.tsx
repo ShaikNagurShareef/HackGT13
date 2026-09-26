@@ -1,5 +1,6 @@
 import type { Route, Routes } from '../api/schemas'
 import { cssColor } from '../lib/bands'
+import { routeReportsLine } from '../lib/reports'
 import { formatClock, formatMinutes } from '../lib/time'
 import { TrustNote } from './Controls'
 
@@ -122,6 +123,11 @@ export function ComparisonCard({
         </div>
       )}
       {routes.message && pathpulse && <p className="faint">{routes.message}</p>}
+      {routes.reports.length > 0 && (
+        <p className="route-reports" data-testid="route-reports">
+          <span className="report-dot" aria-hidden="true" /> {routeReportsLine(routes.reports)}
+        </p>
+      )}
       {routes.unavoidable.length > 0 && (
         <p className="faint">Both routes use {routes.unavoidable.join(', ')} — take extra care there.</p>
       )}

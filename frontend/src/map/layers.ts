@@ -1,6 +1,6 @@
 import { PathLayer, ScatterplotLayer } from '@deck.gl/layers'
 import type { Layer, PickingInfo } from '@deck.gl/core'
-import type { Route } from '../api/schemas'
+import type { Report, Route } from '../api/schemas'
 import { RAMP, widthFor } from '../lib/bands'
 import type { Hotspot } from '../lib/hotspots'
 import { buildHexLayer } from './hexLayer'
@@ -30,11 +30,17 @@ interface LayerInput {
   onSegment: (id: number) => void
   hex?: HexInput | null
   walker?: [number, number] | null
+  reports?: ReadonlyArray<Report>
 }
 
 const FAST_GREY: [number, number, number, number] = [154, 166, 178, 235]
 const TEAL: [number, number, number, number] = [63, 209, 198, 255]
 const TEAL_HALO: [number, number, number, number] = [63, 209, 198, 70]
+// Violet sits outside the blue→amber→pink risk ramp, so a report never reads as a score.
+const REPORT_FILL: [number, number, number, number] = [182, 156, 255, 255]
+const REPORT_RING: [number, number, number, number] = [255, 255, 255, 230]
+const REPORT_RADIUS_PX = 5
+const REPORT_MAX_BOOST = 4
 
 export function buildLayers(input: LayerInput): Layer[] {
   const { frame, frameKey, reducedMotion } = input
@@ -115,7 +121,34 @@ export function buildLayers(input: LayerInput): Layer[] {
       )
     }
   }
-  return [...layers, ...routeLayers(input.fastest, input.pathpulse), ...walkerLayer(input.walker)]
+  return [
+    ...layers,
+    ...routeLayers(input.fastest, input.pathpulse),
+    ...reportLayers(input.reports, input.onSegment),
+    ...walkerLayer(input.walker),
+  ]
+}
+
+/** Community street reports: small violet dots; clicking one opens that street's sheet. */
+function reportLayers(reports: ReadonlyArray<Report> | undefined, onSegment: (id: number) => void): Layer[] {
+  if (!reports?.length) return []
+  return [
+    new ScatterplotLayer<Report>({
+      id: 'community-reports',
+      data: reports,
+      getPosition: (d) => [d.lon, d.lat],
+      getRadius: (d) => REPORT_RADIUS_PX + Math.min(d.confirmations - 1, REPORT_MAX_BOOST),
+      radiusUnits: 'pixels',
+      getFillColor: REPORT_FILL,
+      stroked: true,
+      getLineColor: REPORT_RING,
+      lineWidthMinPixels: 1.5,
+      pickable: true,
+      onClick: (info: PickingInfo<Report>) => {
+        if (info.object) onSegment(info.object.seg_id)
+      },
+    }),
+  ]
 }
 
 function walkerLayer(position: [number, number] | null | undefined): Layer[] {

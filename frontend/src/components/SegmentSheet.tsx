@@ -2,6 +2,7 @@ import type { SegmentDetail } from '../api/schemas'
 import { cssColor } from '../lib/bands'
 import { atlantaParts, formatClock } from '../lib/time'
 import { HourlyChart } from './HourlyChart'
+import { StreetReports } from './StreetReports'
 
 /** Local one-line summary used when the explanation service is unreachable. */
 export function segmentSummary(detail: SegmentDetail): string {
@@ -79,9 +80,10 @@ export interface SegmentSheetProps {
   onClose: () => void
   onAbout: () => void
   onListen?: () => void
+  onReported?: () => void
 }
 
-export function SegmentSheet({ detail, explanation, onClose, onAbout, onListen }: SegmentSheetProps) {
+export function SegmentSheet({ detail, explanation, onClose, onAbout, onListen, onReported }: SegmentSheetProps) {
   const h = detail.history
   const pct = (x: number) => `${Math.round(x * 100)}%`
   return (
@@ -129,6 +131,7 @@ export function SegmentSheet({ detail, explanation, onClose, onAbout, onListen }
         </div>
       </dl>
       <HourlyChart segId={detail.seg_id} highlightHour={atlantaParts(new Date(detail.at)).hour} />
+      <StreetReports key={detail.seg_id} segId={detail.seg_id} onReported={onReported} />
       {detail.confidence === 'limited' && (
         <p className="faint">Few recorded crashes here — estimate based mostly on street characteristics.</p>
       )}

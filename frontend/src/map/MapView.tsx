@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import maplibregl, { type Map as MlMap } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { MapLibreOverlay } from '@deck.gl/maplibre'
-import type { Route } from '../api/schemas'
+import type { Bbox } from '../api/client'
+import type { Report, Route } from '../api/schemas'
 import type { Hotspot } from '../lib/hotspots'
 import { buildLayers, type HexInput, type SegmentPath } from './layers'
 
@@ -24,6 +25,13 @@ export interface MapViewProps {
   hex?: HexInput | null
   walker?: [number, number] | null
   focus?: { path: [number, number][]; key: number } | null
+  reports?: ReadonlyArray<Report>
+  onViewport?: (bbox: Bbox) => void
+}
+
+function viewportOf(map: MlMap): Bbox {
+  const b = map.getBounds()
+  return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]
 }
 
 function prefersReducedMotion(): boolean {
@@ -44,9 +52,11 @@ export function MapView(props: MapViewProps) {
   const mapRef = useRef<MlMap | null>(null)
   const overlayRef = useRef<MapLibreOverlay | null>(null)
   const pickRef = useRef(props.onMapPick)
+  const viewportRef = useRef(props.onViewport)
   const outlineRef = useRef<string | undefined>(props.outlineUrl)
   const [supported] = useState(webglAvailable)
   pickRef.current = props.onMapPick
+  viewportRef.current = props.onViewport
 
   useEffect(() => {
     if (!container.current || !supported) return
@@ -66,7 +76,9 @@ export function MapView(props: MapViewProps) {
     })
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right')
     map.on('contextmenu', (e) => pickRef.current(e.lngLat.lat, e.lngLat.lng))
+    map.on('moveend', () => viewportRef.current?.(viewportOf(map)))
     map.on('load', () => {
+      viewportRef.current?.(viewportOf(map))
       const rectangle = {
         type: 'Feature' as const,
         properties: {},

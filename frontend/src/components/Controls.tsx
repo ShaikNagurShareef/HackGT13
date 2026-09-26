@@ -58,7 +58,7 @@ export function DepartPicker({ value, onChange }: { value: string; onChange: (v:
   )
 }
 
-export function Legend() {
+export function Legend({ reports = false }: { reports?: boolean }) {
   return (
     <section className="legend panel" aria-label="Risk legend">
       <div className="legend-title">Traffic risk to pedestrians</div>
@@ -75,6 +75,11 @@ export function Legend() {
         ))}
       </div>
       <div className="faint">Citywide 0–100 scale · thicker = higher</div>
+      {reports && (
+        <div className="legend-report faint">
+          <span className="report-dot" aria-hidden="true" /> Community report · tap to open the street
+        </div>
+      )}
     </section>
   )
 }

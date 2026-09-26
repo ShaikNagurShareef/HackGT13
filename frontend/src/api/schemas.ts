@@ -57,6 +57,39 @@ export const routeSchema = z.object({
     .default([]),
 })
 
+/** Community street report categories (fixed list; no free text). Mirrors backend/app/domain/reports.py. */
+export const REPORT_CATEGORIES = [
+  'sidewalk_blocked',
+  'signal_out',
+  'construction',
+  'poor_lighting',
+  'flooding',
+  'fast_traffic',
+] as const
+export type ReportCategory = (typeof REPORT_CATEGORIES)[number]
+export const CATEGORY_LABELS: Record<ReportCategory, string> = {
+  sidewalk_blocked: 'Sidewalk blocked',
+  signal_out: 'Crossing signal out',
+  construction: 'Construction detour',
+  poor_lighting: 'Poor street lighting',
+  flooding: 'Flooding or standing water',
+  fast_traffic: 'Fast-moving traffic',
+}
+
+export const reportSchema = z.object({
+  seg_id: z.number().int(),
+  category: z.enum(REPORT_CATEGORIES),
+  label: z.string(),
+  street: z.string(),
+  lon: z.number(),
+  lat: z.number(),
+  confirmations: z.number().int().nonnegative(),
+  updated_at: z.string(),
+  expires_at: z.string(),
+})
+export const reportsSchema = z.array(reportSchema)
+export type Report = z.infer<typeof reportSchema>
+
 export const routesSchema = z.object({
   condition_used: conditionUsedSchema,
   depart_at: z.string(),
@@ -69,6 +102,7 @@ export const routesSchema = z.object({
   unavoidable: z.array(z.string()),
   avoided: z.array(z.object({ seg_id: z.number(), name: z.string(), score: z.number() })).default([]),
   route_key: z.string(),
+  reports: reportsSchema.default([]),
 })
 
 export const segmentSchema = z.object({

@@ -50,12 +50,15 @@ describe('StreetReports', () => {
     chip.focus()
     await userEvent.keyboard('{Enter}')
 
-    const status = await screen.findByRole('status')
-    expect(status).toHaveTextContent('Thanks — other walkers will see this for 14 days.')
+    // The polite live region is always mounted so screen readers announce the change.
+    await vi.waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Thanks — other walkers will see this for 14 days.'),
+    )
     expect(screen.getByRole('button', { name: 'Crossing signal out' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('list', { name: 'Community reports on this street' })).toHaveTextContent('1 walker')
     const post = fetcher.mock.calls.find((c) => (c[1] as RequestInit | undefined)?.method === 'POST')
-    expect(JSON.parse(String((post?.[1] as RequestInit).body))).toEqual({ seg_id: 11, category: 'signal_out' })
+    const postInit = post?.[1] as RequestInit | undefined
+    expect(JSON.parse(String(postInit?.body))).toEqual({ seg_id: 11, category: 'signal_out' })
     expect(onReported).toHaveBeenCalled()
   })
 
@@ -89,7 +92,7 @@ describe('StreetReports', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Sidewalk blocked' }))
 
-    expect(await screen.findByRole('status')).toHaveTextContent('Too many requests')
+    await vi.waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Too many requests'))
     expect(screen.getByRole('button', { name: 'Sidewalk blocked' })).toHaveAttribute('aria-pressed', 'false')
   })
 })

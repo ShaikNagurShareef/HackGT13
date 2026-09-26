@@ -14,6 +14,7 @@ import type { FrameSet } from './frames/frameStore'
 import { useBundle } from './hooks/useBundle'
 import { useExplanation } from './hooks/useExplanation'
 import { usePreviewWalk } from './hooks/usePreviewWalk'
+import { useViewportReports } from './hooks/useViewportReports'
 import { speak } from './lib/voice'
 import { useTypewriter } from './hooks/useTypewriter'
 import { useViewState } from './hooks/useViewState'
@@ -109,6 +110,8 @@ export default function App() {
     api.explainSegment(detail?.seg_id ?? 0, detail?.at ?? 'now', view.cond),
   )
   const walk = usePreviewWalk(routes?.pathpulse ?? null, true)
+  // Community reports (MongoDB Atlas) are live-only context: hidden in the offline demo.
+  const communityReports = useViewportReports(!demo && !cityMode)
   const routeText = useTypewriter(routeExplain.result?.text ?? null)
   const segText = useTypewriter(segExplain.result?.text ?? (segExplain.failed && detail ? segmentSummary(detail) : null))
 
@@ -233,6 +236,8 @@ export default function App() {
         onMapPick={onMapPick}
         walker={walk.position}
         focus={focus}
+        reports={communityReports.reports}
+        onViewport={communityReports.onViewport}
         hex={
           cityMode && data.hexCells
             ? {
@@ -295,6 +300,7 @@ export default function App() {
             }
             onClose={() => update({ seg: null })}
             onAbout={() => setAboutOpen(true)}
+            onReported={communityReports.refresh}
           />
         ) : routes ? (
           <ComparisonCard
@@ -311,7 +317,7 @@ export default function App() {
             onSelectSegment={onSegment}
           />
         ) : (
-          <Legend />
+          <Legend reports={communityReports.available} />
         )}
       </aside>
       <Timeline

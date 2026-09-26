@@ -76,8 +76,21 @@ const DEMO_ONLY = {
   },
 }
 
+/** Community reports need the live database; the offline demo simply hides them. */
+const REPORTS_OFF = {
+  success: false,
+  data: null,
+  error: { code: 'REPORTS_UNAVAILABLE', message: 'Community reports are not part of the offline demo.' },
+}
+
+function isReportsPath(path: string): boolean {
+  const route = path.split('?')[0]
+  return route === '/reports' || route.startsWith('/reports/') || /^\/segments\/\d+\/reports$/.test(route)
+}
+
 export async function demoResponse(method: string, path: string, body?: string): Promise<unknown> {
   if (path.startsWith('/geocode')) return { success: true, data: [], error: null }
+  if (isReportsPath(path)) return REPORTS_OFF
   const fixtures = await loadFixtures()
   const key = fixtureKey(method, path, body)
   return (key && fixtures[key]) ?? DEMO_ONLY

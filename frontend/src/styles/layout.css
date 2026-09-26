@@ -540,3 +540,64 @@
   align-items: center;
   margin: 6px 0;
 }
+
+/* Community street reports (MongoDB Atlas): context only, never a score. */
+.report-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--report);
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.9);
+  vertical-align: middle;
+  flex: none;
+}
+.legend-report {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.route-reports {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.street-reports {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.street-reports-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.street-reports-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  font-size: 13px;
+}
+.street-reports-list li {
+  padding: 2px 0;
+}
+.street-reports-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.street-reports-chips .chip {
+  white-space: normal;
+  text-align: left;
+}
+.street-reports-chips .chip:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.street-reports-status:empty {
+  margin: 0; /* stays mounted (not display:none) so the polite live region announces */
+}

@@ -7,6 +7,8 @@ import {
   hourlySchema,
   areaSchema,
   metaSchema,
+  reportSchema,
+  reportsSchema,
   routesSchema,
   segmentSchema,
   type ConditionUsed,
@@ -15,6 +17,8 @@ import {
   type Hourly,
   type Area,
   type Meta,
+  type Report,
+  type ReportCategory,
   type Routes,
   type SegmentDetail,
 } from './schemas'
@@ -73,6 +77,9 @@ async function request<T extends z.ZodType>(
 }
 
 export type LatLon = { lat: number; lon: number }
+/** [minLon, minLat, maxLon, maxLat] */
+export type Bbox = readonly [number, number, number, number]
+const BBOX_DECIMALS = 5
 export type Condition = 'live' | 'dry' | 'wet'
 
 export const api = {
@@ -110,4 +117,14 @@ export const api = {
   liveConditions: (): Promise<ConditionUsed> => request('/conditions/live', conditionUsedSchema),
   geocode: (q: string): Promise<GeoResult[]> =>
     request(`/geocode?q=${encodeURIComponent(q)}`, geoResultsSchema),
+  /** Community street reports: the server locates the report from the segment. */
+  postReport: (segId: number, category: ReportCategory): Promise<Report> =>
+    request('/reports', reportSchema, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ seg_id: segId, category }),
+    }),
+  reportsInBbox: (bbox: Bbox): Promise<Report[]> =>
+    request(`/reports?bbox=${bbox.map((v) => v.toFixed(BBOX_DECIMALS)).join(',')}`, reportsSchema),
+  segmentReports: (id: number): Promise<Report[]> => request(`/segments/${id}/reports`, reportsSchema),
 }

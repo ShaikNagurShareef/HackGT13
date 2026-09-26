@@ -38,6 +38,7 @@ export const routes = (over: Partial<Routes> = {}): Routes => ({
   unavoidable: ['Fifth Street Northwest'],
   avoided: [{ seg_id: 12, name: 'Peachtree Place Northwest', score: 98 }],
   route_key: 'aaaaaaaaaaaaaaaa',
+  reports: [],
   ...over,
 })
 
