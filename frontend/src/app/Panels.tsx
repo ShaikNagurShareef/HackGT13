@@ -1,6 +1,7 @@
 import { About } from '../components/About'
 import { OptionsSheet, type OptionsSheetProps } from '../components/options/OptionsSheet'
 import { SearchSheet } from '../components/search/SearchSheet'
+import type { ModeTabsProps } from '../components/route/ModeTabs'
 import type { Meta } from '../api/schemas'
 import type { SafetyMeta } from '../api/safetySchemas'
 import type { Routines } from '../hooks/useRoutines'
@@ -21,10 +22,13 @@ export interface PanelsProps {
   options: OptionValues
   /** Personal-safety meta when the server has the layer (About section, welcome scope). */
   safetyMeta?: SafetyMeta | null
+  /** Travel-mode chip in the search sheet. */
+  modes?: ModeTabsProps | null
 }
 
 /** The one modal sheet that can be open at a time: search, options, or About. */
-export function Panels({ panel, meta, actions, routines, canUseLocation, welcome, onDismissWelcome, options, safetyMeta = null }: PanelsProps) {
+export function Panels(props: PanelsProps) {
+  const { panel, meta, actions, routines, canUseLocation, welcome, onDismissWelcome, options, safetyMeta = null, modes = null } = props
   if (!panel) return null
   if (panel.kind === 'about') return <About meta={meta} safetyMeta={safetyMeta} onClose={actions.closePanel} />
   if (panel.kind === 'options') {
@@ -55,6 +59,7 @@ export function Panels({ panel, meta, actions, routines, canUseLocation, welcome
       onPickSuggestion={actions.planSuggestion}
       onEditSaved={actions.editSaved}
       onClose={actions.closePanel}
+      modes={modes}
     />
   )
 }

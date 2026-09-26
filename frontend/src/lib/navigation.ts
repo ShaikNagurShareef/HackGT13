@@ -1,5 +1,6 @@
 /** Turn-by-turn helpers for navigation mode: where the walker is on the route and what comes next. */
 
+import { continueHeadline, tripNoun, type TravelMode } from './modes'
 import { cumulativeDistances, haversine, type WalkAlert } from './walk'
 
 export interface LatLon {
@@ -87,6 +88,8 @@ export interface InstructionInput {
   durationS: number
   street: string | null
   destination: string
+  /** Travel mode: ride modes get ride wording on the street banner (alerts read the same). */
+  mode?: TravelMode
 }
 
 function joinNames(names: ReadonlyArray<string>): string {
@@ -114,7 +117,7 @@ export function nextInstruction(input: InstructionInput): NavInstruction {
   const minutes = Math.max(1, Math.round(remainingSeconds(input.durationS, totalM, alongM) / 60))
   return {
     tone: 'info',
-    headline: `Continue on ${input.street ?? 'the PathPro route'}`,
+    headline: continueHeadline(input.street, input.mode ?? 'walk'),
     detail: `${minutes} min to go`,
   }
 }
@@ -142,10 +145,11 @@ export interface StartChoice {
   note: string | null
 }
 
-/** Start follows GPS on or near the route; otherwise (GPS off, or at the expo) it previews the walk. */
-export function startMode(coords: ReadonlyArray<[number, number]>, gps: LatLon | null): StartChoice {
-  if (!gps) return { mode: 'preview', note: 'Location is off, so Start previews the walk.' }
+/** Start follows GPS on or near the route; otherwise (GPS off, or at the expo) it previews the walk or ride. */
+export function startMode(coords: ReadonlyArray<[number, number]>, gps: LatLon | null, travel: TravelMode = 'walk'): StartChoice {
+  const noun = tripNoun(travel)
+  if (!gps) return { mode: 'preview', note: `Location is off, so Start previews the ${noun}.` }
   const { offsetM } = projectOnRoute(coords, cumulativeDistances(coords), gps)
   if (offsetM <= NEAR_ROUTE_M) return { mode: 'gps', note: null }
-  return { mode: 'preview', note: `You're ${formatDistance(offsetM)} from this route, so Start previews the walk.` }
+  return { mode: 'preview', note: `You're ${formatDistance(offsetM)} from this route, so Start previews the ${noun}.` }
 }

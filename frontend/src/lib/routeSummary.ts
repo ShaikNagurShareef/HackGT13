@@ -1,6 +1,7 @@
 /** Route sheet copy: Google-Maps-style headline, arrival time, and the evidence fallback line. */
 
 import type { Route, Routes } from '../api/schemas'
+import { formatTripMinutes, isRideMode } from './modes'
 import { formatMinutes, formatTime } from './time'
 
 export interface RouteLine {
@@ -32,6 +33,11 @@ function timeCost(minutes: number | null): string {
   return rounded > 0 ? `+${rounded} min vs fastest` : 'About the same time as fastest'
 }
 
+/** Walks read "23 min" (as before); rides say so: "14 min ride". */
+function duration(routes: Routes, route: Route): string {
+  return isRideMode(routes.mode) ? formatTripMinutes(route.duration_s, routes.mode) : formatMinutes(route.duration_s)
+}
+
 export function summarizeRoutes(routes: Routes): RouteSummary {
   const { fastest, pathpro } = routes
   if (!pathpro) {
@@ -39,7 +45,7 @@ export function summarizeRoutes(routes: Routes): RouteSummary {
       primary: {
         kind: 'fast',
         label: 'Route',
-        title: `${formatMinutes(fastest.duration_s)} · already the lower-risk option`,
+        title: `${duration(routes, fastest)} · already the lower-risk option`,
         sub: arrive(routes, fastest),
       },
       secondary: null,
@@ -49,13 +55,13 @@ export function summarizeRoutes(routes: Routes): RouteSummary {
     primary: {
       kind: 'pp',
       label: 'PathPro route',
-      title: `${formatMinutes(pathpro.duration_s)} · ${routes.exposure_reduction_pct ?? 0}% less traffic risk`,
+      title: `${duration(routes, pathpro)} · ${routes.exposure_reduction_pct ?? 0}% less traffic risk`,
       sub: `${timeCost(routes.time_cost_min)} · ${arrive(routes, pathpro)}`,
     },
     secondary: {
       kind: 'fast',
       label: 'Fastest route',
-      title: formatMinutes(fastest.duration_s),
+      title: duration(routes, fastest),
       sub: `${km(fastest.high_risk_m)} high-risk · ${arrive(routes, fastest)}`,
     },
   }

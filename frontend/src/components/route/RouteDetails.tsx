@@ -3,6 +3,7 @@ import type { Routes } from '../../api/schemas'
 import type { DayPart } from '../../api/safetySchemas'
 import { useTypewriter } from '../../hooks/useTypewriter'
 import { cssColor } from '../../lib/bands'
+import { tripNoun } from '../../lib/modes'
 import { routeReportsLine } from '../../lib/reports'
 import { templateSummary } from '../../lib/routeSummary'
 import { formatClock } from '../../lib/time'
@@ -68,7 +69,7 @@ export function RouteDetails(props: RouteDetailsProps) {
         ))}
       </div>
       <button type="button" className="btn preview-btn" onClick={onPreview}>
-        <Icon name="play" size={16} /> Preview walk
+        <Icon name="play" size={16} /> Preview {tripNoun(routes.mode)}
       </button>
       <TrustNote />
     </>

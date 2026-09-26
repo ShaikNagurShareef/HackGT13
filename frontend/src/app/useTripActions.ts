@@ -4,6 +4,7 @@ import type { SearchField } from '../components/search/SearchSheet'
 import type { Geolocation } from '../hooks/useGeolocation'
 import type { Navigation } from '../hooks/useNavigation'
 import type { TripPlanner } from '../hooks/useTripPlanner'
+import { tripNoun } from '../lib/modes'
 import { startMode } from '../lib/navigation'
 import { describeStart, originMessage } from '../lib/origin'
 import type { RoutineSuggestion, SavedKind } from '../lib/routines'
@@ -86,7 +87,7 @@ export function useTripActions({ onNotice, view, update, geo, planner, routines,
 
   const share = async () => {
     const url = shareableUrl(view, window.location.origin, window.location.pathname)
-    const text = view.to ? `Lower-risk walk to ${view.to.label} on PathPro` : 'PathPro route'
+    const text = view.to ? `Lower-risk ${tripNoun(view.mode)} to ${view.to.label} on PathPro` : 'PathPro route'
     const outcome = await shareLink(url, 'PathPro route', text)
     setShareStatus(outcome === 'copied' ? 'Link copied' : outcome === 'failed' ? SHARE_FAILED : null)
   }

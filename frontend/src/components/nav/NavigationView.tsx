@@ -1,11 +1,15 @@
 import type { ReactNode } from 'react'
+import type { TravelMode } from '../../api/schemas'
 import type { NavMode } from '../../hooks/useNavigation'
+import { tripNoun } from '../../lib/modes'
 import { formatDistance, type NavInstruction } from '../../lib/navigation'
 import { Icon } from '../ui/Icon'
 
 export interface NavigationViewProps {
   instruction: NavInstruction | null
   mode: NavMode
+  /** Travel mode, for the preview badge ("Preview ride"). */
+  travel?: TravelMode
   remainingS: number
   remainingM: number
   arrival: string
@@ -40,7 +44,7 @@ export function NavigationView(props: NavigationViewProps) {
             <p className="nav-headline">Finding your position on the route…</p>
           )}
         </div>
-        {props.mode === 'preview' && <span className="nav-badge">Preview walk</span>}
+        {props.mode === 'preview' && <span className="nav-badge">Preview {tripNoun(props.travel ?? 'walk')}</span>}
       </div>
       {props.share && <div className={props.arrived ? 'nav-share nav-share-arrived' : 'nav-share'}>{props.share}</div>}
       {props.arrived ? (

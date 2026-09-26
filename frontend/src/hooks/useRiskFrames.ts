@@ -8,7 +8,10 @@ export interface FrameSource {
   prefetch: (day: DayGroup) => void
 }
 
-/** Risk Tides (or City Pulse) frames for a day group and condition. */
+/**
+ * Risk Tides (or City Pulse) frames for a day group and condition. Frames from a previous store
+ * (the walk network, before switching to the ride network) are never returned for the new one.
+ */
 export function useRiskFrames(
   store: FrameSource | null,
   day: DayGroup,
@@ -17,7 +20,7 @@ export function useRiskFrames(
   onError: (message: string) => void,
   errorMessage: string,
 ): FrameSet | null {
-  const [frames, setFrames] = useState<FrameSet | null>(null)
+  const [loaded, setLoaded] = useState<{ store: FrameSource; frames: FrameSet } | null>(null)
   const latest = useLatest({ onError, errorMessage })
 
   useEffect(() => {
@@ -26,12 +29,12 @@ export function useRiskFrames(
     store.prefetch(day)
     store
       .get(day, cond)
-      .then((f) => !cancelled && setFrames(f))
+      .then((frames) => !cancelled && setLoaded({ store, frames }))
       .catch(() => !cancelled && latest.current.onError(latest.current.errorMessage))
     return () => {
       cancelled = true
     }
   }, [store, day, cond, enabled, latest])
 
-  return frames
+  return loaded != null && loaded.store === store ? loaded.frames : null
 }

@@ -144,9 +144,10 @@ describe('useNavigation', () => {
 
   it('a ride preview moves faster than a walk preview', () => {
     vi.useFakeTimers()
-    const walk = setup({ r: route(), gps: null })
+    const r = route()
+    const walk = setup({ r, gps: null })
     const ride = renderHook(() =>
-      useNavigation({ route: route(), gps: null, streets: STREETS, destination: DEST, departAt: DEPART, mode: 'bike', speedMps: 4.2 }),
+      useNavigation({ route: r, gps: null, streets: STREETS, destination: DEST, departAt: DEPART, mode: 'bike', speedMps: 4.2 }),
     )
 
     act(() => walk.result.current.start('preview'))

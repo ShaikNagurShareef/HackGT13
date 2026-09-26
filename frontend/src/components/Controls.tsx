@@ -58,10 +58,13 @@ export function DepartPicker({ value, onChange }: { value: string; onChange: (v:
   )
 }
 
-export function Legend({ reports = false }: { reports?: boolean }) {
+const WALK_LEGEND_TITLE = 'Traffic risk to pedestrians'
+
+/** `title` names who the street risk is for (pedestrians, or people on bikes & scooters). */
+export function Legend({ reports = false, title = WALK_LEGEND_TITLE }: { reports?: boolean; title?: string }) {
   return (
     <section className="legend panel" aria-label="Risk legend">
-      <div className="legend-title">Traffic risk to pedestrians</div>
+      <div className="legend-title">{title}</div>
       <div className="legend-bar" aria-hidden="true">
         {Array.from({ length: 20 }, (_, i) => (
           <span key={i} style={{ background: cssColor(i * 5 + 2.5), height: 4 + i * 0.35 }} />

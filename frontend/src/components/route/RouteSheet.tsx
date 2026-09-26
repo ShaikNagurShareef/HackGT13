@@ -5,6 +5,7 @@ import { summarizeRoutes, type RouteLine } from '../../lib/routeSummary'
 import { formatRouteSafety } from '../../lib/safety'
 import { BottomSheet } from '../sheet/BottomSheet'
 import { Icon } from '../ui/Icon'
+import { HandoffCard, type HandoffCardProps } from './HandoffCard'
 import { RouteDetails } from './RouteDetails'
 import { RouteOption } from './RouteOption'
 
@@ -27,6 +28,8 @@ export interface RouteSheetProps {
   onSelectSegment: (id: number) => void
   /** Personal-safety day parts, to name the time window of reported crimes. */
   dayParts?: ReadonlyArray<DayPart>
+  /** Long walks: MARTA hand-off and "Try Bike" suggestions. */
+  handoff?: HandoffCardProps | null
 }
 
 /** Route sheet: the PathPro route headline, the fastest alternative, and big Start (RTE-04). */
@@ -57,6 +60,7 @@ export function RouteSheet(props: RouteSheetProps) {
           />
         ))}
       </div>
+      {props.handoff && <HandoffCard {...props.handoff} />}
       <div className="route-actions">
         <button type="button" className="btn primary start-btn" onClick={props.onStart}>
           <Icon name="play" size={18} />

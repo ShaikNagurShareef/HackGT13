@@ -21,6 +21,8 @@ export interface HomeScreenProps {
   safetyAvailable?: boolean
   /** Personal safety mode: the safety legend replaces the traffic-risk chip. */
   safetyLegend?: SafetyLegendProps | null
+  /** Street legend title for the network on the map (walk or ride). */
+  legendTitle?: string
 }
 
 /** Map-first home: one search pill (plus at most one routine card and a status chip). */
@@ -38,7 +40,7 @@ export function HomeScreen(props: HomeScreenProps) {
         {props.welcomeDataThrough && (
           <WelcomeToast dataThrough={props.welcomeDataThrough} safetyAvailable={props.safetyAvailable} onDismiss={props.onDismissWelcome} />
         )}
-        {props.safetyLegend ? <SafetyLegendChip {...props.safetyLegend} /> : <LegendChip reports={props.reportsLegend} />}
+        {props.safetyLegend ? <SafetyLegendChip {...props.safetyLegend} /> : <LegendChip reports={props.reportsLegend} title={props.legendTitle} />}
       </div>
     </>
   )

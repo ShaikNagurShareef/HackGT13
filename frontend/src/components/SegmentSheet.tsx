@@ -81,9 +81,11 @@ export interface SegmentSheetProps {
   onAbout: () => void
   onListen?: () => void
   onReported?: () => void
+  /** Ride-network street: the pedestrian crash count, hourly chart, and reports are walk-network data. */
+  rideNetwork?: boolean
 }
 
-export function SegmentSheet({ detail, explanation, onClose, onAbout, onListen, onReported }: SegmentSheetProps) {
+export function SegmentSheet({ detail, explanation, onClose, onAbout, onListen, onReported, rideNetwork = false }: SegmentSheetProps) {
   const h = detail.history
   const pct = (x: number) => `${Math.round(x * 100)}%`
   return (
@@ -117,10 +119,12 @@ export function SegmentSheet({ detail, explanation, onClose, onAbout, onListen, 
           <dt className="faint">Crashes here ({h.period})</dt>
           <dd className="num">{h.crashes.toFixed(0)}</dd>
         </div>
-        <div>
-          <dt className="faint">Involving pedestrians</dt>
-          <dd className="num">{h.ped_crashes.toFixed(0)}</dd>
-        </div>
+        {!rideNetwork && (
+          <div>
+            <dt className="faint">Involving pedestrians</dt>
+            <dd className="num">{h.ped_crashes.toFixed(0)}</dd>
+          </div>
+        )}
         <div>
           <dt className="faint">After dark</dt>
           <dd className="num">{pct(h.dark_share)}</dd>
@@ -130,8 +134,8 @@ export function SegmentSheet({ detail, explanation, onClose, onAbout, onListen, 
           <dd className="num">{pct(h.wet_share)}</dd>
         </div>
       </dl>
-      <HourlyChart segId={detail.seg_id} highlightHour={atlantaParts(new Date(detail.at)).hour} />
-      <StreetReports key={detail.seg_id} segId={detail.seg_id} onReported={onReported} />
+      {!rideNetwork && <HourlyChart segId={detail.seg_id} highlightHour={atlantaParts(new Date(detail.at)).hour} />}
+      {!rideNetwork && <StreetReports key={detail.seg_id} segId={detail.seg_id} onReported={onReported} />}
       {detail.confidence === 'limited' && (
         <p className="faint">Few recorded crashes here — estimate based mostly on street characteristics.</p>
       )}

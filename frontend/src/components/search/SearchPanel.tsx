@@ -3,6 +3,7 @@ import { useGeocode } from '../../hooks/useGeocode'
 import { searchPlaces } from '../../lib/places'
 import type { RoutineSuggestion, SavedKind } from '../../lib/routines'
 import type { Place } from '../../state/urlState'
+import { ModeTabs, type ModeTabsProps } from '../route/ModeTabs'
 import { Icon } from '../ui/Icon'
 import { PlaceSections } from './PlaceSections'
 
@@ -35,6 +36,8 @@ export interface SearchPanelProps {
   onPickSuggestion: (s: RoutineSuggestion) => void
   onEditSaved: (kind: SavedKind) => void
   autoFocus?: boolean
+  /** Compact travel-mode chip beside the destination search. */
+  modes?: ModeTabsProps | null
 }
 
 /** Search input plus results (typing) or the place sections (empty): used in the sheet and the desktop sidebar. */
@@ -65,6 +68,7 @@ export function SearchPanel(props: SearchPanelProps) {
           }}
         />
       </div>
+      {field === 'to' && props.modes && <ModeTabs {...props.modes} compact />}
       <div className="search-body">
         {field === 'from' && props.canUseLocation && !searching && (
           <button type="button" className="place-row place-row-location" onClick={props.onUseLocation}>

@@ -13,6 +13,36 @@ export const envelope = <T extends z.ZodType>(data: T) =>
 
 export const factorSchema = z.object({ key: z.string(), label: z.string(), points: z.number() })
 
+/** Travel modes, in tab order. Walk is the pedestrian network; the others share the ride network. */
+export const travelModeSchema = z.enum(['walk', 'bike', 'ebike', 'scooter'])
+export type TravelMode = z.infer<typeof travelModeSchema>
+
+/** `static_prefix` is joined into static file URLs, so only a bare lowercase prefix is accepted. */
+const STATIC_PREFIX = /^([a-z]+_)?$/
+
+export const modeInfoSchema = z.object({
+  key: travelModeSchema,
+  label: z.string().min(1).max(24),
+  available: z.boolean(),
+  speed_kmh: z.number().positive().max(60),
+  network: z.enum(['walk', 'ride']),
+  static_prefix: z.string().regex(STATIC_PREFIX),
+  /** Segments in the mode's network (frame width); defaults to the geometry's feature count. */
+  n_segments: z.number().int().positive().optional(),
+})
+export type ModeInfo = z.infer<typeof modeInfoSchema>
+
+/** Keep the well-formed modes; an unknown or malformed entry never breaks the whole meta. */
+const modesSchema = z
+  .array(z.unknown())
+  .catch([])
+  .transform((items) =>
+    items.flatMap((item) => {
+      const parsed = modeInfoSchema.safeParse(item)
+      return parsed.success ? [parsed.data] : []
+    }),
+  )
+
 export const metaSchema = z.object({
   model_version: z.string(),
   data_through: z.string(),
@@ -26,6 +56,9 @@ export const metaSchema = z.object({
   headline: z.record(z.string(), z.unknown()),
   spatial_factors: z.array(factorSchema),
   temporal_factors: z.array(factorSchema),
+  /** Absent on older servers and the recorded demo: the app then offers Walk only. */
+  modes: modesSchema,
+  ride_model: z.record(z.string(), z.unknown()).nullable().catch(null),
 })
 
 export const conditionUsedSchema = z.object({
@@ -106,7 +139,14 @@ export const routesSchema = z.object({
   avoided: z.array(z.object({ seg_id: z.number(), name: z.string(), score: z.number() })).default([]),
   route_key: z.string(),
   reports: reportsSchema.default([]),
+  mode: travelModeSchema.catch('walk'),
 })
+
+/** MARTA rail stations for the transit hand-off. */
+export const transitStationsSchema = z.array(
+  z.object({ name: z.string().min(1).max(80), lat: z.number(), lon: z.number(), lines: z.array(z.string()).optional() }),
+)
+export type TransitStation = z.infer<typeof transitStationsSchema>[number]
 
 export const segmentSchema = z.object({
   seg_id: z.number().int(),

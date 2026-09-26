@@ -8,6 +8,7 @@ import './styles/nav.css'
 import './styles/desktop.css'
 import './styles/safety.css'
 import './styles/share.css'
+import './styles/modes.css'
 import App from './App.tsx'
 import { initRuntime } from './api/runtime'
 

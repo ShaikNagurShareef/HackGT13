@@ -1,3 +1,4 @@
+import { MARTA_STATIONS } from '../lib/martaStations'
 import { usingFallbackDemo } from './runtime'
 
 /** Offline demo transport (PRD DEMO-01): answers API calls from recorded fixtures. */
@@ -40,6 +41,16 @@ export function resetFixturesForTests(): void {
   fixturesPromise = null
 }
 
+/** Ride-mode fixtures are keyed `|<mode>`; walks keep their original keys. */
+function rideSuffix(mode: unknown): string {
+  return typeof mode === 'string' && mode !== 'walk' ? `|${mode}` : ''
+}
+
+function isRideRoute(method: string, path: string, body?: string): boolean {
+  if (method !== 'POST' || path !== '/routes' || !body) return false
+  return rideSuffix((JSON.parse(body) as Record<string, unknown>).mode) !== ''
+}
+
 function coordKey(p: { lat: number; lon: number }): string {
   return `${p.lat.toFixed(4)},${p.lon.toFixed(4)}`
 }
@@ -51,15 +62,15 @@ export function fixtureKey(method: string, path: string, body?: string): string 
   if (method === 'GET' && (route === '/meta' || route === '/conditions/live')) return `GET ${route}`
   if (method === 'GET' && route === '/areas/lookup') return `GET /areas/lookup|${q.get('cond') ?? 'live'}`
   const seg = route.match(/^\/segments\/(\d+)$/)
-  if (method === 'GET' && seg) return `GET /segments/${seg[1]}|${q.get('cond') ?? 'live'}`
+  if (method === 'GET' && seg) return `GET /segments/${seg[1]}|${q.get('cond') ?? 'live'}${rideSuffix(q.get('mode'))}`
   if (method === 'POST' && body) {
     const b = JSON.parse(body) as Record<string, unknown>
     if (route === '/routes') {
       const o = b.origin as { lat: number; lon: number }
       const d = b.destination as { lat: number; lon: number }
-      // Only default-preference routes are recorded; a lit-and-busy request must not get one.
+      // Only default-preference walks are recorded; a lit-and-busy request must not get one.
       const lit = b.prefer === 'lit_and_busy' ? '|lit' : ''
-      return `POST /routes ${coordKey(o)}>${coordKey(d)}|${String(b.cond ?? 'live')}${lit}`
+      return `POST /routes ${coordKey(o)}>${coordKey(d)}|${String(b.cond ?? 'live')}${rideSuffix(b.mode) || lit}`
     }
     if (route === '/explain' && b.kind === 'route') return `POST /explain route:${String(b.route_key)}`
     if (route === '/explain' && b.kind === 'segment') {
@@ -100,6 +111,16 @@ function safetyKey(path: string): string | null {
   return null
 }
 
+/** Ride routes are demo-only when recorded; otherwise the app falls back to Walk. */
+const MODE_OFF = {
+  success: false,
+  data: null,
+  error: { code: 'MODE_UNAVAILABLE', message: 'Bike and scooter routes are not part of this offline demo.' },
+}
+
+/** MARTA stations: a recorded fixture when present, otherwise the bundled rail list. */
+const BUNDLED_STATIONS = { success: true, data: MARTA_STATIONS, error: null }
+
 function isReportsPath(path: string): boolean {
   const route = path.split('?')[0]
   return route === '/reports' || route.startsWith('/reports/') || /^\/segments\/\d+\/reports$/.test(route)
@@ -113,7 +134,12 @@ export async function demoResponse(method: string, path: string, body?: string):
     const key = safetyKey(path)
     return (key && recorded[key]) ?? SAFETY_OFF
   }
+  if (path === '/transit/stations') {
+    const recorded = await loadFixtures().catch((): Fixtures => ({}))
+    return recorded['GET /transit/stations'] ?? BUNDLED_STATIONS
+  }
   const fixtures = await loadFixtures()
   const key = fixtureKey(method, path, body)
-  return (key && fixtures[key]) ?? DEMO_ONLY
+  const fallback = isRideRoute(method, path, body) ? MODE_OFF : DEMO_ONLY
+  return (key && fixtures[key]) ?? fallback
 }

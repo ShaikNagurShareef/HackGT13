@@ -2,6 +2,7 @@
 
 import type { Condition } from '../api/client'
 import { DEFAULT_PREFERENCE, type RoutePreference } from '../api/safetySchemas'
+import { DEFAULT_MODE, isTravelMode, type TravelMode } from '../lib/modes'
 import type { DayGroup } from '../lib/time'
 
 export interface Place {
@@ -21,6 +22,8 @@ export interface ViewState {
   demo: boolean
   /** Route preference; crime is never an input to routing. */
   prefer: RoutePreference
+  /** Travel mode (Walk · Bike · E-bike · Scooter); `prefer` applies to walks only. */
+  mode: TravelMode
 }
 
 export const DEFAULT_STATE: ViewState = {
@@ -33,6 +36,7 @@ export const DEFAULT_STATE: ViewState = {
   seg: null,
   demo: false,
   prefer: DEFAULT_PREFERENCE,
+  mode: DEFAULT_MODE,
 }
 
 const CONDS: ReadonlyArray<Condition> = ['live', 'dry', 'wet']
@@ -67,6 +71,7 @@ export function parseState(search: string): ViewState {
   const cond = q.get('cond') as Condition | null
   const day = q.get('day') as DayGroup | null
   const depart = q.get('t') ?? 'now'
+  const mode = q.get('mode')
   return {
     from: parsePlace(q.get('from')),
     to: parsePlace(q.get('to')),
@@ -77,6 +82,7 @@ export function parseState(search: string): ViewState {
     seg: parseIntIn(q.get('seg'), 0, 1_000_000),
     demo: q.get('demo') === '1',
     prefer: q.get('pref') === LIT_TOKEN ? 'lit_and_busy' : DEFAULT_PREFERENCE,
+    mode: isTravelMode(mode) ? mode : DEFAULT_MODE,
   }
 }
 
@@ -91,6 +97,7 @@ export function serializeState(s: ViewState): string {
   if (s.seg != null) q.set('seg', String(s.seg))
   if (s.demo) q.set('demo', '1')
   if (s.prefer === 'lit_and_busy') q.set('pref', LIT_TOKEN)
+  if (s.mode !== DEFAULT_MODE) q.set('mode', s.mode)
   const out = q.toString()
   return out ? `?${out}` : ''
 }

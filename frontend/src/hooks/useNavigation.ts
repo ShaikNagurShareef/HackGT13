@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { Route } from '../api/schemas'
+import type { Route, TravelMode } from '../api/schemas'
 import {
   hasArrived,
   nearestStreet,
@@ -9,6 +9,7 @@ import {
   type NamedPath,
   type NavInstruction,
 } from '../lib/navigation'
+import { arrivalRadiusM } from '../lib/modes'
 import type { GeoFix } from '../lib/origin'
 import { arrivalAt as arrivalAtTime } from '../lib/routeSummary'
 import { deviceSpeak } from '../lib/voice'
@@ -25,6 +26,10 @@ export interface NavigationInput {
   destination: Place | null
   /** Planned departure (routes.depart_at): a preview walk arrives on that schedule. */
   departAt: string | null
+  /** Travel mode: ride wording on the banner and a wider arrival radius. */
+  mode?: TravelMode
+  /** Travel speed for the preview and alert spacing (defaults to walking pace). */
+  speedMps?: number
 }
 
 export interface Navigation {
@@ -51,11 +56,12 @@ const CLOCK_TICK_MS = 15_000
  * Navigation mode: follows GPS (or the simulated preview walker) along the route, derives the
  * banner, and speaks each high-risk stretch once (VOX-02).
  */
-export function useNavigation({ route, gps, streets, destination, departAt }: NavigationInput): Navigation {
+export function useNavigation(input: NavigationInput): Navigation {
+  const { route, gps, streets, destination, departAt, mode: travel = 'walk', speedMps = WALK_SPEED_MPS } = input
   const [active, setActive] = useState(false)
   const [mode, setMode] = useState<NavMode>('gps')
   const [gpsArrived, setGpsArrived] = useState(false)
-  const walk = usePreviewWalk(route, false)
+  const walk = usePreviewWalk(route, false, speedMps)
   const spoken = useRef<Set<number>>(new Set())
   const lastSpokenS = useRef<number | null>(null)
   const arrivalSpoken = useRef(false)
@@ -82,8 +88,9 @@ export function useNavigation({ route, gps, streets, destination, departAt }: Na
 
   // Arrival is sticky: GPS jitter must not bounce the walker out of "You've arrived".
   // Adjusting state during render (not in an effect) is React's pattern for this.
-  const reachedEnd = end != null && gps != null && hasArrived(gps, { lon: end[0], lat: end[1] })
-  const reachedDestination = destination != null && gps != null && hasArrived(gps, destination)
+  const radiusM = arrivalRadiusM(travel)
+  const reachedEnd = end != null && gps != null && hasArrived(gps, { lon: end[0], lat: end[1] }, radiusM)
+  const reachedDestination = destination != null && gps != null && hasArrived(gps, destination, radiusM)
   if (live && mode === 'gps' && !gpsArrived && (reachedEnd || reachedDestination)) setGpsArrived(true)
   const arrived = live && (mode === 'preview' ? walk.progress >= 1 : gpsArrived)
 
@@ -95,14 +102,14 @@ export function useNavigation({ route, gps, streets, destination, departAt }: Na
       arrivalSpoken.current = true
       return
     }
-    const walkS = alongM / WALK_SPEED_MPS
+    const walkS = alongM / speedMps
     const idx = dueAlert(route.alerts, alongM, walkS, { spoken: spoken.current, lastSpokenS: lastSpokenS.current })
     if (idx == null) return
     spoken.current.add(idx)
     lastSpokenS.current = walkS
     deviceSpeak(alertText(route.alerts[idx]))
     navigator.vibrate?.(VIBRATE_MS)
-  }, [live, route, hasPosition, alongM, arrived])
+  }, [live, route, hasPosition, alongM, arrived, speedMps])
 
   useEffect(() => {
     if (!live) return
@@ -142,6 +149,7 @@ export function useNavigation({ route, gps, streets, destination, departAt }: Na
           durationS: route.duration_s,
           street,
           destination: destination?.label ?? 'Your destination',
+          mode: travel,
         })
       : null
 

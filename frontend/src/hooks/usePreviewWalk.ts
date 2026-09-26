@@ -15,8 +15,8 @@ export interface PreviewWalk {
   stop: () => void
 }
 
-/** Deterministic simulated walk along a route with spoken alerts (VOX-02/05, EC-44/45). */
-export function usePreviewWalk(route: Route | null, voiceOn: boolean): PreviewWalk {
+/** Deterministic simulated walk (or ride, at `speedMps`) along a route with spoken alerts (VOX-02/05, EC-44/45). */
+export function usePreviewWalk(route: Route | null, voiceOn: boolean, speedMps: number = WALK_SPEED_MPS): PreviewWalk {
   const [active, setActive] = useState(false)
   const [walked, setWalked] = useState(0)
   const [banner, setBanner] = useState<string | null>(null)
@@ -46,10 +46,10 @@ export function usePreviewWalk(route: Route | null, voiceOn: boolean): PreviewWa
   useEffect(() => {
     if (!active || !route) return
     const id = window.setInterval(() => {
-      const next = Math.min(walkedRef.current + (WALK_SPEED_MPS * PREVIEW_SPEEDUP * TICK_MS) / 1000, total)
+      const next = Math.min(walkedRef.current + (speedMps * PREVIEW_SPEEDUP * TICK_MS) / 1000, total)
       walkedRef.current = next
       setWalked(next)
-      const walkS = next / WALK_SPEED_MPS
+      const walkS = next / speedMps
       const idx = dueAlert(route.alerts, next, walkS, { spoken: spoken.current, lastSpokenS: lastSpokenS.current })
       if (idx == null) return
       spoken.current.add(idx)
@@ -60,7 +60,7 @@ export function usePreviewWalk(route: Route | null, voiceOn: boolean): PreviewWa
       navigator.vibrate?.(200)
     }, TICK_MS)
     return () => window.clearInterval(id)
-  }, [active, route, total, voiceOn])
+  }, [active, route, total, voiceOn, speedMps])
 
   useEffect(() => {
     if (active && total > 0 && walked >= total) setActive(false)

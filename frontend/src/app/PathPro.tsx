@@ -17,6 +17,7 @@ import { useGeolocation } from '../hooks/useGeolocation'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useLiveCondition } from '../hooks/useLiveCondition'
 import { useNavigation } from '../hooks/useNavigation'
+import { useRideNetwork } from '../hooks/useRideNetwork'
 import { useRiskFrames } from '../hooks/useRiskFrames'
 import { useRoutes } from '../hooks/useRoutes'
 import { useRoutines } from '../hooks/useRoutines'
@@ -25,10 +26,12 @@ import { useTripPlanner } from '../hooks/useTripPlanner'
 import { useViewState } from '../hooks/useViewState'
 import { useViewportReports } from '../hooks/useViewportReports'
 import { hotspotsFor } from '../lib/hotspots'
+import { isRideMode, networkLegendTitle, tabDurations } from '../lib/modes'
 import { startMode } from '../lib/navigation'
 import { originMessage } from '../lib/origin'
 import { statusLabel, type MapMode } from '../lib/options'
 import { estimateWalkMin, isStrongSuggestion } from '../lib/suggestion'
+import { haversine } from '../lib/walk'
 import { atlantaParts, dayGroupOf, formatTime } from '../lib/time'
 import { speak } from '../lib/voice'
 import { hasSeenWelcome, markWelcomeSeen } from '../lib/welcome'
@@ -42,9 +45,12 @@ import { RouteScreen, type RouteScreenProps } from './RouteScreen'
 import { useSafetyMode } from './useSafetyMode'
 import { useShareResume } from './useShareResume'
 import { useTripActions } from './useTripActions'
+import { useHandoff, useTravelModes } from './useTravelModes'
 
 const PLAY_MS = 1000
 const DESKTOP_QUERY = '(min-width: 1024px)'
+/** Straight-line distance → rough routed distance, for mode-tab estimates before any route loads. */
+const DETOUR_FACTOR = 1.3
 
 /** The app container: owns view state, data hooks, and which screen (home / route / nav) is showing. */
 export interface PathProProps {
@@ -80,11 +86,22 @@ export function PathPro({ data, loadError }: PathProProps) {
       load.then(setArea).catch((e: unknown) => !silent && setError(e instanceof ApiError ? e.message : 'Area unavailable.')),
     [],
   )
-  const { routes, loading } = useRoutes(view, {
-    onError: setError,
-    onOutside: (to) => void showArea(api.areaAt(to.lat, to.lon, view.depart, view.cond), true),
-    onLoaded: () => update({ hour: null, day: null }),
-  })
+  const travel = useTravelModes({ meta: data?.meta ?? null, view, update, onNotice: setError })
+  const { mode } = travel
+  const { routes, loading, durations } = useRoutes(
+    { ...view, mode },
+    {
+      onError: setError,
+      onOutside: (to) => void showArea(api.areaAt(to.lat, to.lon, view.depart, view.cond), true),
+      onLoaded: () => update({ hour: null, day: null }),
+      onModeUnavailable: travel.onModeUnavailable,
+    },
+  )
+  // Ride modes draw the ride network once its geometry and frames are in; walks never download it.
+  const rideNet = useRideNetwork(data?.meta ?? null, isRideMode(mode) ? travel.info : null, setError)
+  const networkMode = rideNet ? mode : 'walk'
+  const networkSegments = rideNet?.segments ?? data?.segments ?? []
+  const routeMode = routes?.mode ?? 'walk'
 
   const now = useMemo(() => new Date(), [])
   const departDate = routes ? new Date(routes.depart_at) : now
@@ -93,25 +110,29 @@ export function PathPro({ data, loadError }: PathProProps) {
   const liveCond = routes?.condition_used.cond ?? (live.wet ? 'wet' : 'dry')
   const mapCond = view.cond === 'live' ? liveCond : view.cond
   const condLabel = view.cond === 'live' ? (live.label ?? `Live · ${mapCond}`) : view.cond === 'wet' ? 'Wet' : 'Dry'
-  const frames = useRiskFrames(data?.frames ?? null, day, mapCond, true, setError, 'Risk Tides frames could not load.')
+  const frames = useRiskFrames(rideNet?.frames ?? data?.frames ?? null, day, mapCond, true, setError, 'Risk Tides frames could not load.')
   const hexFrames = useRiskFrames(data?.hexFrames ?? null, day, mapCond, cityMode, setError, 'City Pulse frames could not load.')
-  const detail = useSegmentDetail(view.seg, routes?.depart_at ?? view.depart, view.cond, setError)
+  const detail = useSegmentDetail(view.seg, routes?.depart_at ?? view.depart, view.cond, setError, networkMode)
 
   const routeKey = routes?.route_key ?? null
   const routeExplain = useExplanation(routeKey, () => api.explainRoute(routeKey ?? ''))
   const routeText = routeExplain.result?.text ?? null
   const kind = selection && selection.key === routeKey ? selection.kind : 'pp'
   const selectedRoute = routes ? (kind === 'pp' && routes.pathpro ? routes.pathpro : routes.fastest) : null
+  // Street names for the banner come from the network the route was planned on.
+  const routeNetwork = isRideMode(routeMode) ? rideNet?.segments : data?.segments
   const routeStreets = useMemo(() => {
     const ids = new Set(selectedRoute?.segment_ids ?? [])
-    return (data?.segments ?? []).filter((s) => ids.has(s.id))
-  }, [data, selectedRoute])
+    return (routeNetwork ?? []).filter((s) => ids.has(s.id))
+  }, [routeNetwork, selectedRoute])
   const nav = useNavigation({
     route: selectedRoute,
     gps: geo.position,
     streets: routeStreets,
     destination: view.to,
     departAt: routes?.depart_at ?? null,
+    mode: routeMode,
+    speedMps: travel.speedMps,
   })
   const reports = useViewportReports(!demo && mapMode === 'streets')
   const safety = useSafetyMode(mapMode, hour)
@@ -139,12 +160,16 @@ export function PathPro({ data, loadError }: PathProProps) {
 
   const frame = useMemo(() => frames?.hour(hour) ?? null, [frames, hour])
   const medians = useMemo(() => frames?.medians() ?? [], [frames])
-  const hotspots = useMemo(() => (data && frame ? hotspotsFor(data.hotspotNodes, frame) : []), [data, frame])
+  // Hotspot nodes belong to the walk network.
+  const hotspots = useMemo(
+    () => (data && frame && networkMode === 'walk' ? hotspotsFor(data.hotspotNodes, frame) : []),
+    [data, frame, networkMode],
+  )
   const onSegment = useCallback((id: number) => update({ seg: id }), [update])
   const { pickDestination } = planner
   const onMapPick = useCallback((lat: number, lon: number) => pickDestination({ lat, lon, label: 'Dropped pin' }), [pickDestination])
   const focusSegment = (id: number) => {
-    const seg = data?.segments.find((s) => s.id === id)
+    const seg = networkSegments.find((s) => s.id === id)
     if (seg) setFocus({ path: seg.path, key: Date.now() })
     update({ seg: id })
   }
@@ -201,6 +226,7 @@ export function PathPro({ data, loadError }: PathProProps) {
   const dismissSuggestion = () => setHiddenSuggestion(top?.to.label ?? null)
   const safetyControls = safety.controls
   const optionValues = {
+    travelMode: mode,
     cond: view.cond,
     condLabel: routes?.condition_used.label ?? condLabel,
     onCond: (c: typeof view.cond) => update({ cond: c }),
@@ -224,6 +250,21 @@ export function PathPro({ data, loadError }: PathProProps) {
     showReportsLegend: reports.available,
   }
   const canUseLocation = geo.status !== 'denied' && geo.status !== 'unavailable' && planner.origin.status !== 'outside'
+  const straightM = view.from && view.to ? haversine([view.from.lon, view.from.lat], [view.to.lon, view.to.lat]) * DETOUR_FACTOR : null
+  const modeTabs = {
+    options: travel.options,
+    selected: mode,
+    onSelect: travel.onMode,
+    durations: tabDurations(travel.options, durations, routes?.fastest.distance_m ?? straightM),
+  }
+  const handoff = useHandoff({
+    routes,
+    from: view.from,
+    to: view.to,
+    options: travel.options,
+    onPlanStation: planner.pickDestination,
+    onTryMode: travel.onMode,
+  })
   const routeScreen: RouteScreenProps = {
     header: {
       from: view.from,
@@ -245,15 +286,17 @@ export function PathPro({ data, loadError }: PathProProps) {
             explanation: routeText,
             onStart: actions.start,
             onPreview: () => nav.start('preview'),
-            startNote: selectedRoute ? startMode(selectedRoute.coords, fix).note : null,
+            startNote: selectedRoute ? startMode(selectedRoute.coords, fix, routeMode).note : null,
             onListen: () => void speak({ kind: 'route', route_key: routes.route_key }, routeText ?? ''),
             onShare: () => void actions.share(),
             shareStatus: actions.shareStatus,
             onFocusSegment: focusSegment,
             onSelectSegment: onSegment,
             dayParts: safety.meta?.day_parts,
+            handoff,
           }
         : null,
+    modes: modeTabs,
     prefer: view.prefer,
     safetyNote: !desktop && safety.legend?.layers.crimes ? () => actions.setPanel({ kind: 'options' }) : null,
   }
@@ -265,9 +308,9 @@ export function PathPro({ data, loadError }: PathProProps) {
       <MapStage
         bbox={data.meta.coverage_bbox}
         outlineUrl={`${data.meta.static_base}/coverage.geojson`}
-        segments={data.segments}
+        segments={networkSegments}
         frame={frame}
-        frameKey={`${day}-${mapCond}-${hour}-${frames ? 'ready' : 'empty'}`}
+        frameKey={`${networkMode}-${day}-${mapCond}-${hour}-${frames ? 'ready' : 'empty'}`}
         hotspots={hotspots}
         fastest={fastest}
         pathpro={pathpro}
@@ -305,6 +348,7 @@ export function PathPro({ data, loadError }: PathProProps) {
               onPick: (place) => actions.pickPlace('to', place),
               onPickSuggestion: actions.planSuggestion,
               onEditSaved: actions.editSaved,
+              modes: modeTabs,
             },
             options: { ...optionValues, onClearHistory: routines.clear },
             onAbout: () => actions.setPanel({ kind: 'about' }),
@@ -317,6 +361,7 @@ export function PathPro({ data, loadError }: PathProProps) {
           onDismissWelcome={dismissWelcome}
           safetyAvailable={safety.available}
           safetyDock={safety.legend}
+          travelMode={routeMode}
         />
       ) : (
         <>
@@ -334,6 +379,7 @@ export function PathPro({ data, loadError }: PathProProps) {
                 cityMode,
                 safetyMode: mapMode === 'safety',
                 prefer: view.prefer,
+                mode,
               })}
               onOpenOptions={() => actions.setPanel({ kind: 'options' })}
               welcomeDataThrough={welcome ? data.meta.data_through : null}
@@ -341,6 +387,7 @@ export function PathPro({ data, loadError }: PathProProps) {
               reportsLegend={reports.available}
               safetyAvailable={safety.available}
               safetyLegend={safety.legend}
+              legendTitle={networkLegendTitle(networkMode)}
             />
           )}
           {screen === 'route' && <RouteScreen {...routeScreen} />}
@@ -350,6 +397,7 @@ export function PathPro({ data, loadError }: PathProProps) {
         <NavigationView
           instruction={nav.instruction}
           mode={nav.mode}
+          travel={routeMode}
           remainingS={nav.remainingS}
           remainingM={nav.remainingM}
           arrival={formatTime(nav.arrivalAt)}
@@ -391,6 +439,7 @@ export function PathPro({ data, loadError }: PathProProps) {
           onCloseDetail={() => update({ seg: null })}
           onAbout={() => actions.setPanel({ kind: 'about' })}
           onReported={reports.refresh}
+          rideNetwork={networkMode !== 'walk'}
         />
       )}
       {screen !== 'nav' && safety.pick && (
@@ -414,6 +463,7 @@ export function PathPro({ data, loadError }: PathProProps) {
         onDismissWelcome={dismissWelcome}
         options={{ ...optionValues, timeline }}
         safetyMeta={safety.meta}
+        modes={{ ...modeTabs, durations: undefined }}
       />
     </main>
   )

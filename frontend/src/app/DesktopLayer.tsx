@@ -3,6 +3,7 @@ import { SidebarBrand } from '../components/desktop/SidebarBrand'
 import { WelcomeToast } from '../components/home/WelcomeToast'
 import { SafetyLegend, type SafetyLegendProps } from '../components/safety/SafetyLegend'
 import { Timeline, type TimelineProps } from '../components/Timeline'
+import { travelingTo, type TravelMode } from '../lib/modes'
 import { RouteScreen, type RouteScreenProps } from './RouteScreen'
 
 export interface DesktopLayerProps {
@@ -16,11 +17,13 @@ export interface DesktopLayerProps {
   safetyAvailable?: boolean
   /** Personal safety mode: on the route screen the legend docks on the map (home shows it in the sidebar). */
   safetyDock?: SafetyLegendProps | null
+  travelMode?: TravelMode
 }
 
 /** Desktop (≥1024 px): a persistent sidebar beside the map, with Risk Tides docked on the map. */
 export function DesktopLayer(props: DesktopLayerProps) {
   const { screen, home, route, destination, timeline, welcomeDataThrough, onDismissWelcome, safetyAvailable, safetyDock } = props
+  const navNote = `${travelingTo(props.travelMode ?? 'walk', destination)}. The banner on the map shows what's next.`
   return (
     <>
       {screen === 'home' && <DesktopHome {...home} />}
@@ -33,7 +36,7 @@ export function DesktopLayer(props: DesktopLayerProps) {
       {screen === 'nav' && (
         <aside className="desk-sidebar" aria-label="PathPro">
           <SidebarBrand />
-          <p className="desk-nav-note">Walking to {destination}. The banner on the map shows what's next.</p>
+          <p className="desk-nav-note">{navNote}</p>
         </aside>
       )}
       {screen !== 'nav' && (

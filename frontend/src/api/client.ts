@@ -11,6 +11,7 @@ import {
   reportsSchema,
   routesSchema,
   segmentSchema,
+  transitStationsSchema,
   type ConditionUsed,
   type Explanation,
   type GeoResult,
@@ -21,6 +22,8 @@ import {
   type ReportCategory,
   type Routes,
   type SegmentDetail,
+  type TransitStation,
+  type TravelMode,
 } from './schemas'
 
 import { DEFAULT_PREFERENCE, type RoutePreference } from './safetySchemas'
@@ -94,13 +97,17 @@ export const api = {
     const origin = isDemoMode() ? '' : getApiOrigin()
     return origin ? { ...meta, static_base: `${origin}${meta.static_base}` } : meta
   },
-  /** `prefer` is sent only when it differs from the default, so older servers see the same request. */
+  /**
+   * `prefer` (walks only) and `mode` (rides only) are sent only when they differ from the
+   * defaults, so older servers and the recorded demo see the same walking request.
+   */
   routes: (
     origin: LatLon,
     destination: LatLon,
     departAt: string,
     cond: Condition,
     prefer: RoutePreference = DEFAULT_PREFERENCE,
+    mode: TravelMode = 'walk',
   ): Promise<Routes> =>
     request('/routes', routesSchema, {
       method: 'POST',
@@ -110,11 +117,14 @@ export const api = {
         destination,
         depart_at: departAt,
         cond,
-        ...(prefer === DEFAULT_PREFERENCE ? {} : { prefer }),
+        ...(mode === 'walk' ? {} : { mode }),
+        ...(mode !== 'walk' || prefer === DEFAULT_PREFERENCE ? {} : { prefer }),
       }),
     }),
-  segment: (id: number, t: string, cond: Condition): Promise<SegmentDetail> =>
-    request(`/segments/${id}?t=${encodeURIComponent(t)}&cond=${cond}`, segmentSchema),
+  /** Ride modes index the ride network, so their segment ids need the mode. */
+  segment: (id: number, t: string, cond: Condition, mode: TravelMode = 'walk'): Promise<SegmentDetail> =>
+    request(`/segments/${id}?t=${encodeURIComponent(t)}&cond=${cond}${mode === 'walk' ? '' : `&mode=${mode}`}`, segmentSchema),
+  transitStations: (): Promise<TransitStation[]> => request('/transit/stations', transitStationsSchema),
   explainRoute: (routeKey: string): Promise<Explanation> =>
     request('/explain', explainSchema, {
       method: 'POST',

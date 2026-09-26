@@ -52,7 +52,7 @@ describe('useRideNetwork', () => {
     const onError = vi.fn()
     renderHook(() => useRideNetwork(meta(), BIKE, onError))
 
-    await waitFor(() => expect(onError).toHaveBeenCalledWith('The bike & scooter risk map could not load.'))
+    await waitFor(() => expect(onError).toHaveBeenCalledWith('The bike & scooter risk map could not load, so the map shows walking risk.'))
   })
 })
 

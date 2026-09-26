@@ -67,8 +67,8 @@ describe('martaHandoff', () => {
   })
 
   it('ships a bundled MARTA rail list for the offline demo', () => {
-    expect(MARTA_STATIONS.length).toBeGreaterThan(10)
-    expect(MARTA_STATIONS.some((s) => s.name === 'North Ave')).toBe(true)
+    expect(MARTA_STATIONS).toHaveLength(38)
+    expect(MARTA_STATIONS.some((s) => s.name === 'North Avenue')).toBe(true)
   })
 })
 

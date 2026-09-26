@@ -5,14 +5,16 @@ export interface MapModePickerProps {
   onMode: (mode: MapMode) => void
   cityAvailable: boolean
   safetyAvailable: boolean
+  /** Ride modes: the personal-safety layer is about walking, so it says so. */
+  safetyLabel?: string
 }
 
 /** Streets (traffic risk) · City Pulse · Personal safety — only the modes this bundle supports. */
-export function MapModePicker({ mode, onMode, cityAvailable, safetyAvailable }: MapModePickerProps) {
+export function MapModePicker({ mode, onMode, cityAvailable, safetyAvailable, safetyLabel = 'Personal safety' }: MapModePickerProps) {
   const modes: ReadonlyArray<[MapMode, string, boolean]> = [
     ['streets', 'Streets', true],
     ['city', 'City Pulse', cityAvailable],
-    ['safety', 'Personal safety', safetyAvailable],
+    ['safety', safetyLabel, safetyAvailable],
   ]
   return (
     <div className="conditions" role="group" aria-label="Map mode">
