@@ -1,0 +1,426 @@
+1
+00:00:00,800 --> 00:00:04,610
+Pedestrian deaths in Atlanta
+are a public-health problem.
+
+2
+00:00:04,650 --> 00:00:09,533
+Many of us walk between Klaus, Tech
+Square, and Midtown MARTA late at night.
+
+3
+00:00:09,573 --> 00:00:13,654
+Our friends, especially women,
+already plan routes around well-lit,
+
+4
+00:00:13,694 --> 00:00:17,114
+busier streets, and text each
+other when they get home.
+
+5
+00:00:17,154 --> 00:00:21,653
+Yet every navigation app asks
+one question: what's fastest?
+
+6
+00:00:21,693 --> 00:00:26,030
+So we built PathPro: a map of where
+and when traffic risk is highest,
+
+7
+00:00:26,070 --> 00:00:28,962
+with better tools for
+walking alone at night.
+
+8
+00:00:29,002 --> 00:00:32,538
+Open pathpro.tech in any phone browser.
+
+9
+00:00:32,578 --> 00:00:35,278
+There's no app to install and no login.
+
+10
+00:00:35,318 --> 00:00:39,817
+Two taps take you from opening it to a
+route that starts at your GPS location.
+
+11
+00:00:39,857 --> 00:00:41,640
+It works on desktop too,
+
+12
+00:00:41,680 --> 00:00:45,367
+with keyboard and screen-reader
+labels and large touch targets,
+
+13
+00:00:45,407 --> 00:00:48,264
+and your walking patterns
+stay on your phone.
+
+14
+00:00:48,425 --> 00:00:52,100
+Here's Klaus to Midtown MARTA at
+10:30 on a rainy Friday night.
+
+15
+00:00:52,140 --> 00:00:56,695
+The teal PathPro route is about four
+minutes longer than the fastest walk,
+
+16
+00:00:56,735 --> 00:00:59,831
+with 54% less traffic risk.
+
+17
+00:01:00,073 --> 00:01:03,847
+Tap Why, and it names the
+high-risk stretches it avoids.
+
+18
+00:01:03,887 --> 00:01:07,434
+Tap Listen, and ElevenLabs reads it aloud.
+
+19
+00:01:07,674 --> 00:01:13,855
+<i>The PathPro route adds 4.2 minutes</i>
+<i>and cuts traffic-risk exposure 54%…</i>
+
+20
+00:01:14,055 --> 00:01:17,208
+Start navigation, and
+PathPro walks with you,
+
+21
+00:01:17,248 --> 00:01:20,611
+speaking up before each
+high-traffic-risk crossing.
+
+22
+00:01:20,651 --> 00:01:24,767
+<i>High traffic risk ahead. Fowler Street</i>
+<i>Northwest and Ferst Drive Northwest,</i>
+
+23
+00:01:24,807 --> 00:01:26,860
+<i>in 250 m.</i>
+
+24
+00:01:26,900 --> 00:01:32,317
+On a long walk, like Georgia Tech to Inman
+Park, PathPro offers a faster option:
+
+25
+00:01:32,357 --> 00:01:36,113
+walk 17 minutes to Midtown
+station and take MARTA.
+
+26
+00:01:36,153 --> 00:01:39,167
+Or switch to Bike, E-bike, or Scooter.
+
+27
+00:01:39,207 --> 00:01:45,419
+This ride takes 27 minutes, with 72%
+less traffic risk than the fastest ride.
+
+28
+00:01:45,577 --> 00:01:48,155
+Walking at night is
+about more than traffic.
+
+29
+00:01:48,195 --> 00:01:53,420
+Personal-safety mode adds street
+lighting, foot traffic, and help points,
+
+30
+00:01:53,460 --> 00:01:56,323
+including Georgia Tech's
+blue-light phones.
+
+31
+00:01:56,363 --> 00:01:59,676
+Reported crimes against
+persons are informational only,
+
+32
+00:01:59,716 --> 00:02:03,468
+shown with a fairness note, and
+never used to choose routes.
+
+33
+00:02:03,666 --> 00:02:09,466
+PathPro is for anyone walking or riding
+alone at night: women and girls, students,
+
+34
+00:02:09,506 --> 00:02:13,053
+people who rely on MARTA
+instead of a car, older adults,
+
+35
+00:02:13,093 --> 00:02:15,364
+and people on bikes and scooters.
+
+36
+00:02:15,404 --> 00:02:18,266
+Choose well-lit and
+busier streets after dark,
+
+37
+00:02:18,306 --> 00:02:22,097
+with help points like Georgia Tech's
+blue-light phones along the way.
+
+38
+00:02:22,137 --> 00:02:25,557
+Share my walk lets a friend follow
+along, and if you're running late,
+
+39
+00:02:25,597 --> 00:02:29,179
+PathPro checks in, with 911 one tap away.
+
+40
+00:02:29,219 --> 00:02:32,758
+And voice alerts keep your
+eyes up, not on the screen.
+
+41
+00:02:32,798 --> 00:02:33,437
+On desktop,
+
+42
+00:02:33,477 --> 00:02:38,932
+Risk Tides re-scores about 50,000 Atlanta
+streets for every hour and weather,
+
+43
+00:02:38,972 --> 00:02:42,720
+on one citywide scale. Watch
+corridors light up after dark,
+
+44
+00:02:42,760 --> 00:02:45,570
+and again when the pavement turns wet.
+
+45
+00:02:45,964 --> 00:02:49,539
+City Pulse scores all
+3,537 areas of the city,
+
+46
+00:02:49,579 --> 00:02:52,570
+so any address gets a score.
+
+47
+00:02:52,947 --> 00:02:56,370
+Does it work? We trained on 2020 to 2023,
+
+48
+00:02:56,410 --> 00:03:01,537
+and tested on 543 pedestrian crashes
+from 2024 the model never saw.
+
+49
+00:03:01,577 --> 00:03:06,923
+The 10% of streets PathPro
+ranks highest held seventy-four
+
+50
+00:03:06,963 --> 00:03:08,368
+percent of them.
+
+51
+00:03:08,408 --> 00:03:12,157
+The City's High Injury Network: 54%.
+
+52
+00:03:12,197 --> 00:03:13,907
+Random: 12%.
+
+53
+00:03:14,168 --> 00:03:16,206
+What does better ranking buy?
+
+54
+00:03:16,246 --> 00:03:16,984
+For a city,
+
+55
+00:03:17,024 --> 00:03:22,162
+the same budget spent on 10% of street
+length reaches 38% more of next year's
+
+56
+00:03:22,202 --> 00:03:25,169
+pedestrian crashes than
+the High Injury Network,
+
+57
+00:03:25,209 --> 00:03:29,384
+and, for rides, about
+60% more bike crashes.
+
+58
+00:03:29,424 --> 00:03:34,596
+For a person, four extra minutes cut
+traffic-risk exposure by more than half.
+
+59
+00:03:34,636 --> 00:03:35,456
+Nationally,
+
+60
+00:03:35,496 --> 00:03:40,831
+NHTSA puts the economic cost
+of crashes at $340 billion in
+
+61
+00:03:40,871 --> 00:03:42,201
+2019.
+
+62
+00:03:42,241 --> 00:03:47,962
+And a new city needs one coverage
+polygon, plus its public crash data.
+
+63
+00:03:48,002 --> 00:03:51,921
+Under the hood, we clean a quarter
+million public crash records,
+
+64
+00:03:51,961 --> 00:03:57,250
+snap them to 50,000 streets, and
+score each one by hour and weather.
+
+65
+00:03:57,290 --> 00:04:01,500
+One bundle feeds a FastAPI
+service and a React map.
+
+66
+00:04:01,540 --> 00:04:06,516
+Vultr runs all of it: the API and
+the site, on one VM in Atlanta,
+
+67
+00:04:06,556 --> 00:04:11,577
+close to our users. Caddy adds
+automatic HTTPS, systemd keeps it up,
+
+68
+00:04:11,617 --> 00:04:14,070
+and one script deploys it.
+
+69
+00:04:14,110 --> 00:04:16,764
+Our domain is pathpro.tech.
+
+70
+00:04:16,804 --> 00:04:19,051
+Say it out loud: path protect.
+
+71
+00:04:19,091 --> 00:04:21,573
+The .tech completes the word.
+
+72
+00:04:21,613 --> 00:04:24,197
+Tiger Data is our system of record:
+
+73
+00:04:24,237 --> 00:04:28,934
+over 220,000 crash rows
+in a Timescale hypertable,
+
+74
+00:04:28,974 --> 00:04:33,160
+a continuous aggregate behind each
+street's crashes-by-hour chart,
+
+75
+00:04:33,200 --> 00:04:38,742
+PostGIS geometry, and a risk
+grid of 9.5 million rows.
+
+76
+00:04:38,782 --> 00:04:41,993
+MongoDB Atlas holds what walkers tell us.
+
+77
+00:04:42,033 --> 00:04:47,078
+Street reports use a geo index for
+map queries, expire after 14 days,
+
+78
+00:04:47,118 --> 00:04:51,025
+and repeats become confirmations
+in one atomic upsert.
+
+79
+00:04:51,065 --> 00:04:53,556
+Shared walks expire in 6 hours.
+
+80
+00:04:53,596 --> 00:04:58,444
+Geo plus TTL fits short-lived,
+user-generated data.
+
+81
+00:04:58,484 --> 00:05:00,743
+ElevenLabs gives PathPro its voice,
+
+82
+00:05:00,783 --> 00:05:04,360
+for explanations and for
+walk alerts like this one.
+
+83
+00:05:04,400 --> 00:05:08,516
+<i>High traffic risk ahead. Fowler Street</i>
+<i>Northwest and Ferst Drive Northwest,</i>
+
+84
+00:05:08,556 --> 00:05:10,610
+<i>in 250 m.</i>
+
+85
+00:05:10,650 --> 00:05:15,567
+Explanations come from
+Groq's GPT-OSS 120B,
+
+86
+00:05:15,607 --> 00:05:19,550
+for sub-second answers,
+with Gemini as the fallback.
+
+87
+00:05:19,590 --> 00:05:23,834
+A validator rejects any sentence with
+a number that isn't in the evidence,
+
+88
+00:05:23,874 --> 00:05:27,621
+so the LLM never produces a risk number.
+
+89
+00:05:27,661 --> 00:05:31,986
+That's PathPro: traffic risk you can
+see, for every street, every hour,
+
+90
+00:05:32,026 --> 00:05:34,169
+and every way you get around Atlanta.
+
+91
+00:05:34,209 --> 00:05:36,526
+Try it at pathpro.tech.
+
+92
+00:05:36,566 --> 00:05:39,399
+See traffic risk before you walk into it.
