@@ -44,8 +44,8 @@ Status as of Sat Sep 26, 2026, 7:00 AM ET. Submit on Devpost by **Sun 07:30** (h
 
 ### SpaceXAI "Make it Legendary" (Grok, Grok Imagine, Grok Voice; built with Cursor)
 Pitch: *mission control for every walk home*. We align with SpaceX's engineering culture (first principles, test like you fly, engine-out redundancy, reusability, public-health mission), not its branding. No logos, and no suggestion of a partnership.
-- [ ] xAI account (shaiknagurshareef6@gmail.com), API key in `backend/.env` as `XAI_API_KEY`, credits (SpaceXAI table or HackGT Discord, else top up)
-- [ ] Cursor account (same email); do part of the Grok work in Cursor so "built with Cursor" is true
+- [ ] xAI account (shaiknagurshareef6@gmail.com), API key in `backend/.env` as `XAI_API_KEY`, $25 credits from the SpaceXAI promo code on the sponsor slide (Grok Voice + Imagine; code kept out of git)
+- [ ] Cursor account (same email), 1 month of Pro from the SpaceXAI event redeem link; do part of the Grok work in Cursor so "built with Cursor" is true
 - [ ] Grok explanations (Grok → Groq → Gemini → template), Grok Voice alerts, and "Imagine this street redesigned" (Grok Imagine) live on pathpro.tech
 - [ ] Video v3: Grok Voice narration plus a 20 s "Make it Legendary" scene (script in `media/pathpro_demo_script.md`)
 - [ ] Publish the "Make it Legendary" section in `docs/devpost.md` (it's gated on the live check) and select the track
