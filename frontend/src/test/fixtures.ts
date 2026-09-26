@@ -1,4 +1,4 @@
-import type { Meta, Route, Routes, SegmentDetail } from '../api/schemas'
+import type { Meta, Report, Route, Routes, SegmentDetail } from '../api/schemas'
 
 export const route = (over: Partial<Route> = {}): Route => ({
   coords: [
@@ -81,4 +81,17 @@ export const meta = (): Meta => ({
   },
   spatial_factors: [],
   temporal_factors: [],
+})
+
+export const report = (over: Partial<Report> = {}): Report => ({
+  seg_id: 11,
+  category: 'construction',
+  label: 'Construction detour',
+  street: 'Fifth Street Northwest',
+  lon: -84.39,
+  lat: 33.777,
+  confirmations: 2,
+  updated_at: '2026-09-26T12:00:00Z',
+  expires_at: '2026-10-10T12:00:00Z',
+  ...over,
 })

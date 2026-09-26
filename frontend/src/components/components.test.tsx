@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { meta, routes, segment } from '../test/fixtures'
+import { meta, report, routes, segment } from '../test/fixtures'
 import { About, FirstRun } from './About'
 import { ComparisonCard, templateSummary } from './ComparisonCard'
 import { ConditionsChip, DepartPicker, Legend, TrustNote } from './Controls'
@@ -78,6 +78,25 @@ describe('ComparisonCard (RTE-04)', () => {
     expect(onListen).toHaveBeenCalled()
     expect(onStart).toHaveBeenCalled()
     expect(screen.getByRole('status')).toHaveTextContent('Spring Street')
+  })
+})
+
+describe('ComparisonCard community reports', () => {
+  it('lists community reports on the recommended route', () => {
+    const withReports = routes({
+      reports: [report(), report({ seg_id: 12, category: 'sidewalk_blocked', label: 'Sidewalk blocked' })],
+    })
+    render(<ComparisonCard routes={withReports} explanation={null} onClear={vi.fn()} onSelectSegment={vi.fn()} />)
+
+    expect(screen.getByRole('region', { name: 'Route comparison' })).toHaveTextContent(
+      '2 community reports on this route: Construction detour, Sidewalk blocked',
+    )
+  })
+
+  it('says nothing about reports when there are none', () => {
+    render(<ComparisonCard routes={routes()} explanation={null} onClear={vi.fn()} onSelectSegment={vi.fn()} />)
+
+    expect(screen.queryByText(/community report/)).toBeNull()
   })
 })
 
@@ -188,6 +207,12 @@ describe('Controls', () => {
     const legend = screen.getByRole('region', { name: 'Risk legend' })
     for (const label of ['Lower', 'Moderate', 'Elevated', 'High']) expect(legend).toHaveTextContent(label)
     expect(screen.getByRole('note')).toHaveTextContent('Traffic risk estimate')
+    expect(legend).not.toHaveTextContent('Community report')
+  })
+
+  it('adds a community report entry to the legend when reports are on', () => {
+    render(<Legend reports />)
+    expect(screen.getByRole('region', { name: 'Risk legend' })).toHaveTextContent('Community report')
   })
 })
 

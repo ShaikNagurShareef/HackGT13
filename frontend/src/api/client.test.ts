@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { routes, segment } from '../test/fixtures'
+import { report, routes, segment } from '../test/fixtures'
 import { ApiError, api } from './client'
 
 function respond(body: unknown) {
@@ -67,5 +67,48 @@ describe('api client', () => {
     })
     expect((geo.mock.calls[0] as unknown as [string])[0]).toBe('/api/geocode?q=10th%20%26%20Peachtree')
     expect(segment().score).toBe(96)
+  })
+})
+
+describe('community reports client', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('posts only a segment and a category', async () => {
+    const fetcher = respond({ success: true, data: report({ confirmations: 1 }) })
+
+    const saved = await api.postReport(11, 'construction')
+
+    expect(saved.confirmations).toBe(1)
+    const [url, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe('/api/reports')
+    expect(init.method).toBe('POST')
+    expect(JSON.parse(String(init.body))).toEqual({ seg_id: 11, category: 'construction' })
+  })
+
+  it('fetches reports in a viewport and on a segment', async () => {
+    const fetcher = respond({ success: true, data: [report()] })
+
+    const inView = await api.reportsInBbox([-84.4, 33.7, -84.3, 33.8])
+    const onSeg = await api.segmentReports(11)
+
+    expect(inView).toHaveLength(1)
+    expect(onSeg[0].label).toBe('Construction detour')
+    expect((fetcher.mock.calls[0] as unknown as [string])[0]).toBe('/api/reports?bbox=-84.40000,33.70000,-84.30000,33.80000')
+    expect((fetcher.mock.calls[1] as unknown as [string])[0]).toBe('/api/segments/11/reports')
+  })
+
+  it('routes default to no reports, and carry them when present', async () => {
+    const { reports: _omit, ...legacy } = routes()
+    respond({ success: true, data: legacy })
+    expect((await api.routes({ lat: 1, lon: 2 }, { lat: 3, lon: 4 }, 'now', 'dry')).reports).toEqual([])
+
+    respond({ success: true, data: routes({ reports: [report()] }) })
+    expect((await api.routes({ lat: 1, lon: 2 }, { lat: 3, lon: 4 }, 'now', 'dry')).reports).toHaveLength(1)
+  })
+
+  it('surfaces REPORTS_UNAVAILABLE so the UI can hide the feature', async () => {
+    respond({ success: false, error: { code: 'REPORTS_UNAVAILABLE', message: 'Community reports are unavailable' } })
+
+    await expect(api.segmentReports(11)).rejects.toMatchObject({ code: 'REPORTS_UNAVAILABLE' })
   })
 })
