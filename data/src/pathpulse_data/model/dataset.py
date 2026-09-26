@@ -12,6 +12,7 @@ import geopandas as gpd
 import h3
 import numpy as np
 import pandas as pd
+from scipy.spatial import cKDTree
 
 from pathpulse_data.config import INTERIM_DIR, THRESHOLDS
 
@@ -38,7 +39,9 @@ PASSTHROUGH = [
 ]
 FLAGS = ["oneway", "state_owned", "school_zone", "osm_lit", "aadt_missing", "ped_volume_missing"]
 GROUPS = ["arterial", "collector", "local"]
-SPATIAL_BLOCK_RES = 8
+BOOTSTRAP_BLOCK_RES = 8  # ~0.7 km2: resampling unit for confidence intervals
+CV_BLOCK_RES = 7  # ~5 km2: coarse enough that split intersection crashes stay in one fold
+NEIGHBOR_RADIUS_M = 200.0
 
 
 @dataclass(frozen=True)
@@ -47,7 +50,9 @@ class SegmentData:
 
     features: pd.DataFrame  # indexed by seg_id
     crashes: pd.DataFrame  # snapped yearly-stream crash weights: seg_id, year, is_ped, weight
-    blocks: pd.Series  # spatial block id per seg_id for grouped CV
+    blocks: pd.Series  # H3 res-8 block per seg_id: bootstrap resampling unit
+    cv_groups: pd.Series  # H3 res-7 block per seg_id: grouped CV folds
+    xy: np.ndarray | None = None  # segment midpoints in meters (UTM), for neighborhood history
 
 
 def load_segment_data() -> SegmentData:
@@ -56,10 +61,18 @@ def load_segment_data() -> SegmentData:
     yearly = snaps.loc[snaps["stream"] == "yearly", ["seg_id", "year", "is_ped", "weight"]]
     segs = gpd.read_parquet(INTERIM_DIR / "road_segments.parquet").set_index("seg_id")
     mids = segs.geometry.interpolate(0.5, normalized=True)
-    blocks = pd.Series(
-        [h3.latlng_to_cell(p.y, p.x, SPATIAL_BLOCK_RES) for p in mids], index=segs.index
+    mids_m = mids.to_crs("EPSG:32616")
+
+    def cells(res: int) -> pd.Series:
+        return pd.Series([h3.latlng_to_cell(p.y, p.x, res) for p in mids], index=segs.index)
+
+    return SegmentData(
+        features=feats,
+        crashes=yearly,
+        blocks=cells(BOOTSTRAP_BLOCK_RES),
+        cv_groups=cells(CV_BLOCK_RES),
+        xy=np.column_stack([mids_m.x.to_numpy(), mids_m.y.to_numpy()]),
     )
-    return SegmentData(features=feats, crashes=yearly, blocks=blocks)
 
 
 def window_counts(data: SegmentData, years: range, ped: bool) -> pd.Series:
@@ -71,6 +84,24 @@ def window_counts(data: SegmentData, years: range, ped: bool) -> pd.Series:
 
 def effective_length(features: pd.DataFrame) -> pd.Series:
     return features["length_m"].clip(lower=THRESHOLDS.min_segment_len_m)
+
+
+def neighbor_density(data: SegmentData, counts: pd.Series, years: int) -> pd.Series:
+    """Crashes per year on *other* segments within NEIGHBOR_RADIUS_M, per 100 m of their length.
+
+    Pedestrian crashes cluster along corridors, so the surrounding record carries signal the
+    segment's own sparse history cannot. Uses only the counts passed in (training window).
+    """
+    if data.xy is None:
+        return pd.Series(0.0, index=counts.index)
+    tree = cKDTree(data.xy)
+    lengths = effective_length(data.features).to_numpy() / 100.0
+    values, out = counts.to_numpy(), np.zeros(len(counts))
+    for i, nbrs in enumerate(tree.query_ball_point(data.xy, NEIGHBOR_RADIUS_M)):
+        others = [j for j in nbrs if j != i]
+        if others:
+            out[i] = values[others].sum() / lengths[others].sum() / years
+    return pd.Series(out, index=counts.index)
 
 
 def design_matrix(data: SegmentData, train_years: range) -> pd.DataFrame:
@@ -93,4 +124,8 @@ def design_matrix(data: SegmentData, train_years: range) -> pd.DataFrame:
     nonped = window_counts(data, train_years, ped=False)
     per_100m_year = nonped / (effective_length(f) / 100.0) / len(train_years)
     x["log_nonped_density"] = np.log1p(per_100m_year)
+    n_years = len(train_years)
+    ped = window_counts(data, train_years, ped=True)
+    x["log_nbr_ped_density"] = np.log1p(100.0 * neighbor_density(data, ped, n_years))
+    x["log_nbr_nonped_density"] = np.log1p(neighbor_density(data, nonped, n_years))
     return x

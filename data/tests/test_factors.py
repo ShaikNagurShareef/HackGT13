@@ -18,7 +18,14 @@ def test_every_model_feature_maps_to_a_factor() -> None:
     from pathpulse_data.model.dataset import FLAGS, GROUPS, NUMERIC_LOG1P, PASSTHROUGH
 
     features = (
-        ["log_len", "log_rail_dist", "is_service", "log_nonped_density"]
+        [
+            "log_len",
+            "log_rail_dist",
+            "is_service",
+            "log_nonped_density",
+            "log_nbr_ped_density",
+            "log_nbr_nonped_density",
+        ]
         + [f"log_{c}" for c in NUMERIC_LOG1P]
         + PASSTHROUGH
         + FLAGS

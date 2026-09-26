@@ -47,7 +47,9 @@ def _synthetic_data(seed: int = 0) -> tuple[SegmentData, np.ndarray]:
             )
     crashes = pd.DataFrame(rows)
     blocks = pd.Series(np.arange(N_SEG) // 30, index=feats.index)
-    return SegmentData(features=feats, crashes=crashes, blocks=blocks), true_rate.to_numpy()
+    cv_groups = pd.Series(np.arange(N_SEG) // 60, index=feats.index)
+    data = SegmentData(features=feats, crashes=crashes, blocks=blocks, cv_groups=cv_groups)
+    return data, true_rate.to_numpy()
 
 
 @pytest.fixture(scope="module")

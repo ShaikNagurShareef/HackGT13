@@ -16,7 +16,16 @@ from sklearn.model_selection import GroupKFold
 
 from pathpulse_data.model.evaluate import poisson_deviance
 
-MONOTONE_UP = {"log_aadt", "lanes", "speed", "log_nonped_density", "log_ped_volume", "log_len"}
+MONOTONE_UP = {
+    "log_aadt",
+    "lanes",
+    "speed",
+    "log_nonped_density",
+    "log_ped_volume",
+    "log_len",
+    "log_nbr_ped_density",
+    "log_nbr_nonped_density",
+}
 DEFAULT_LGB: dict[str, float | int | str] = {
     "objective": "poisson",
     "learning_rate": 0.03,

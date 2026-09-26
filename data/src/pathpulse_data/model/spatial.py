@@ -115,7 +115,7 @@ def fit_spatial(
     n = len(train_years)
     total = window_counts(data, train_years, ped=True)
     rate, weight = total / n, pd.Series(float(n), index=x.index)
-    groups = data.blocks.reindex(x.index)
+    groups = data.cv_groups.reindex(x.index)
 
     rounds, cv_dev = cv_rounds(x, rate, weight, groups, params)
     alpha = _choose_glm_alpha(x, rate, weight, groups)

@@ -13,6 +13,7 @@ import pandas as pd
 
 SPATIAL_FACTORS: dict[str, str] = {
     "history": "Pedestrian crash history here",
+    "nearby_history": "Pedestrian crashes on nearby streets",
     "vehicle_crashes": "Vehicle crashes on this street",
     "traffic_volume": "Traffic volume",
     "speed": "Speed limit",
@@ -69,6 +70,8 @@ FEATURE_TO_FACTOR: dict[str, str] = {
     "school_zone": "school",
     "osm_lit": "lighting",
     "log_nonped_density": "vehicle_crashes",
+    "log_nbr_nonped_density": "vehicle_crashes",
+    "log_nbr_ped_density": "nearby_history",
     "log_len": "length",
 }
 

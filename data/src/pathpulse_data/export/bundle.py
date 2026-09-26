@@ -31,16 +31,17 @@ log = logging.getLogger(__name__)
 SPATIAL_TEST = (range(2020, 2024), 2024)
 SPATIAL_VAL = (range(2020, 2023), 2023)
 SPATIAL_FINAL = range(2020, 2025)
+# 2024-25 timed data comes from only two narrow layers, so the shipped model stops at 2023.
 TEMPORAL_TRAIN, TEMPORAL_TEST, TEMPORAL_FINAL = (
     range(2017, 2022),
     range(2022, 2024),
-    range(2017, 2026),
+    range(2017, 2024),
 )
 
 
 def model_version() -> str:
     sha = (
-        subprocess.run(  # noqa: S603 - fixed argv, no user input
+        subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],  # noqa: S607 - local build CLI
             capture_output=True,
             text=True,
@@ -63,14 +64,31 @@ def evaluate_all() -> dict[str, Any]:
 def headline(metrics: dict[str, Any]) -> dict[str, Any]:
     methods = {m["method"]: m for m in metrics["spatial_test"]["methods"]}
     ours = methods["PathPulse (EB ensemble)"]
+    hin = methods["City High Injury Network"]
     return {
         "capture_top10": ours["capture_top10"],
         "capture_top10_ci95": metrics["spatial_test"]["capture_top10_ci95"],
         "vs_random": ours["capture_top10"] / 0.10,
-        "hin_capture_top10": methods["City High Injury Network"]["capture_top10"],
+        "hin_capture_top10": hin["capture_top10"],
+        "hin_length_share": metrics["spatial_test"]["hin_length_share"],
+        "capture_at_hin_share": ours["capture_at_hin_share"],
+        "hin_capture_at_own_share": hin["capture_at_hin_share"],
+        "model_only_capture_top10": methods["Model only (SPF)"]["capture_top10"],
+        "validation_gain_vs_count_only": (
+            {m["method"]: m for m in metrics["spatial_validation"]["methods"]}[
+                "PathPulse (EB ensemble)"
+            ]["capture_top10"]
+            - {m["method"]: m for m in metrics["spatial_validation"]["methods"]}[
+                "Past crash count only"
+            ]["capture_top10"]
+        ),
+        "gain_vs_count_only_ci95": metrics["spatial_test"]["capture_gain_vs_count_only_ci95"],
         "count_only_capture_top10": methods["Past crash count only"]["capture_top10"],
         "roc_auc": ours["roc_auc"],
         "temporal_deviance_reduction": metrics["temporal_test"]["deviance_reduction"],
+        "temporal_reduction_vs_hour_day": metrics["temporal_test"][
+            "deviance_reduction_vs_hour_day"
+        ],
         "test_year": metrics["spatial_test"]["test_year"],
     }
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Callable
 
 import geopandas as gpd
 import numpy as np
@@ -24,6 +25,12 @@ from pathpulse_data.network.layers import UTM, load_lines
 
 log = logging.getLogger(__name__)
 BOOT_REPS = 400
+OURS, COUNT_ONLY, HIN = (
+    "PathPulse (EB ensemble)",
+    "Past crash count only",
+    "City High Injury Network",
+)
+ARC_LABEL = "ARC structural flags (demographic flags removed)"
 _TIER = re.compile(r"(\d)")
 
 
@@ -51,19 +58,35 @@ def method_scores(fit: SpatialFit, data: SegmentData) -> dict[str, np.ndarray]:
     lengths = effective_length(data.features).to_numpy()
     arc = data.features["arc_structural_count"].to_numpy(float)
     return {
-        "PathPulse (EB ensemble)": density(exp["eb"], data),
+        OURS: density(exp["eb"], data),
         "Model only (SPF)": density(exp["spf"], data),
-        "Past crash count only": _tiebreak(exp["history"].to_numpy() / (lengths / 100.0), 1),
-        "City High Injury Network": _tiebreak(hin_scores(data).to_numpy(), 2),
-        "ARC structural risk factors": _tiebreak(arc, 3),
+        COUNT_ONLY: _tiebreak(exp["history"].to_numpy() / (lengths / 100.0), 1),
+        HIN: _tiebreak(hin_scores(data).to_numpy(), 2),
+        ARC_LABEL: _tiebreak(arc, 3),
         "Random": np.random.default_rng(4).uniform(size=len(lengths)),
     }
 
 
+def block_bootstrap(
+    stat: Callable[[np.ndarray], float], blocks: pd.Series, reps: int, seed: int
+) -> tuple[float, float]:
+    """95% CI resampling whole spatial blocks: nearby segments are not independent."""
+    codes, uniques = pd.factorize(blocks)
+    members = [np.flatnonzero(codes == b) for b in range(len(uniques))]
+
+    def resample(block_idx: np.ndarray) -> float:
+        return stat(np.concatenate([members[b] for b in block_idx]))
+
+    return bootstrap_ci(resample, len(members), reps, seed=seed)
+
+
 def benchmark(fit: SpatialFit, data: SegmentData, test_year: int) -> dict[str, object]:
     observed = window_counts(data, range(test_year, test_year + 1), ped=True).to_numpy()
-    lengths = effective_length(data.features).to_numpy()
+    # Rank on clipped-length density, but spend the budget on real street length.
+    lengths = data.features["length_m"].to_numpy(float)
     scores = method_scores(fit, data)
+    hin_raw = hin_scores(data).to_numpy()
+    hin_share = float(lengths[hin_raw > 0].sum() / lengths.sum())
     rows = []
     for name, s in scores.items():
         roc, pr = roc_pr_auc(s, observed)
@@ -72,6 +95,9 @@ def benchmark(fit: SpatialFit, data: SegmentData, test_year: int) -> dict[str, o
                 "method": name,
                 "capture_top10": top_share_capture(s, observed, lengths, 0.1),
                 "capture_top5": top_share_capture(s, observed, lengths, 0.05),
+                "capture_at_hin_share": top_share_capture(s, observed, lengths, hin_share)
+                if hin_share > 0
+                else float("nan"),
                 "roc_auc": roc,
                 "pr_auc": pr,
             }
@@ -79,18 +105,22 @@ def benchmark(fit: SpatialFit, data: SegmentData, test_year: int) -> dict[str, o
     table = pd.DataFrame(rows)
 
     exp = fit.expected(data)
-    ours, base = scores["PathPulse (EB ensemble)"], scores["Past crash count only"]
+    ours, base = scores[OURS], scores[COUNT_ONLY]
 
     def cap(idx: np.ndarray, s: np.ndarray) -> float:
         return top_share_capture(s[idx], observed[idx], lengths[idx], 0.1)
 
-    ci = bootstrap_ci(lambda i: cap(i, ours), len(observed), BOOT_REPS, seed=11)
-    diff_ci = bootstrap_ci(lambda i: cap(i, ours) - cap(i, base), len(observed), BOOT_REPS, seed=12)
+    blocks = data.blocks.reindex(data.features.index)
+    ci = block_bootstrap(lambda i: cap(i, ours), blocks, BOOT_REPS, seed=11)
+    diff_ci = block_bootstrap(lambda i: cap(i, ours) - cap(i, base), blocks, BOOT_REPS, seed=12)
     calib = calibration_by_decile(exp["eb"].to_numpy(), observed)
     return {
         "test_year": test_year,
         "train_years": [fit.train_years.start, fit.train_years.stop - 1],
         "observed_ped_crashes": float(observed.sum()),
+        "predicted_ped_crashes": float(exp["eb"].sum()),
+        "hin_length_share": hin_share,
+        "bootstrap": f"{BOOT_REPS} resamples of {blocks.nunique()} H3 res-8 spatial blocks",
         "methods": table.to_dict(orient="records"),
         "capture_top10_ci95": ci,
         "capture_gain_vs_count_only_ci95": diff_ci,

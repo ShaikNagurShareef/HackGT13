@@ -84,8 +84,21 @@ def design(cells: pd.DataFrame, is_ped: pd.Series) -> pd.DataFrame:
         axis=1,
     )
     ped_terms = ped_terms * ped
-    return pd.concat(
-        [pd.DataFrame({"ped": ped[:, 0]}, index=cells.index), shared, ped_terms], axis=1
+    parts = [pd.DataFrame({"ped": ped[:, 0]}, index=cells.index), shared, ped_terms]
+    if "year" in cells.columns:
+        # Year effects absorb changes in source coverage (which layers exist in which year)
+        # so they cannot distort the hour/light/rain shape. Prediction cells carry no year
+        # and fall back to the reference year; normalization makes the level irrelevant.
+        years = _year_one_hot(cells["year"])
+        parts += [years, years.mul(ped[:, 0], axis=0).add_prefix("ped:")]
+    return pd.concat(parts, axis=1)
+
+
+def _year_one_hot(years: pd.Series) -> pd.DataFrame:
+    levels = sorted(int(y) for y in years.unique())
+    return pd.DataFrame(
+        {f"year={y}": (years.astype(int) == y).astype(float) for y in levels[1:]},
+        index=years.index,
     )
 
 
@@ -94,9 +107,12 @@ class TemporalModel:
     coef: pd.Series
     intercept: float
 
+    def _x(self, cells: pd.DataFrame, is_ped: bool) -> pd.DataFrame:
+        x = design(cells, pd.Series(is_ped, index=cells.index))
+        return x.reindex(columns=self.coef.index, fill_value=0.0)
+
     def log_rate(self, cells: pd.DataFrame, is_ped: bool = True) -> pd.Series:
-        x = design(cells, pd.Series(is_ped, index=cells.index))[self.coef.index]
-        return self.intercept + x @ self.coef
+        return self.intercept + self._x(cells, is_ped) @ self.coef
 
     def log_contributions(
         self, cells: pd.DataFrame, reference: pd.DataFrame | None = None
@@ -106,8 +122,7 @@ class TemporalModel:
         Columns time_of_day, day_of_week, light, rain, and _base sum to
         log(normalized_multiplier(cells, reference)).
         """
-        x = design(cells, pd.Series(True, index=cells.index))[self.coef.index]
-        raw = x * self.coef
+        raw = self._x(cells, True) * self.coef
         out = pd.DataFrame(
             {
                 name: raw[[c for c in raw.columns if pred(c)]].sum(axis=1)

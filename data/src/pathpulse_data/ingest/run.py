@@ -67,9 +67,9 @@ def main() -> None:
     timed_raw = crashes.loc[crashes["time_precision"] == "minute"]
     timed, dedupe_report = dedupe_timed(timed_raw)
     timed = timed.assign(crash_id=[f"t{i}" for i in range(len(timed))])
-    yearly = crashes.loc[crashes["source"] == YEARLY_SOURCE].drop_duplicates(
-        subset=["year", "lat", "lon", "severity", "road", "cross_road", "is_ped"]
-    )
+    # ARC rows have no collision id and identical rows are distinct crashes geocoded to the
+    # same intersection (93% no-injury), so only exact OBJECTID repeats are removed.
+    yearly = crashes.loc[crashes["source"] == YEARLY_SOURCE].drop_duplicates(subset=["source_id"])
     yearly = yearly.assign(crash_id=[f"y{i}" for i in range(len(yearly))])
 
     index = build_road_index()
