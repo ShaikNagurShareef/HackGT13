@@ -28,6 +28,7 @@ from pathpulse_data.model.temporal_data import (
     load_hours,
 )
 from pathpulse_data.network.coverage import city_polygon, outline_geojson
+from pathpulse_data.safety import export as safety_export
 
 log = logging.getLogger(__name__)
 SPATIAL_TEST = (range(2020, 2024), 2024)
@@ -147,6 +148,7 @@ def main() -> None:
     current.symlink_to(version)
     log.info("bundle written: %s | headline %s", out, json.dumps(metrics["headline"]))
     citywide_export.main()  # City Pulse hexes join the same versioned bundle
+    safety_export.add_safety(out)  # personal-safety layer (skipped if raw pulls are missing)
 
 
 if __name__ == "__main__":
