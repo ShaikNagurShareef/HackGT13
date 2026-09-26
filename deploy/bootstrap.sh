@@ -3,10 +3,10 @@
 #   ssh root@<ip> 'bash -s' < deploy/bootstrap.sh <domain>
 set -euo pipefail
 
-DOMAIN="${1:?usage: bootstrap.sh <domain e.g. pathpro.tech>}"
+DOMAIN="${1:?usage: bootstrap.sh <domains e.g. \"pathpro.tech, 203-0-113-7.sslip.io\">}"
 
 apt-get update -y
-apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl rsync ufw
+apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl rsync ufw python3.12
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' |
   gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' \

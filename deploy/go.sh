@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # One command from keys to a live site: deploy/go.sh <domain>   (e.g. pathpro.tech)
-# Steps: verify keys -> provision Vultr VM -> bootstrap -> deploy -> load Tiger Data -> smoke test.
+# Steps: verify keys -> provision Vultr VM -> bootstrap -> deploy -> (optional) load Tiger Data.
+# The app is also served at <ip>.sslip.io with real HTTPS, so it works before DNS for <domain>.
+# Set LOAD_TIGER=1 to (re)load Tiger Data; it is a one-time, multi-minute load.
 set -euo pipefail
 
 DOMAIN="${1:?usage: deploy/go.sh <domain>}"
@@ -16,21 +18,23 @@ echo "==> 2/6 provisioning Vultr"
 [ -f "$ROOT/deploy/.host" ] || bash "$ROOT/deploy/provision_vultr.sh"
 IP="$(cat "$ROOT/deploy/.host")"
 HOST="root@$IP"
+SITES="$DOMAIN, ${IP//./-}.sslip.io"
 SSH=(ssh -i "$KEY_PATH" -o StrictHostKeyChecking=accept-new "$HOST")
 for _ in $(seq 1 30); do "${SSH[@]}" true 2>/dev/null && break; sleep 5; done
 
 echo "==> 3/6 bootstrapping server"
-"${SSH[@]}" 'bash -s' -- "$DOMAIN" <"$ROOT/deploy/bootstrap.sh"
+"${SSH[@]}" 'bash -s' -- "\"$SITES\"" <"$ROOT/deploy/bootstrap.sh"
 
 echo "==> 4/6 deploying app"
-RSYNC_RSH="ssh -i $KEY_PATH" bash "$ROOT/deploy/deploy.sh" "$HOST" "$DOMAIN" || true
+RSYNC_RSH="ssh -i $KEY_PATH" bash "$ROOT/deploy/deploy.sh" "$HOST" "$SITES"
 
 echo "==> 5/6 loading Tiger Data"
-if grep -qE '^DATABASE_URL=.+' "$ROOT/backend/.env"; then
+if [ "${LOAD_TIGER:-0}" = 1 ] && grep -qE '^DATABASE_URL=.+' "$ROOT/backend/.env"; then
   (cd "$ROOT" && uv run --package pathpulse-data python -m pathpulse_data.db.load_tiger)
 fi
 
 echo "==> 6/6 smoke test"
 echo "DNS for $DOMAIN -> $(dig +short "$DOMAIN" | tail -1) (should be $IP)"
 curl -fsS --max-time 20 "https://$DOMAIN/api/healthz" && echo && echo "LIVE: https://$DOMAIN" ||
-  echo "HTTPS not up yet (DNS/TLS can take a few minutes). Direct check: http://$IP/api/healthz"
+  echo "https://$DOMAIN not up yet (DNS/TLS can take a few minutes)."
+echo "Always available: https://${IP//./-}.sslip.io"
