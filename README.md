@@ -4,6 +4,17 @@
 
 **Live app: [pathpro.tech](https://pathpro.tech)**, hosted on Vultr (Atlanta) behind Caddy with automatic HTTPS.
 
+## Demo videos
+
+[![PathPro demo video: see the risks on your way, before you go](media/thumbnail_v2.png)](media/pathpro_demo_v2.mp4)
+
+| Video | Length | Captions |
+| --- | --- | --- |
+| [**Full demo**: team, motivation, how PathPro differs, the app on phone and desktop, every risk it shows, who it's for, results and ROI, and one scene per sponsor](media/pathpro_demo_v2.mp4) | 6:30 | [SRT](media/pathpro_demo_v2.srt) · [VTT](media/pathpro_demo_v2.vtt) |
+| [**30-second cut**](media/pathpro_30s.mp4) | 0:35 | [SRT](media/pathpro_30s.srt) · [VTT](media/pathpro_30s.vtt) |
+
+Both videos have ElevenLabs narration and burned-in captions, and are stored with Git LFS. Clone with `git lfs install` first, or open a file on GitHub and choose "View raw" to play it. The timestamped narration and the source of every number are in [media/pathpro_demo_script.md](media/pathpro_demo_script.md).
+
 - **Modes:** Walk · Bike · E-bike · Scooter (a separate cyclist-risk model on OpenStreetMap's bike network), plus a MARTA hand-off for long walks. No car routing, by design.
 - **Offline demo:** add `?demo=1` for the scripted Klaus → Midtown MARTA scenario (walk and ride).
 - **Deploy:** `deploy/go.sh pathpro.tech` provisions the Vultr VM, installs Caddy + systemd, ships the app, and smoke-tests it.
