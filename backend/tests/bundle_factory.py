@@ -4,6 +4,9 @@ World: a 3-column x 3-row walk grid near Georgia Tech. Columns are ~200 m apart 
 ~40 m apart. The middle row is a hot corridor; the top row is calm. Walking middle-left to
 middle-right: fastest = middle row (400 m); lower-risk = up, across the top, down (480 m,
 inside the 1.25x detour budget).
+
+`write_ride_bundle` adds the ride model the same way, with a `ride_` prefix on every file and a
+4-column grid (17 segments), so ride segment ids 12..16 exist only on the ride network.
 """
 
 from __future__ import annotations
@@ -26,8 +29,17 @@ TEMPORAL_KEYS = ("time_of_day", "day_of_week", "light", "rain")
 MODEL_VERSION = "pp-test-0001"
 
 
-def node_id(row: int, col: int) -> int:
-    return row * COLS + col
+RIDE_COLS = 4  # the ride grid is one column wider, so ride segment ids differ from walk ones
+RIDE_PREFIX = "ride_"
+RIDE_HEADLINE = {"capture_top10": 0.41, "roc_auc": 0.83}
+
+
+def node_id(row: int, col: int, cols: int = COLS) -> int:
+    return row * cols + col
+
+
+def ride_node_id(row: int, col: int) -> int:
+    return node_id(row, col, RIDE_COLS)
 
 
 def _haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -38,43 +50,18 @@ def _haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return 2 * r * math.asin(math.sqrt(a))
 
 
-def _edges() -> list[tuple[int, int, int]]:
+def _edges(cols: int = COLS) -> list[tuple[int, int, int]]:
     """(u, v, row_of_edge) for horizontal edges; vertical edges carry row -1."""
     out = []
-    for r, c in itertools.product(range(ROWS), range(COLS - 1)):
-        out.append((node_id(r, c), node_id(r, c + 1), r))
-    for r, c in itertools.product(range(ROWS - 1), range(COLS)):
-        out.append((node_id(r, c), node_id(r + 1, c), -1))
+    for r, c in itertools.product(range(ROWS), range(cols - 1)):
+        out.append((node_id(r, c, cols), node_id(r, c + 1, cols), r))
+    for r, c in itertools.product(range(ROWS - 1), range(cols)):
+        out.append((node_id(r, c, cols), node_id(r + 1, c, cols), -1))
     return out
 
 
-def write_bundle(root: Path) -> Path:
-    root.mkdir(parents=True, exist_ok=True)
-    lats = np.array([LAT0 + r * DLAT for r in range(ROWS) for _ in range(COLS)])
-    lons = np.array([LON0 + c * DLON for _ in range(ROWS) for c in range(COLS)])
-    edges = _edges()
-    n_seg = len(edges)
-    risk = {HOT_ROW: 2.0, CALM_ROW: -2.0, 2: 0.0, -1: -1.0}
-    spatial = np.array([[risk[row], 0.1 * i / n_seg, 0.0] for i, (_, _, row) in enumerate(edges)])
-    coords, offsets = [], [0]
-    for u, v, _ in edges:
-        coords += [[lons[u], lats[u]], [lons[v], lats[v]]]
-        offsets.append(len(coords))
-    lengths = [_haversine_m(lats[u], lons[u], lats[v], lons[v]) for u, v, _ in edges]
-    np.savez_compressed(
-        root / "walk_graph.npz",
-        node_lon=lons,
-        node_lat=lats,
-        edge_u=np.array([e[0] for e in edges], np.int32),
-        edge_v=np.array([e[1] for e in edges], np.int32),
-        edge_len=np.array(lengths, np.float32),
-        edge_seg=np.arange(n_seg, dtype=np.int32),
-        edge_kind=np.zeros(n_seg, np.uint8),
-        coords=np.array(coords),
-        coord_offsets=np.array(offsets, np.int32),
-    )
-    np.save(root / "spatial_factors.npy", spatial.astype(np.float32))
-    rows = [
+def _temporal_rows() -> list[dict[str, object]]:
+    return [
         {
             "day_group": dg,
             "hour": h,
@@ -92,19 +79,55 @@ def write_bundle(root: Path) -> Path:
         for lt in ("day", "twilight", "dark")
         for wet in (False, True)
     ]
+
+
+def _write_graph(root: Path, graph_name: str, cols: int) -> list[float]:
+    lats = np.array([LAT0 + r * DLAT for r in range(ROWS) for _ in range(cols)])
+    lons = np.array([LON0 + c * DLON for _ in range(ROWS) for c in range(cols)])
+    edges = _edges(cols)
+    coords, offsets = [], [0]
+    for u, v, _ in edges:
+        coords += [[lons[u], lats[u]], [lons[v], lats[v]]]
+        offsets.append(len(coords))
+    lengths = [_haversine_m(lats[u], lons[u], lats[v], lons[v]) for u, v, _ in edges]
+    np.savez_compressed(
+        root / graph_name,
+        node_lon=lons,
+        node_lat=lats,
+        edge_u=np.array([e[0] for e in edges], np.int32),
+        edge_v=np.array([e[1] for e in edges], np.int32),
+        edge_len=np.array(lengths, np.float32),
+        edge_seg=np.arange(len(edges), dtype=np.int32),
+        edge_kind=np.zeros(len(edges), np.uint8),
+        coords=np.array(coords),
+        coord_offsets=np.array(offsets, np.int32),
+    )
+    return lengths
+
+
+def _write_mode(
+    root: Path, prefix: str, graph_name: str, cols: int, headline: dict[str, float]
+) -> int:
+    """One mode's model files (graph, factors, segment metadata, metrics); returns n_segments."""
+    edges = _edges(cols)
+    n_seg = len(edges)
+    lengths = _write_graph(root, graph_name, cols)
+    risk = {HOT_ROW: 2.0, CALM_ROW: -2.0, 2: 0.0, -1: -1.0}
+    spatial = np.array([[risk[row], 0.1 * i / n_seg, 0.0] for i, (_, _, row) in enumerate(edges)])
+    np.save(root / f"{prefix}spatial_factors.npy", spatial.astype(np.float32))
     _write_json(
-        root / "factors.json",
+        root / f"{prefix}factors.json",
         {
             "base": -1.0,
             "spatial": [{"key": k, "label": k.replace("_", " ").title()} for k in SPATIAL_KEYS],
             "temporal": [{"key": k, "label": k.replace("_", " ").title()} for k in TEMPORAL_KEYS],
-            "temporal_rows": rows,
+            "temporal_rows": _temporal_rows(),
             "quantiles": np.linspace(-5.0, 3.0, 1001).tolist(),
         },
     )
     names = [f"Row {row} St" if row >= 0 else "Cross Ave" for _, _, row in edges]
     _write_json(
-        root / "seg_meta.json",
+        root / f"{prefix}seg_meta.json",
         {
             "name": names,
             "road_group": ["arterial"] * n_seg,
@@ -118,10 +141,23 @@ def write_bundle(root: Path) -> Path:
             "confidence": ["high" if row == HOT_ROW else "limited" for _, _, row in edges],
         },
     )
-    _write_json(root / "hotspot_nodes.json", [[lons[4], lats[4], [2, 3]]])
-    _write_json(root / "metrics.json", {"headline": {"capture_top10": 0.47, "roc_auc": 0.87}})
-    (root / "frames_weekday_dry.bin").write_bytes(bytes(24 * n_seg))
-    files = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(root.iterdir())}
+    _write_json(root / f"{prefix}hotspot_nodes.json", [[LON0 + DLON, LAT0 + DLAT, [2, 3]]])
+    _write_json(root / f"{prefix}metrics.json", {"headline": headline})
+    (root / f"{prefix}frames_weekday_dry.bin").write_bytes(bytes(24 * n_seg))
+    return n_seg
+
+
+def _file_hashes(root: Path) -> dict[str, str]:
+    return {
+        p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+        for p in sorted(root.iterdir())
+        if p.name != "manifest.json"
+    }
+
+
+def write_bundle(root: Path) -> Path:
+    root.mkdir(parents=True, exist_ok=True)
+    n_seg = _write_mode(root, "", "walk_graph.npz", COLS, {"capture_top10": 0.47, "roc_auc": 0.87})
     _write_json(
         root / "manifest.json",
         {
@@ -133,9 +169,19 @@ def write_bundle(root: Path) -> Path:
             "coverage_bbox": [-84.415, 33.745, -84.370, 33.795],
             "reference_dates": {"weekday": "2026-09-28"},
             "frame_light": {},
-            "files": files,
+            "files": _file_hashes(root),
         },
     )
+    return root
+
+
+def write_ride_bundle(root: Path) -> Path:
+    """Add a mirrored ride model (ride_* files + manifest["modes"]["ride"]) to a walk bundle."""
+    n_seg = _write_mode(root, RIDE_PREFIX, "ride_graph.npz", RIDE_COLS, RIDE_HEADLINE)
+    manifest = json.loads((root / "manifest.json").read_text())
+    manifest["files"] = _file_hashes(root)
+    manifest["modes"] = {"ride": {"prefix": RIDE_PREFIX, "n_segments": n_seg}}
+    _write_json(root / "manifest.json", manifest)
     return root
 
 
