@@ -7,6 +7,7 @@ import { AboutSafety } from './AboutSafety'
 import { RoutePreferencePicker } from './RoutePreferencePicker'
 import { SafetyLayerToggles } from './SafetyLayerToggles'
 import { SafetyLegend } from './SafetyLegend'
+import { SafetyHelpList } from './SafetyHelpList'
 import { SafetyLegendChip } from './SafetyLegendChip'
 import { SafetyPickCard } from './SafetyPickCard'
 import { SafetyRouteNote } from './SafetyRouteNote'
@@ -121,9 +122,37 @@ describe('SafetyLegendChip (phone home)', () => {
 
     expect(toggle).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByText(FAIRNESS_NOTE)).toBeInTheDocument()
+    expect(toggle).toHaveAttribute('aria-controls', screen.getByRole('region', { name: 'Personal safety legend' }).id)
     await userEvent.click(toggle)
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByText(FAIRNESS_NOTE)).toBeNull()
+  })
+})
+
+describe('SafetyHelpList (keyboard and screen-reader access to help points)', () => {
+  it('lists help points in view, blue-light phones first, and opens one', async () => {
+    const onPick = vi.fn()
+    const police = helpPoint({ kind: 'police', name: 'GT Police' })
+    const phone = helpPoint()
+    render(<SafetyHelpList points={[police, phone]} onPick={onPick} />)
+    const list = screen.getByRole('list', { name: 'Help points in view' })
+    const buttons = within(list).getAllByRole('button')
+
+    expect(buttons.map((b) => b.textContent)).toEqual(['Blue-light emergency phone · Tech Green', 'Police station · GT Police'])
+    await userEvent.click(buttons[1])
+    expect(onPick).toHaveBeenCalledWith({ kind: 'help', point: police })
+  })
+
+  it('caps the list and says how many more are on the map', () => {
+    const points = Array.from({ length: 10 }, (_, i) => helpPoint({ name: `Phone ${i}` }))
+    render(<SafetyHelpList points={points} onPick={vi.fn()} />)
+    expect(screen.getAllByRole('button')).toHaveLength(6)
+    expect(screen.getByText('4 more on the map')).toBeInTheDocument()
+  })
+
+  it('renders nothing when no help points are in view', () => {
+    const { container } = render(<SafetyHelpList points={[]} onPick={vi.fn()} />)
+    expect(container).toBeEmptyDOMElement()
   })
 })
 

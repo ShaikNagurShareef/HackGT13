@@ -65,6 +65,8 @@ describe('personal-safety copy', () => {
           onLayers: vi.fn(),
           hasLit: true,
           hasBusy: true,
+          helpPoints: [helpPoint()],
+          onPickHelp: vi.fn(),
           prefer: 'lower_traffic_risk',
           onPrefer: vi.fn(),
         }}

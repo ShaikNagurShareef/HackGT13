@@ -74,6 +74,10 @@ describe('useSafetyMode', () => {
     act(() => result.current.closePick())
     expect(result.current.pick).toBeNull()
 
+    await waitFor(() => expect(result.current.controls?.helpPoints).toHaveLength(0))
+    act(() => result.current.controls?.onPickHelp({ kind: 'help', point: helpPoint() }))
+    expect(result.current.pick?.kind).toBe('help')
+
     act(() => result.current.mapInput?.onPick({ kind: 'hex', hex: safetyHex() }))
     rerender({ mode: 'streets' })
     expect(result.current.pick).toBeNull()

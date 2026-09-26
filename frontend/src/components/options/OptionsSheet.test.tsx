@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { DEFAULT_SAFETY_LAYERS, FAIRNESS_NOTE } from '../../lib/safety'
-import { safetyMeta } from '../../test/fixtures'
+import { helpPoint, safetyMeta } from '../../test/fixtures'
 import { OptionsSheet, type OptionsSheetProps } from './OptionsSheet'
 
 function setup(over: Partial<OptionsSheetProps> = {}) {
@@ -94,6 +94,8 @@ describe('OptionsSheet with the personal safety layer', () => {
     onLayers: vi.fn(),
     hasLit: true,
     hasBusy: false,
+    helpPoints: [helpPoint()],
+    onPickHelp: vi.fn(),
     prefer: 'lower_traffic_risk' as const,
     onPrefer: vi.fn(),
   })
@@ -121,5 +123,7 @@ describe('OptionsSheet with the personal safety layer', () => {
     expect(screen.queryByRole('checkbox', { name: 'Busier streets' })).toBeNull()
     await user.click(screen.getByRole('checkbox', { name: 'Well-lit streets' }))
     expect(p.safety?.onLayers).toHaveBeenCalledWith({ ...DEFAULT_SAFETY_LAYERS, lit: true })
+    await user.click(screen.getByRole('button', { name: 'Blue-light emergency phone · Tech Green' }))
+    expect(p.safety?.onPickHelp).toHaveBeenCalledWith({ kind: 'help', point: helpPoint() })
   })
 })
