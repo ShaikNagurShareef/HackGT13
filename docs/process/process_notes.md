@@ -200,6 +200,18 @@ Our original scope said "no crime data anywhere". At 13:08 Saturday the team dec
 - **An LLM validator that was too strict (`ba32da1`).** Groq sometimes reworded the evidence period ("2020–2024"), and the grounding check rejected it as an invented number. Numbers inside evidence strings now count as grounded. The rule that the LLM never produces a risk number is unchanged.
 - **Smaller fixes.** NaN written to Tiger Data where NULL belonged; per-keystroke map redraws (`5c032b0`); help-point icons that buried the campus map (`cc593dc`); and a "lit-and-busy" plan that replaced the default route even when it was no better (`039c5f6`).
 
+### Pivot: walking alone isn't realistic (Sat afternoon)
+
+Feedback: "Just walking for long distances is unrealistic; it can be driving, cycling, e-bike." We agreed on bikes, e-bikes, and scooters, and deliberately left out driving. Car routing is a crowded space, and risk-aware driving routes push traffic onto the neighborhood streets where people walk.
+
+What we built:
+- OpenStreetMap's bike network, with City bike facilities and BeltLine features.
+- A ride model that captures 69.9% [64.0–76.1] of 2024 cyclist crashes in its top 10% of street length, against 30.4% for past bike crashes.
+- Walk · Bike · E-bike · Scooter tabs in the app.
+- A MARTA hand-off for long walks.
+
+We set a hard cut-off: ship walk-only if the model missed its targets by 01:30. Our first cyclist-only model (57.4%) lost to simply reusing the walk model. We chose the training label on the 2023 validation year (pooled pedestrian + cyclist crashes) and disclose that choice.
+
 ## 7. AI-tool disclosure
 
 - **Tools.** Code, tests, and most documentation were written with **Claude Code** following the ECC workflow: plan, failing test, implementation, independent reviewer agents (ML, security, language), and a verification loop.
