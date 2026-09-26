@@ -1,0 +1,135 @@
+/* Navigation mode: a big "next thing" banner on top, time left + End at the bottom. */
+
+.nav-banner {
+  position: absolute;
+  top: calc(var(--safe-top) + 12px);
+  left: calc(var(--safe-left) + 12px);
+  right: calc(var(--safe-right) + 12px);
+  z-index: var(--z-nav);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(63, 209, 198, 0.4);
+  background: linear-gradient(135deg, #0d3a3a, #0a2233);
+  box-shadow: var(--shadow-lift);
+  animation: rise var(--duration) var(--ease-out) both;
+}
+.nav-banner-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--teal-tint);
+  color: var(--teal);
+}
+.nav-banner-text {
+  flex: 1;
+  min-width: 0;
+}
+.nav-headline {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+.nav-detail {
+  margin: 4px 0 0;
+  font-size: 16px;
+  color: var(--text-muted);
+}
+.nav-alert {
+  border-color: rgba(255, 212, 121, 0.6);
+  background: linear-gradient(135deg, #3b2c0e, #1d1a14);
+}
+.nav-alert .nav-banner-icon {
+  background: var(--amber-tint);
+  color: var(--amber);
+}
+.nav-alert .nav-detail {
+  color: #ffe6ad;
+}
+.nav-badge {
+  align-self: flex-start;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.nav-bar,
+.nav-arrived {
+  position: absolute;
+  left: calc(var(--safe-left) + 12px);
+  right: calc(var(--safe-right) + 12px);
+  bottom: calc(var(--safe-bottom) + 12px);
+  z-index: var(--z-nav);
+  border-radius: 20px;
+  animation: sheet-in var(--duration) var(--ease-out) both;
+}
+.nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 14px 14px 20px;
+}
+.nav-bar p {
+  margin: 0;
+}
+.nav-eta {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--teal);
+  line-height: 1.1;
+}
+.end-btn {
+  min-width: 96px;
+  min-height: 52px;
+  border-radius: var(--radius-pill);
+  border-color: transparent;
+  background: var(--danger);
+  color: #2a0710;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+}
+.end-btn:hover {
+  background: #ffa5b9;
+}
+.nav-arrived {
+  padding: 20px;
+  text-align: center;
+}
+.nav-arrived-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--teal);
+}
+.nav-arrived .btn {
+  width: 100%;
+  margin-top: 12px;
+}
+
+@media (min-width: 761px) {
+  .nav-banner,
+  .nav-bar,
+  .nav-arrived {
+    left: 50%;
+    right: auto;
+    width: min(560px, calc(100% - 32px));
+    transform: translateX(-50%);
+    animation: none;
+  }
+}

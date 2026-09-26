@@ -69,6 +69,7 @@ describe('useNavigation', () => {
     expect(result.current.alongM).toBeCloseTo(0, 0)
     expect(result.current.remainingS).toBeCloseTo(1104, -1)
     expect(result.current.heading).toBe(45)
+    expect(result.current.arrivalAt.getTime()).toBeGreaterThan(Date.now() + 1000 * 1000)
 
     rerender({ r: route(), gps: gpsAt(END) })
     expect(result.current.arrived).toBe(true)

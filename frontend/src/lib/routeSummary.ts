@@ -56,7 +56,7 @@ export function summarizeRoutes(routes: Routes): RouteSummary {
       kind: 'fast',
       label: 'Fastest route',
       title: formatMinutes(fastest.duration_s),
-      sub: `${km(fastest.distance_m)} · ${km(fastest.high_risk_m)} on high-risk streets · ${arrive(routes, fastest)}`,
+      sub: `${km(fastest.high_risk_m)} high-risk · ${arrive(routes, fastest)}`,
     },
   }
 }

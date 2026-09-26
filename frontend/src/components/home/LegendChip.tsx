@@ -1,5 +1,9 @@
 import { useState } from 'react'
+import { cssColor } from '../../lib/bands'
 import { Legend } from '../Controls'
+
+const RAMP_STOPS = [0, 25, 50, 75, 100]
+const RAMP_GRADIENT = `linear-gradient(90deg, ${RAMP_STOPS.map(cssColor).join(', ')})`
 
 /** Compact "Lower → High" gradient chip; tap to open the full numeric legend. */
 export function LegendChip({ reports }: { reports: boolean }) {
@@ -8,7 +12,7 @@ export function LegendChip({ reports }: { reports: boolean }) {
     <div className="legend-chip-wrap">
       {open && <Legend reports={reports} />}
       <button type="button" className="legend-chip" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        <span className="legend-chip-ramp" aria-hidden="true" />
+        <span className="legend-chip-ramp" style={{ background: RAMP_GRADIENT }} aria-hidden="true" />
         <span>
           Lower <span aria-hidden="true">→</span> High traffic risk
         </span>

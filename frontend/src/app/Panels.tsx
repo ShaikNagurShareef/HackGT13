@@ -1,0 +1,56 @@
+import { About } from '../components/About'
+import { OptionsSheet, type OptionsSheetProps } from '../components/options/OptionsSheet'
+import { SearchSheet } from '../components/search/SearchSheet'
+import type { Meta } from '../api/schemas'
+import type { Routines } from '../hooks/useRoutines'
+import type { Panel } from './useTripActions'
+import type { useTripActions } from './useTripActions'
+
+type Actions = ReturnType<typeof useTripActions>
+type OptionValues = Omit<OptionsSheetProps, 'onAbout' | 'onClearHistory' | 'onClose'>
+
+export interface PanelsProps {
+  panel: Panel
+  meta: Meta
+  actions: Actions
+  routines: Routines
+  canUseLocation: boolean
+  welcome: boolean
+  onDismissWelcome: () => void
+  options: OptionValues
+}
+
+/** The one modal sheet that can be open at a time: search, options, or About. */
+export function Panels({ panel, meta, actions, routines, canUseLocation, welcome, onDismissWelcome, options }: PanelsProps) {
+  if (!panel) return null
+  if (panel.kind === 'about') return <About meta={meta} onClose={actions.closePanel} />
+  if (panel.kind === 'options') {
+    return (
+      <OptionsSheet
+        {...options}
+        onAbout={() => actions.setPanel({ kind: 'about' })}
+        onClearHistory={routines.clear}
+        onClose={actions.closePanel}
+      />
+    )
+  }
+  const { field } = panel
+  return (
+    <SearchSheet
+      key={field}
+      field={field}
+      welcome={welcome}
+      onDismissWelcome={onDismissWelcome}
+      note={actions.searchNote(field)}
+      suggestions={routines.suggestions}
+      saved={routines.saved}
+      recents={routines.recents}
+      canUseLocation={canUseLocation}
+      onUseLocation={actions.startFromMyLocation}
+      onPick={(place) => actions.pickPlace(field, place)}
+      onPickSuggestion={actions.planSuggestion}
+      onEditSaved={actions.editSaved}
+      onClose={actions.closePanel}
+    />
+  )
+}

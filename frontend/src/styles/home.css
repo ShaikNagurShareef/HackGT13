@@ -1,0 +1,350 @@
+/* Map-first home + trip header chrome. Phone-first; the desktop column starts at 761px. */
+
+.home-top,
+.route-top {
+  position: absolute;
+  top: calc(var(--safe-top) + 12px);
+  left: calc(var(--safe-left) + var(--gutter));
+  right: calc(var(--safe-right) + var(--gutter));
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  z-index: var(--z-chrome);
+  pointer-events: none;
+}
+.home-top > *,
+.route-top > * {
+  pointer-events: auto;
+}
+
+/* The one thing on the home screen. */
+.search-pill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 18px 8px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--surface-glass);
+  backdrop-filter: blur(18px) saturate(1.3);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  box-shadow: var(--shadow-lift);
+  color: var(--text);
+  text-align: left;
+  transition: border-color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
+}
+.search-pill:hover {
+  border-color: rgba(63, 209, 198, 0.5);
+}
+.search-pill:active {
+  transform: scale(0.985);
+}
+.search-pill-text {
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.search-pill-icon {
+  color: var(--text-faint);
+  display: grid;
+}
+.logo-mark {
+  flex: none;
+}
+
+/* Deviations from the default options, e.g. "☂ Wet · 10 PM". */
+.status-chip {
+  align-self: flex-start;
+  min-height: 36px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(255, 212, 121, 0.5);
+  background: rgba(40, 32, 12, 0.85);
+  color: var(--amber);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: var(--shadow-soft);
+}
+@media (pointer: coarse) {
+  .status-chip {
+    min-height: var(--tap);
+  }
+}
+
+/* Learned routine: one card, Tesla-style, above the pill. */
+.suggestion-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 6px 10px 12px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, rgba(20, 60, 64, 0.92), rgba(10, 26, 40, 0.92));
+  border-color: rgba(63, 209, 198, 0.35);
+  animation: rise var(--duration) var(--ease-out) both;
+}
+.suggestion-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--teal-tint);
+  color: var(--teal);
+}
+.suggestion-text {
+  flex: 1;
+  min-width: 0;
+}
+.suggestion-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 15px;
+}
+.suggestion-sub {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* Map buttons: stacked bottom-right on home, under the trip header on the route screen. */
+.fab {
+  position: absolute;
+  right: calc(var(--safe-right) + var(--gutter));
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-soft);
+  color: var(--text);
+  z-index: var(--z-chrome);
+  transition: transform var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
+}
+.fab:hover {
+  border-color: rgba(63, 209, 198, 0.5);
+}
+.fab:active {
+  transform: scale(0.94);
+}
+.fab-locate {
+  bottom: calc(var(--safe-bottom) + 44px);
+}
+.fab-layers {
+  bottom: calc(var(--safe-bottom) + 44px + 52px + 12px);
+}
+.fab-locate.is-live {
+  color: var(--me);
+}
+.fab-locate[aria-busy='true'] .icon {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+[data-screen='route'] .fab-layers {
+  bottom: auto;
+  top: calc(var(--safe-top) + 146px);
+}
+[data-screen='route'] .fab-locate {
+  bottom: auto;
+  top: calc(var(--safe-top) + 146px + 52px + 10px);
+}
+
+.home-bottom {
+  position: absolute;
+  left: calc(var(--safe-left) + var(--gutter));
+  right: calc(var(--safe-right) + var(--gutter) + 64px);
+  bottom: calc(var(--safe-bottom) + 16px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  z-index: var(--z-chrome);
+  pointer-events: none;
+}
+.home-bottom > * {
+  pointer-events: auto;
+}
+
+.legend-chip-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.legend-chip-wrap .legend {
+  width: min(340px, calc(100vw - 2 * var(--gutter)));
+  padding: 14px;
+  animation: rise var(--duration) var(--ease-out) both;
+}
+.legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--tap);
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--surface-glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: var(--shadow-soft);
+}
+.legend-chip-ramp {
+  width: 56px;
+  height: 6px;
+  border-radius: 3px;
+}
+
+.welcome-toast {
+  width: 100%;
+  max-width: 420px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  animation: rise var(--duration) var(--ease-out) both;
+}
+.welcome-lede {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--teal);
+}
+.welcome-scope {
+  margin: 4px 0 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Trip header: compact From / To with swap. */
+.trip-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 20px;
+  background: var(--surface-glass);
+}
+.trip-lines {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.trip-line {
+  display: grid;
+  grid-template-columns: 14px 40px 1fr;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--tap);
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+.trip-line + .trip-line {
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 12px 12px;
+}
+.trip-line:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.trip-key {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.trip-value {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+.trip-line-missing .trip-value {
+  color: var(--amber);
+}
+.trip-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.trip-dot-from {
+  border: 2.5px solid var(--me);
+}
+.trip-dot-to {
+  background: var(--hot);
+  box-shadow: 0 0 0 3px rgba(255, 154, 115, 0.25);
+}
+
+.location-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 10px 10px 14px;
+  border-radius: 16px;
+  border-color: rgba(255, 212, 121, 0.45);
+  background: rgba(34, 28, 12, 0.9);
+}
+.location-notice p {
+  margin: 0;
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (min-width: 761px) {
+  .home-top,
+  .route-top {
+    right: auto;
+    width: 400px;
+  }
+  .home-bottom {
+    right: auto;
+    width: 420px;
+  }
+  .fab-locate {
+    bottom: 130px;
+  }
+  .fab-layers {
+    bottom: calc(130px + 52px + 12px);
+  }
+  [data-screen='route'] .fab-layers {
+    top: auto;
+    bottom: calc(130px + 52px + 12px);
+  }
+  [data-screen='route'] .fab-locate {
+    top: auto;
+    bottom: 130px;
+  }
+  .banner {
+    left: calc(var(--gutter) + 400px + 16px);
+    top: var(--gutter);
+  }
+}

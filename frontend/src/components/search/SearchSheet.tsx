@@ -77,7 +77,7 @@ export function SearchSheet(props: SearchSheetProps) {
           aria-expanded={searching && results.length > 0}
           aria-controls={listId}
           aria-autocomplete="list"
-          placeholder="Search a place, building, or MARTA stop"
+          placeholder="Search places or MARTA stops"
           autoFocus
           value={text}
           onChange={(e) => setText(e.target.value)}

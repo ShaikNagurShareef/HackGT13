@@ -1,104 +1,11 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { meta, report, routes, segment } from '../test/fixtures'
-import { About, FirstRun } from './About'
-import { ComparisonCard, templateSummary } from './ComparisonCard'
+import { meta, segment } from '../test/fixtures'
+import { About } from './About'
 import { ConditionsChip, DepartPicker, Legend, TrustNote } from './Controls'
 import { FactorBars, ScoreDial, SegmentSheet } from './SegmentSheet'
 import { Timeline, hourAt, positionOf } from './Timeline'
-
-describe('ComparisonCard (RTE-04)', () => {
-  it('shows time cost next to benefit and both routes', () => {
-    render(<ComparisonCard routes={routes()} explanation={null} onClear={vi.fn()} onSelectSegment={vi.fn()} />)
-
-    const card = screen.getByRole('region', { name: 'Route comparison' })
-    expect(card).toHaveTextContent('+4.3 min, 49% less traffic-risk exposure')
-    expect(within(screen.getByTestId('route-pp')).getByText('83')).toBeInTheDocument()
-    expect(within(screen.getByTestId('route-fast')).getByText('93')).toBeInTheDocument()
-    expect(card).toHaveTextContent('Both routes use Fifth Street Northwest')
-    expect(screen.getByRole('note')).toHaveTextContent('Always stay alert')
-  })
-
-  it('uses the grounded explanation when present, template otherwise', () => {
-    const { rerender } = render(
-      <ComparisonCard routes={routes()} explanation={null} onClear={vi.fn()} onSelectSegment={vi.fn()} />,
-    )
-    expect(screen.getByTestId('route-explanation')).toHaveTextContent('by avoiding Peachtree Place Northwest')
-
-    rerender(<ComparisonCard routes={routes()} explanation="LLM text" onClear={vi.fn()} onSelectSegment={vi.fn()} />)
-    expect(screen.getByTestId('route-explanation')).toHaveTextContent('LLM text')
-  })
-
-  it('renders the single-route case positively (RTE-03)', () => {
-    const single = routes({ pathpro: null, time_cost_min: null, exposure_reduction_pct: null, unavoidable: [] })
-    render(<ComparisonCard routes={single} explanation={null} onClear={vi.fn()} onSelectSegment={vi.fn()} />)
-
-    expect(screen.getAllByText('The fastest route is already the lower-risk option.')).toHaveLength(1)
-    expect(screen.queryByTestId('route-pp')).toBeNull()
-    expect(templateSummary(single)).toContain('busiest stretch is Fifth Street Northwest')
-  })
-
-  it('selects a hot segment and clears', async () => {
-    const onSelect = vi.fn()
-    const onClear = vi.fn()
-    render(<ComparisonCard routes={routes()} explanation={null} onClear={onClear} onSelectSegment={onSelect} />)
-
-    const hotList = screen.getByLabelText('Highest-risk stretches on the fastest route')
-    await userEvent.click(within(hotList).getByRole('button', { name: /Peachtree Place Northwest/ }))
-    await userEvent.click(screen.getByRole('button', { name: 'Clear route' }))
-
-    expect(onSelect).toHaveBeenCalledWith(12)
-    expect(onClear).toHaveBeenCalled()
-  })
-
-  it('lists avoided stretches, listen, and preview-walk controls (RTE-06, VOX-01/05)', async () => {
-    const onFocus = vi.fn()
-    const onListen = vi.fn()
-    const onStart = vi.fn()
-    render(
-      <ComparisonCard
-        routes={routes()}
-        explanation={null}
-        onClear={vi.fn()}
-        onSelectSegment={vi.fn()}
-        onFocusSegment={onFocus}
-        onListen={onListen}
-        walk={{ active: false, progress: 0, banner: 'In 60 meters, Spring Street has high traffic risk.', onStart, onStop: vi.fn() }}
-      />,
-    )
-
-    const avoided = screen.getByLabelText('High-risk stretches the PathPro route avoids')
-    expect(avoided).toHaveTextContent('Avoids 1 high-risk stretch')
-    await userEvent.click(within(avoided).getByRole('button', { name: /Peachtree Place Northwest/ }))
-    await userEvent.click(screen.getByRole('button', { name: /Listen/ }))
-    await userEvent.click(screen.getByRole('button', { name: /Preview walk/ }))
-
-    expect(onFocus).toHaveBeenCalledWith(12)
-    expect(onListen).toHaveBeenCalled()
-    expect(onStart).toHaveBeenCalled()
-    expect(screen.getByRole('status')).toHaveTextContent('Spring Street')
-  })
-})
-
-describe('ComparisonCard community reports', () => {
-  it('lists community reports on the recommended route', () => {
-    const withReports = routes({
-      reports: [report(), report({ seg_id: 12, category: 'sidewalk_blocked', label: 'Sidewalk blocked' })],
-    })
-    render(<ComparisonCard routes={withReports} explanation={null} onClear={vi.fn()} onSelectSegment={vi.fn()} />)
-
-    expect(screen.getByRole('region', { name: 'Route comparison' })).toHaveTextContent(
-      '2 community reports on this route: Construction detour, Sidewalk blocked',
-    )
-  })
-
-  it('says nothing about reports when there are none', () => {
-    render(<ComparisonCard routes={routes()} explanation={null} onClear={vi.fn()} onSelectSegment={vi.fn()} />)
-
-    expect(screen.queryByText(/community report/)).toBeNull()
-  })
-})
 
 describe('SegmentSheet (EXP-01..05)', () => {
   it('factor bars sum to the displayed score', () => {
@@ -216,17 +123,7 @@ describe('Controls', () => {
   })
 })
 
-describe('About and first run (TRUST-01..03)', () => {
-  it('first run states the traffic-only scope and dismisses', async () => {
-    const onDone = vi.fn()
-    render(<FirstRun dataThrough="2026-09-19" onDone={onDone} />)
-
-    expect(screen.getByRole('dialog')).toHaveTextContent('Traffic risk only — not crime or personal safety')
-    expect(screen.getByRole('dialog')).toHaveTextContent('Crash data through 2026-09-19')
-    await userEvent.click(screen.getByRole('button', { name: 'Got it' }))
-    expect(onDone).toHaveBeenCalled()
-  })
-
+describe('About (TRUST-01..03)', () => {
   it('about shows holdout metrics, limitations, and tap-to-call', async () => {
     const onClose = vi.fn()
     render(<About meta={meta()} onClose={onClose} />)
@@ -236,6 +133,7 @@ describe('About and first run (TRUST-01..03)', () => {
     expect(dialog).toHaveTextContent('37%–56%')
     expect(screen.getByRole('link', { name: 'Georgia Tech Police 404-894-2500' })).toHaveAttribute('href', 'tel:4048942500')
     await userEvent.click(screen.getByRole('button', { name: 'Close' }))
-    expect(onClose).toHaveBeenCalled()
+    await userEvent.keyboard('{Escape}')
+    expect(onClose).toHaveBeenCalledTimes(2)
   })
 })

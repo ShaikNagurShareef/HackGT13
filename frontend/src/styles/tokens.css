@@ -21,6 +21,34 @@
   --gutter: 16px;
   --sheet-width: 380px;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Map-first chrome (mobile UX pass) */
+  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --surface-glass: rgba(9, 22, 35, 0.8);
+  --surface-raised: #10263a;
+  --surface-sunk: rgba(4, 12, 20, 0.55);
+  --hot: #ff9a73; /* risk accent (matches the factor bars) */
+  --me: #4da3ff; /* you-are-here blue: outside the risk ramp */
+  --amber: #ffd479;
+  --amber-tint: rgba(255, 212, 121, 0.14);
+  --teal-tint: rgba(63, 209, 198, 0.14);
+  --on-teal: #04201d;
+  --radius-lg: 22px;
+  --radius-pill: 999px;
+  --shadow-lift: 0 18px 48px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+  --shadow-soft: 0 6px 20px rgba(0, 0, 0, 0.35);
+  --tap: 44px;
+  --duration-fast: 140ms;
+  --duration: 260ms;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --z-chrome: 3;
+  --z-sheet: 4;
+  --z-nav: 5;
+  --z-banner: 6;
+  --z-modal: 10;
 }
 
 @media (prefers-reduced-motion: reduce) {

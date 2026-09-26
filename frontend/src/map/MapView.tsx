@@ -5,10 +5,14 @@ import { MapLibreOverlay } from '@deck.gl/maplibre'
 import type { Bbox } from '../api/client'
 import type { Report, Route } from '../api/schemas'
 import type { Hotspot } from '../lib/hotspots'
-import { buildLayers, type HexInput, type SegmentPath } from './layers'
+import { buildLayers, type HexInput, type MeMarker, type RouteChoice, type SegmentPath } from './layers'
 
 const DARK_STYLE = 'https://tiles.openfreemap.org/styles/dark'
 const CENTER: [number, number] = [-84.3905, 33.7765]
+const PHONE_MAX_WIDTH = 760
+const FOLLOW_ZOOM = 17
+const RECENTER_ZOOM = 16
+const SHEET_SHARE = 0.44 // the route sheet's peek covers roughly this share of a phone screen
 
 export interface MapViewProps {
   bbox: ReadonlyArray<number>
@@ -23,7 +27,12 @@ export interface MapViewProps {
   onSegment: (id: number) => void
   onMapPick: (lat: number, lon: number) => void
   hex?: HexInput | null
-  walker?: [number, number] | null
+  me?: MeMarker | null
+  /** Navigation mode: keep the camera on the walker. */
+  follow?: boolean
+  /** Bump to fly to the walker (locate button). */
+  recenterKey?: number
+  selectedRoute?: RouteChoice
   focus?: { path: [number, number][]; key: number } | null
   reports?: ReadonlyArray<Report>
   onViewport?: (bbox: Bbox) => void
@@ -36,6 +45,16 @@ function viewportOf(map: MlMap): Bbox {
 
 function prefersReducedMotion(): boolean {
   return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+}
+
+function isPhone(): boolean {
+  return typeof window !== 'undefined' && window.innerWidth <= PHONE_MAX_WIDTH
+}
+
+/** Keep routes clear of the floating chrome: bottom sheet on phones, left panel on desktop. */
+function routePadding(): maplibregl.PaddingOptions {
+  if (isPhone()) return { top: 150, bottom: Math.round(window.innerHeight * SHEET_SHARE), left: 36, right: 36 }
+  return { top: 110, bottom: 80, left: 440, right: 90 }
 }
 
 function webglAvailable(): boolean {
@@ -74,9 +93,13 @@ export function MapView(props: MapViewProps) {
         [east + 0.2, north + 0.2],
       ],
     })
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right')
+    if (!isPhone()) map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right')
     map.on('contextmenu', (e) => pickRef.current(e.lngLat.lat, e.lngLat.lng))
     map.on('moveend', () => viewportRef.current?.(viewportOf(map)))
+    // Keep the attribution as its compact (i) button so it never covers the floating chrome.
+    map.once('idle', () => {
+      container.current?.querySelector('.maplibregl-compact-show')?.classList.remove('maplibregl-compact-show')
+    })
     map.on('load', () => {
       viewportRef.current?.(viewportOf(map))
       const rectangle = {
@@ -150,9 +173,32 @@ export function MapView(props: MapViewProps) {
         [Math.min(...lons), Math.min(...lats)],
         [Math.max(...lons), Math.max(...lats)],
       ],
-      { padding: { top: 120, bottom: 220, left: 60, right: 420 }, duration: prefersReducedMotion() ? 0 : 700 },
+      { padding: routePadding(), duration: prefersReducedMotion() ? 0 : 700 },
     )
   }, [props.fastest, props.pathpro])
+
+  const mePosition = props.me?.position
+  const follow = props.follow ?? false
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !follow || !mePosition) return
+    map.easeTo({
+      center: mePosition,
+      zoom: Math.max(map.getZoom(), FOLLOW_ZOOM),
+      padding: { top: 140, bottom: 160, left: 0, right: 0 },
+      duration: prefersReducedMotion() ? 0 : 600,
+    })
+  }, [follow, mePosition])
+
+  // Locate: fly to the walker once per tap, as soon as a fix exists (it may arrive after the tap).
+  const recenterKey = props.recenterKey ?? 0
+  const handledRecenter = useRef(0)
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !recenterKey || !mePosition || handledRecenter.current === recenterKey) return
+    handledRecenter.current = recenterKey
+    map.flyTo({ center: mePosition, zoom: Math.max(map.getZoom(), RECENTER_ZOOM), duration: prefersReducedMotion() ? 0 : 800 })
+  }, [recenterKey, mePosition])
 
   if (!supported) {
     return (

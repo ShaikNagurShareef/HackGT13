@@ -1,4 +1,4 @@
-import { PathLayer, ScatterplotLayer } from '@deck.gl/layers'
+import { PathLayer, ScatterplotLayer, SolidPolygonLayer } from '@deck.gl/layers'
 import type { Layer, PickingInfo } from '@deck.gl/core'
 import type { Report, Route } from '../api/schemas'
 import { RAMP, widthFor } from '../lib/bands'
@@ -18,6 +18,15 @@ export interface HexInput {
   onPick: (cell: string) => void
 }
 
+/** The walker: GPS fix (with accuracy + heading) or the simulated preview position. */
+export interface MeMarker {
+  position: [number, number]
+  accuracy: number | null
+  heading: number | null
+}
+
+export type RouteChoice = 'pp' | 'fast'
+
 interface LayerInput {
   segments: ReadonlyArray<SegmentPath>
   frame: Uint8Array | null
@@ -29,11 +38,13 @@ interface LayerInput {
   reducedMotion: boolean
   onSegment: (id: number) => void
   hex?: HexInput | null
-  walker?: [number, number] | null
+  me?: MeMarker | null
+  selectedRoute?: RouteChoice
   reports?: ReadonlyArray<Report>
 }
 
 const FAST_GREY: [number, number, number, number] = [154, 166, 178, 235]
+const FAST_PICKED: [number, number, number, number] = [240, 246, 250, 255]
 const TEAL: [number, number, number, number] = [63, 209, 198, 255]
 const TEAL_HALO: [number, number, number, number] = [63, 209, 198, 70]
 // Violet sits outside the blue→amber→pink risk ramp, so a report never reads as a score.
@@ -41,13 +52,22 @@ const REPORT_FILL: [number, number, number, number] = [182, 156, 255, 255]
 const REPORT_RING: [number, number, number, number] = [255, 255, 255, 230]
 const REPORT_RADIUS_PX = 5
 const REPORT_MAX_BOOST = 4
+const ME_BLUE: [number, number, number, number] = [77, 163, 255, 255]
+const ME_HALO: [number, number, number, number] = [77, 163, 255, 46]
+const ME_RING: [number, number, number, number] = [255, 255, 255, 255]
+const ME_DOT_PX = 7
+const HEADING_TIP_M = 26
+const HEADING_BASE_M = 9
+const HEADING_SPREAD_DEG = 40
+const M_PER_DEG_LAT = 111_320
+const DIM = 0.45
 
 export function buildLayers(input: LayerInput): Layer[] {
   const { frame, frameKey, reducedMotion } = input
   if (input.hex) {
     const h = input.hex
     const hexLayer = buildHexLayer(h.cells, h.frame, h.frameKey, reducedMotion, h.onPick)
-    return [hexLayer, ...routeLayers(input.fastest, input.pathpro), ...walkerLayer(input.walker)]
+    return [hexLayer, ...routeLayers(input.fastest, input.pathpro, input.selectedRoute), ...meLayers(input.me)]
   }
   const routing = input.fastest != null
   const alpha = routing ? 110 : 230
@@ -123,9 +143,9 @@ export function buildLayers(input: LayerInput): Layer[] {
   }
   return [
     ...layers,
-    ...routeLayers(input.fastest, input.pathpro),
+    ...routeLayers(input.fastest, input.pathpro, input.selectedRoute),
     ...reportLayers(input.reports, input.onSegment),
-    ...walkerLayer(input.walker),
+    ...meLayers(input.me),
   ]
 }
 
@@ -151,63 +171,109 @@ function reportLayers(reports: ReadonlyArray<Report> | undefined, onSegment: (id
   ]
 }
 
-function walkerLayer(position: [number, number] | null | undefined): Layer[] {
-  if (!position) return []
-  return [
-    new ScatterplotLayer<[number, number]>({
-      id: 'walker',
-      data: [position],
-      getPosition: (d) => d,
-      getRadius: 7,
-      radiusUnits: 'pixels',
-      getFillColor: [255, 255, 255, 255],
-      stroked: true,
-      getLineColor: [63, 209, 198, 255],
-      lineWidthMinPixels: 3,
-      updateTriggers: { getPosition: position },
-    }),
-  ]
+/** Offset a [lon, lat] by metres east/north (small distances only). */
+function offsetM([lon, lat]: [number, number], east: number, north: number): [number, number] {
+  const mPerDegLon = M_PER_DEG_LAT * Math.cos((lat * Math.PI) / 180)
+  return [lon + east / mPerDegLon, lat + north / M_PER_DEG_LAT]
 }
 
-function routeLayers(fastest: Route | null, pathpro: Route | null): Layer[] {
+function headingWedge(position: [number, number], heading: number): [number, number][] {
+  const at = (deg: number, m: number) => {
+    const r = (deg * Math.PI) / 180
+    return offsetM(position, Math.sin(r) * m, Math.cos(r) * m)
+  }
+  return [at(heading, HEADING_TIP_M), at(heading - HEADING_SPREAD_DEG, HEADING_BASE_M), at(heading + HEADING_SPREAD_DEG, HEADING_BASE_M)]
+}
+
+/** Blue "you are here" dot with an accuracy halo (metres) and a heading wedge when known. */
+function meLayers(me: MeMarker | null | undefined): Layer[] {
+  if (!me) return []
   const out: Layer[] = []
-  if (fastest) {
+  if (me.accuracy != null) {
     out.push(
-      new PathLayer<Route>({
-        id: 'route-fastest',
-        data: [fastest],
-        getPath: (d) => d.coords,
-        getColor: FAST_GREY,
-        getWidth: 5,
-        widthUnits: 'pixels',
-        capRounded: true,
-        jointRounded: true,
+      new ScatterplotLayer<MeMarker>({
+        id: 'me-accuracy',
+        data: [me],
+        getPosition: (d) => d.position,
+        getRadius: (d) => d.accuracy ?? 0,
+        radiusUnits: 'meters',
+        getFillColor: ME_HALO,
+        updateTriggers: { getPosition: me.position, getRadius: me.accuracy },
       }),
     )
   }
-  if (pathpro) {
+  if (me.heading != null) {
     out.push(
-      new PathLayer<Route>({
-        id: 'route-pathpulse-halo',
-        data: [pathpro],
-        getPath: (d) => d.coords,
-        getColor: TEAL_HALO,
-        getWidth: 16,
-        widthUnits: 'pixels',
-        capRounded: true,
-        jointRounded: true,
-      }),
-      new PathLayer<Route>({
-        id: 'route-pathpro',
-        data: [pathpro],
-        getPath: (d) => d.coords,
-        getColor: TEAL,
-        getWidth: 6,
-        widthUnits: 'pixels',
-        capRounded: true,
-        jointRounded: true,
+      new SolidPolygonLayer<MeMarker>({
+        id: 'me-heading',
+        data: [me],
+        getPolygon: (d) => headingWedge(d.position, d.heading ?? 0),
+        getFillColor: [77, 163, 255, 150],
+        updateTriggers: { getPolygon: [me.position, me.heading] },
       }),
     )
   }
+  out.push(
+    new ScatterplotLayer<MeMarker>({
+      id: 'me-dot',
+      data: [me],
+      getPosition: (d) => d.position,
+      getRadius: ME_DOT_PX,
+      radiusUnits: 'pixels',
+      getFillColor: ME_BLUE,
+      stroked: true,
+      getLineColor: ME_RING,
+      lineWidthMinPixels: 2.5,
+      updateTriggers: { getPosition: me.position },
+    }),
+  )
   return out
+}
+
+function withAlpha([r, g, b, a]: [number, number, number, number], factor: number): [number, number, number, number] {
+  return [r, g, b, Math.round(a * factor)]
+}
+
+function routeLayers(fastest: Route | null, pathpro: Route | null, selected: RouteChoice = 'pp'): Layer[] {
+  const fastPicked = selected === 'fast' || !pathpro
+  const fast: Layer[] = fastest
+    ? [
+        new PathLayer<Route>({
+          id: 'route-fastest',
+          data: [fastest],
+          getPath: (d) => d.coords,
+          getColor: fastPicked ? FAST_PICKED : FAST_GREY,
+          getWidth: fastPicked ? 7 : 5,
+          widthUnits: 'pixels',
+          capRounded: true,
+          jointRounded: true,
+        }),
+      ]
+    : []
+  const pp: Layer[] = pathpro
+    ? [
+        new PathLayer<Route>({
+          id: 'route-pathpro-halo',
+          data: [pathpro],
+          getPath: (d) => d.coords,
+          getColor: fastPicked ? withAlpha(TEAL_HALO, DIM) : TEAL_HALO,
+          getWidth: 16,
+          widthUnits: 'pixels',
+          capRounded: true,
+          jointRounded: true,
+        }),
+        new PathLayer<Route>({
+          id: 'route-pathpro',
+          data: [pathpro],
+          getPath: (d) => d.coords,
+          getColor: fastPicked ? withAlpha(TEAL, DIM) : TEAL,
+          getWidth: 6,
+          widthUnits: 'pixels',
+          capRounded: true,
+          jointRounded: true,
+        }),
+      ]
+    : []
+  // The selected route draws on top.
+  return fastPicked ? [...pp, ...fast] : [...fast, ...pp]
 }

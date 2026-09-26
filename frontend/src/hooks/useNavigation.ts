@@ -34,12 +34,15 @@ export interface Navigation {
   remainingS: number
   remainingM: number
   instruction: NavInstruction | null
+  /** Estimated arrival (wall clock), refreshed while navigating. */
+  arrivalAt: Date
   start: (mode: NavMode) => void
   end: () => void
 }
 
 const ARRIVED_TEXT = "You've arrived."
 const VIBRATE_MS = 200
+const CLOCK_TICK_MS = 15_000
 
 /**
  * Navigation mode: follows GPS (or the simulated preview walker) along the route, derives the
@@ -53,6 +56,7 @@ export function useNavigation({ route, gps, streets, destination }: NavigationIn
   const spoken = useRef<Set<number>>(new Set())
   const lastSpokenS = useRef<number | null>(null)
   const arrivalSpoken = useRef(false)
+  const [clock, setClock] = useState(() => Date.now())
 
   const cum = useMemo(() => (route ? cumulativeDistances(route.coords) : []), [route])
   const totalM = cum.length ? cum[cum.length - 1] : 0
@@ -92,6 +96,12 @@ export function useNavigation({ route, gps, streets, destination }: NavigationIn
     navigator.vibrate?.(VIBRATE_MS)
   }, [live, route, hasPosition, alongM, arrived])
 
+  useEffect(() => {
+    if (!live) return
+    const id = window.setInterval(() => setClock(Date.now()), CLOCK_TICK_MS)
+    return () => window.clearInterval(id)
+  }, [live])
+
   const start = useCallback(
     (next: NavMode) => {
       if (!route) return
@@ -100,6 +110,7 @@ export function useNavigation({ route, gps, streets, destination }: NavigationIn
       arrivalSpoken.current = false
       setGpsArrived(false)
       setMode(next)
+      setClock(Date.now())
       setActive(true)
       if (next === 'preview') walk.start()
     },
@@ -126,6 +137,7 @@ export function useNavigation({ route, gps, streets, destination }: NavigationIn
         })
       : null
 
+  const remainingS = route ? remainingSeconds(route.duration_s, totalM, alongM) : 0
   return {
     active: live,
     mode,
@@ -133,7 +145,8 @@ export function useNavigation({ route, gps, streets, destination }: NavigationIn
     position,
     heading: mode === 'gps' ? (gps?.heading ?? null) : null,
     alongM,
-    remainingS: route ? remainingSeconds(route.duration_s, totalM, alongM) : 0,
+    remainingS,
+    arrivalAt: new Date(clock + remainingS * 1000),
     remainingM: Math.max(0, totalM - alongM),
     instruction,
     start,

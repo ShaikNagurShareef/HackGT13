@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 @import './tokens.css';
 
 * {
@@ -10,6 +10,7 @@ body,
 #root {
   margin: 0;
   height: 100%;
+  overscroll-behavior: none;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font);
@@ -100,21 +101,70 @@ button {
   background: var(--surface-strong);
 }
 
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.btn:hover {
+  background: var(--surface-hover);
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
 .btn.primary {
   background: var(--teal);
   border-color: var(--teal);
-  color: #04201d;
+  color: var(--on-teal);
   font-weight: 600;
+}
+
+.btn.primary:hover {
+  background: var(--teal-strong);
+  border-color: var(--teal-strong);
+}
+
+.btn.small {
+  padding: 8px 14px;
+  font-size: 14px;
 }
 
 .icon-btn {
   display: inline-grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  flex: none;
+  width: var(--tap);
+  height: var(--tap);
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--surface-strong);
+  color: var(--text);
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.icon-btn:hover {
+  background: var(--surface-hover);
+}
+
+.icon-btn.ghost {
+  background: transparent;
+  border-color: transparent;
+}
+
+.icon-btn.ghost:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+@media (pointer: coarse) {
+  .chip {
+    min-height: var(--tap);
+  }
 }
 
 .muted {
@@ -128,4 +178,20 @@ button {
 
 a {
   color: var(--teal);
+}
+
+/* MapLibre attribution, restyled for the dark map (kept visible, compact). */
+.app .maplibregl-ctrl.maplibregl-ctrl-attrib,
+.app .maplibregl-ctrl-attrib.maplibregl-compact {
+  background: rgba(7, 18, 29, 0.78);
+  color: var(--text-muted);
+}
+.app .maplibregl-ctrl-attrib a {
+  color: var(--text-muted);
+}
+.app .maplibregl-ctrl-attrib-button {
+  filter: invert(1) opacity(0.7);
+}
+.maplibregl-ctrl-bottom-right {
+  margin-bottom: var(--safe-bottom);
 }

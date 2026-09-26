@@ -20,7 +20,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**', 'src/main.tsx', 'src/App.tsx', 'src/hooks/useBundle.ts', 'src/map/**', 'src/vite-env.d.ts'], // shell + WebGL: covered by Playwright
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**', 'src/main.tsx', 'src/App.tsx', 'src/app/PathPro.tsx', 'src/app/MapStage.tsx', 'src/hooks/useBundle.ts', 'src/map/**', 'src/vite-env.d.ts'], // shell container + WebGL: covered by Playwright
       thresholds: { lines: 80, functions: 80, branches: 75, statements: 80 },
     },
   },

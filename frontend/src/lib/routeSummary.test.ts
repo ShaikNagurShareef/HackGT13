@@ -22,7 +22,7 @@ describe('summarizeRoutes (route sheet headline)', () => {
       kind: 'fast',
       label: 'Fastest route',
       title: '18 min',
-      sub: '1.4 km · 1.3 km on high-risk streets · arrive 10:48 PM',
+      sub: '1.3 km high-risk · arrive 10:48 PM',
     })
   })
 

@@ -3,7 +3,7 @@ export function StatusChip({ label, onClick }: { label: string | null; onClick: 
   if (!label) return null
   return (
     <button type="button" className="status-chip" onClick={onClick}>
-      <span className="sr-only">Map options changed: </span>
+      <span className="sr-only">Changed options: </span>
       {label}
     </button>
   )

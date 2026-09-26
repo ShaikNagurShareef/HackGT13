@@ -1,33 +1,14 @@
 import type { Meta } from '../api/schemas'
+import { useDialog } from '../hooks/useDialog'
 
 function pct(v: unknown): string {
   return typeof v === 'number' ? `${Math.round(v * 100)}%` : '—'
 }
 
-export function FirstRun({ dataThrough, onDone }: { dataThrough: string; onDone: () => void }) {
-  return (
-    <div className="scrim" role="dialog" aria-modal="true" aria-labelledby="firstrun-title">
-      <section className="firstrun panel">
-        <h1 id="firstrun-title">PathPro</h1>
-        <p className="lede">See traffic risk before you walk into it.</p>
-        <p>
-          The map shows where and when <strong>pedestrian traffic crashes</strong> have concentrated across the
-          City of Atlanta — street by street, by hour and weather — and suggests walking routes with less exposure.
-        </p>
-        <p className="faint">
-          Traffic risk only — not crime or personal safety. Crash data through {dataThrough}.
-        </p>
-        <button type="button" className="btn primary" onClick={onDone} autoFocus>
-          Got it
-        </button>
-      </section>
-    </div>
-  )
-}
-
 export function About({ meta, onClose }: { meta: Meta; onClose: () => void }) {
   const h = meta.headline
   const ci = Array.isArray(h.capture_top10_ci95) ? (h.capture_top10_ci95 as number[]) : []
+  useDialog(onClose)
   return (
     <div className="scrim" role="dialog" aria-modal="true" aria-labelledby="about-title" onClick={onClose}>
       <section className="about panel" onClick={(e) => e.stopPropagation()}>
