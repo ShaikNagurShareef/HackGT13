@@ -8,6 +8,7 @@ import {
   nextInstruction,
   projectOnRoute,
   remainingSeconds,
+  startMode,
 } from './navigation'
 import { cumulativeDistances, type WalkAlert } from './walk'
 
@@ -133,5 +134,21 @@ describe('nearestStreet', () => {
     expect(nearestStreet({ lat: 33.7701, lon: -84.396 }, streets)).toBe('Ferst Dr')
     expect(nearestStreet({ lat: 33.777, lon: -84.3901 }, streets)).toBe('State St')
     expect(nearestStreet({ lat: 33.777, lon: -84.3901 }, [])).toBeNull()
+  })
+})
+
+describe('startMode (GPS navigation or preview walk)', () => {
+  it('follows GPS when the walker is on or near the route', () => {
+    expect(startMode(LINE, { lat: 33.7702, lon: -84.395 })).toEqual({ mode: 'gps', note: null })
+  })
+
+  it('previews the walk when location is off', () => {
+    expect(startMode(LINE, null)).toEqual({ mode: 'preview', note: 'Location is off, so Start previews the walk.' })
+  })
+
+  it('previews the walk when the walker is far away (e.g. at the expo)', () => {
+    const far = startMode(LINE, { lat: 33.79, lon: -84.395 })
+    expect(far.mode).toBe('preview')
+    expect(far.note).toBe("You're 1.2 km from this route, so Start previews the walk.")
   })
 })
