@@ -48,7 +48,7 @@ A mentor tried our first version on his phone and told us it wasn't intuitive: G
 - **ML:** an exposure-aware safety performance function (Poisson GLM + monotone LightGBM, spatial-block cross-validation), blended with each street's history by Empirical Bayes. A multi-task Poisson GLM learns how risk shifts by hour, day, light, and rain. Every score splits exactly into plain-language factors.
 - **Evaluation:** trained on 2020–23 and tested on 2024.
   - The 10% of street length PathPro ranks highest held **74.3%** of 2024 pedestrian crashes (95% spatial-block CI 70.5–78.3%).
-  - That compares with 49.8% for ranking by past crashes, 53.8% for the City's High Injury Network, and 10% at random. ROC-AUC is 0.89.
+  - That compares with 49.8% for ranking by past crashes, 53.8% for the City's High Injury Network, and 11.9% for a random ranking. ROC-AUC is 0.89.
   - Our score also captures more on the City High Injury Network's own share of street length.
 - **Personal safety, with fairness designed in:**
   - Crime is **never** used in routing or in the traffic model. A test multiplies crime counts by 1,000 and checks that routes don't change.
