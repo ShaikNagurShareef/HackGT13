@@ -1,7 +1,24 @@
 import { useState } from 'react'
 import type { Condition } from '../../api/client'
+import type { RoutePreference } from '../../api/safetySchemas'
+import type { MapMode } from '../../lib/options'
+import type { SafetyLayers } from '../../lib/safety'
 import { ConditionsChip, DepartPicker, Legend } from '../Controls'
+import { RoutePreferencePicker } from '../safety/RoutePreferencePicker'
+import { SafetyLayerToggles } from '../safety/SafetyLayerToggles'
+import { SafetyLegend, type SafetyLegendProps } from '../safety/SafetyLegend'
 import { Timeline, type TimelineProps } from '../Timeline'
+import { MapModePicker } from './MapModePicker'
+
+/** Personal-safety controls; null when the server has no safety layer (older bundles, offline demo). */
+export interface SafetyOptions {
+  legend: SafetyLegendProps
+  onLayers: (layers: SafetyLayers) => void
+  hasLit: boolean
+  hasBusy: boolean
+  prefer: RoutePreference
+  onPrefer: (prefer: RoutePreference) => void
+}
 
 export interface OptionsContentProps {
   cond: Condition
@@ -10,21 +27,24 @@ export interface OptionsContentProps {
   depart: string
   onDepart: (d: string) => void
   cityAvailable: boolean
-  cityMode: boolean
-  onCityMode: (on: boolean) => void
+  mapMode: MapMode
+  onMapMode: (mode: MapMode) => void
+  safety: SafetyOptions | null
   /** Risk Tides lives here on phones; desktop docks it on the map instead. */
   timeline?: TimelineProps
   showReportsLegend: boolean
   onClearHistory: () => void
 }
 
-/** Conditions, departure, map mode, (Risk Tides), legend, and privacy: shared by the sheet and the sidebar. */
+/** Conditions, departure, route preference, map mode, (Risk Tides), legend, and privacy: sheet and sidebar. */
 export function OptionsContent(props: OptionsContentProps) {
   const [cleared, setCleared] = useState(false)
   const handleClear = () => {
     props.onClearHistory()
     setCleared(true)
   }
+  const { safety } = props
+  const safetyMode = props.mapMode === 'safety' && safety != null
   return (
     <>
       <section className="options-group">
@@ -35,17 +55,19 @@ export function OptionsContent(props: OptionsContentProps) {
         <h2>Leaving</h2>
         <DepartPicker value={props.depart} onChange={props.onDepart} />
       </section>
-      {props.cityAvailable && (
+      {safety && (
+        <section className="options-group">
+          <h2>Route preference</h2>
+          <RoutePreferencePicker value={safety.prefer} onChange={safety.onPrefer} />
+        </section>
+      )}
+      {(props.cityAvailable || safety) && (
         <section className="options-group">
           <h2>Map</h2>
-          <div className="conditions" role="group" aria-label="Map scale">
-            <button type="button" className="chip" aria-pressed={!props.cityMode} onClick={() => props.onCityMode(false)}>
-              Streets
-            </button>
-            <button type="button" className="chip" aria-pressed={props.cityMode} onClick={() => props.onCityMode(true)}>
-              City Pulse
-            </button>
-          </div>
+          <MapModePicker mode={props.mapMode} onMode={props.onMapMode} cityAvailable={props.cityAvailable} safetyAvailable={safety != null} />
+          {safetyMode && (
+            <SafetyLayerToggles layers={safety.legend.layers} onChange={safety.onLayers} hasLit={safety.hasLit} hasBusy={safety.hasBusy} />
+          )}
         </section>
       )}
       {props.timeline && (
@@ -54,7 +76,7 @@ export function OptionsContent(props: OptionsContentProps) {
           <Timeline {...props.timeline} />
         </section>
       )}
-      <Legend reports={props.showReportsLegend} />
+      {safetyMode ? <SafetyLegend {...safety.legend} /> : <Legend reports={props.showReportsLegend} />}
       <section className="options-group options-privacy">
         <h2>Privacy</h2>
         <p>Your walking patterns stay on this phone.</p>

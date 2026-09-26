@@ -29,22 +29,22 @@ function textOf(ui: ReactElement): string {
 }
 
 describe('personal-safety copy', () => {
-  const cases: Array<[string, ReactElement]> = [
-    ['legend', <SafetyLegend meta={safetyMeta()} hour={21} layers={ALL_ON} tooWide={false} />],
-    ['legend (zoomed out)', <SafetyLegend meta={null} hour={3} layers={ALL_ON} tooWide />],
-    ['toggles', <SafetyLayerToggles layers={ALL_ON} onChange={vi.fn()} hasLit hasBusy />],
-    ['preference', <RoutePreferencePicker value="lit_and_busy" onChange={vi.fn()} />],
-    ['hex card', <SafetyPickCard pick={{ kind: 'hex', hex: safetyHex({ crime_band: 'higher', activity_band: 'quiet' }) }} dayLabel="Late night" onClose={vi.fn()} />],
-    ['help card', <SafetyPickCard pick={{ kind: 'help', point: helpPoint({ kind: 'police', name: 'Zone 5' }) }} dayLabel={null} onClose={vi.fn()} />],
-    ['route note', <SafetyRouteNote onOpenLegend={vi.fn()} />],
-    ['about section', <AboutSafety meta={safetyMeta()} />],
-    ['about (whole)', <About meta={meta()} safetyMeta={safetyMeta()} onClose={vi.fn()} />],
-    ['welcome (with safety)', <WelcomeToast dataThrough="2026-09-19" safetyAvailable onDismiss={vi.fn()} />],
-    ['welcome (without)', <WelcomeToast dataThrough="2026-09-19" safetyAvailable={false} onDismiss={vi.fn()} />],
+  const cases: Array<[string, () => ReactElement]> = [
+    ['legend', () => <SafetyLegend meta={safetyMeta()} hour={21} layers={ALL_ON} tooWide={false} />],
+    ['legend (zoomed out)', () => <SafetyLegend meta={null} hour={3} layers={ALL_ON} tooWide />],
+    ['toggles', () => <SafetyLayerToggles layers={ALL_ON} onChange={vi.fn()} hasLit hasBusy />],
+    ['preference', () => <RoutePreferencePicker value="lit_and_busy" onChange={vi.fn()} />],
+    ['hex card', () => <SafetyPickCard pick={{ kind: 'hex', hex: safetyHex({ crime_band: 'higher', activity_band: 'quiet' }) }} dayLabel="Late night" onClose={vi.fn()} />],
+    ['help card', () => <SafetyPickCard pick={{ kind: 'help', point: helpPoint({ kind: 'police', name: 'Zone 5' }) }} dayLabel={null} onClose={vi.fn()} />],
+    ['route note', () => <SafetyRouteNote onOpenLegend={vi.fn()} />],
+    ['about section', () => <AboutSafety meta={safetyMeta()} />],
+    ['about (whole)', () => <About meta={meta()} safetyMeta={safetyMeta()} onClose={vi.fn()} />],
+    ['welcome (with safety)', () => <WelcomeToast dataThrough="2026-09-19" safetyAvailable onDismiss={vi.fn()} />],
+    ['welcome (without)', () => <WelcomeToast dataThrough="2026-09-19" safetyAvailable={false} onDismiss={vi.fn()} />],
   ]
 
   it.each(cases)('%s avoids banned words', (_name, ui) => {
-    const text = textOf(ui)
+    const text = textOf(ui())
     expect(text.length).toBeGreaterThan(0)
     expect(text).not.toMatch(BANNED)
   })

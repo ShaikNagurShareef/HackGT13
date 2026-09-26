@@ -10,7 +10,8 @@ test('first run explains traffic risk in a toast and remembers dismissal', async
   await page.goto('/')
 
   const toast = page.getByRole('region', { name: 'Welcome to PathPro' })
-  await expect(toast).toContainText('Traffic risk only — not crime or personal safety')
+  // With the personal-safety layer the scope line adds lighting, foot traffic, help points, and reported crimes.
+  await expect(toast).toContainText(/Traffic risk(, plus personal-safety signals| from crash history)/)
   await toast.getByRole('button', { name: 'Got it' }).click()
   await expect(toast).toBeHidden()
   expect(await page.evaluate(() => localStorage.getItem('pathpro:first-run-seen'))).toBe('1')

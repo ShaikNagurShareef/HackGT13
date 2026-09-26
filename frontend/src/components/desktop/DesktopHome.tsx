@@ -1,4 +1,5 @@
 import type { RoutineSuggestion } from '../../lib/routines'
+import { scopeLine } from '../../lib/safety'
 import { SuggestionCard } from '../home/SuggestionCard'
 import { OptionsContent, type OptionsContentProps } from '../options/OptionsContent'
 import { SearchPanel, type SearchPanelProps } from '../search/SearchPanel'
@@ -12,10 +13,11 @@ export interface DesktopHomeProps {
   search: Omit<SearchPanelProps, 'autoFocus'>
   options: Omit<OptionsContentProps, 'timeline'>
   onAbout: () => void
+  safetyAvailable?: boolean
 }
 
 /** Desktop (≥1024 px) home sidebar: brand, inline search, and the map options in plain view. */
-export function DesktopHome({ suggestion, etaMin, onGo, onDismissSuggestion, search, options, onAbout }: DesktopHomeProps) {
+export function DesktopHome({ suggestion, etaMin, onGo, onDismissSuggestion, search, options, onAbout, safetyAvailable = false }: DesktopHomeProps) {
   return (
     <aside className="desk-sidebar" aria-label="PathPro">
       <SidebarBrand />
@@ -30,7 +32,7 @@ export function DesktopHome({ suggestion, etaMin, onGo, onDismissSuggestion, sea
         <button type="button" className="link-btn" onClick={onAbout}>
           About PathPro
         </button>
-        <span className="faint">Traffic risk only — not crime or personal safety.</span>
+        <span className="faint">{scopeLine(safetyAvailable)}</span>
       </footer>
     </aside>
   )

@@ -4,6 +4,9 @@ import type { Condition } from '../api/client'
 import type { RoutePreference } from '../api/safetySchemas'
 import { hourLabel } from './time'
 
+/** Map scale / layer: traffic risk on streets, City Pulse hexes, or the personal-safety layer. */
+export type MapMode = 'streets' | 'city' | 'safety'
+
 export interface OptionsState {
   cond: Condition
   depart: string

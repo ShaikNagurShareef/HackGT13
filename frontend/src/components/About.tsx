@@ -1,11 +1,20 @@
 import type { Meta } from '../api/schemas'
+import type { SafetyMeta } from '../api/safetySchemas'
 import { useDialog } from '../hooks/useDialog'
+import { AboutSafety } from './safety/AboutSafety'
 
 function pct(v: unknown): string {
   return typeof v === 'number' ? `${Math.round(v * 100)}%` : '—'
 }
 
-export function About({ meta, onClose }: { meta: Meta; onClose: () => void }) {
+export interface AboutProps {
+  meta: Meta
+  /** Present when the server has the personal-safety layer. */
+  safetyMeta?: SafetyMeta | null
+  onClose: () => void
+}
+
+export function About({ meta, safetyMeta = null, onClose }: AboutProps) {
   const h = meta.headline
   const ci = Array.isArray(h.capture_top10_ci95) ? (h.capture_top10_ci95 as number[]) : []
   useDialog(onClose)
@@ -45,8 +54,9 @@ export function About({ meta, onClose }: { meta: Meta; onClose: () => void }) {
           <li>Busy streets look riskier partly because more people walk there (exposure bias).</li>
           <li>Crash reports are incomplete, and streets change after crashes (new signals, road diets).</li>
           <li>Darkness and rain effects are small in Atlanta's data and not separately significant on holdout.</li>
-          <li>No demographic, income, or crime data is used anywhere.</li>
+          <li>No demographic, income, or crime data is used in the traffic-risk model or in routing.</li>
         </ul>
+        {safetyMeta && <AboutSafety meta={safetyMeta} />}
         <h2>Sources</h2>
         <p className="faint">
           Atlanta Regional Commission, City of Atlanta, Central Atlanta Progress, and Georgia Tech crash layers;

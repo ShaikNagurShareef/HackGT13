@@ -18,6 +18,18 @@ export const FAIRNESS_NOTE =
 
 export const CRIME_LAYER_NAME = 'Reported crimes against persons'
 
+/** Which personal-safety layers are drawn. Crime and help points start on; overlays are opt-in. */
+export interface SafetyLayers {
+  crimes: boolean
+  lit: boolean
+  busy: boolean
+  help: boolean
+}
+export const DEFAULT_SAFETY_LAYERS: SafetyLayers = { crimes: true, lit: false, busy: false, help: true }
+
+/** What the walker tapped on the safety map. */
+export type SafetyPick = { kind: 'hex'; hex: SafetyHex } | { kind: 'help'; point: HelpPoint }
+
 /**
  * Calm indigo tints, lighter as reports rise. Deliberately outside the traffic-risk ramp
  * (blue → amber → pink) and never red, so the layer informs without alarming.

@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ApiError, api } from '../api/client'
 import { isDemoMode } from '../api/demo'
+import type { Bbox } from '../api/client'
 import type { Area } from '../api/schemas'
 import { MapControls } from '../components/home/MapControls'
 import { NavigationView } from '../components/nav/NavigationView'
 import { ShareWalkPanel } from '../components/share/ShareWalkPanel'
 import { StatusScreen } from '../components/StatusScreen'
+import { SafetyPickCard } from '../components/safety/SafetyPickCard'
 import type { BundleData } from '../hooks/useBundle'
 import { useDemoMode } from '../hooks/useDemoMode'
 import { useExplanation } from '../hooks/useExplanation'
@@ -23,7 +25,7 @@ import { useViewportReports } from '../hooks/useViewportReports'
 import { hotspotsFor } from '../lib/hotspots'
 import { startMode } from '../lib/navigation'
 import { originMessage } from '../lib/origin'
-import { statusLabel } from '../lib/options'
+import { statusLabel, type MapMode } from '../lib/options'
 import { estimateWalkMin, isStrongSuggestion } from '../lib/suggestion'
 import { atlantaParts, dayGroupOf, formatTime } from '../lib/time'
 import { speak } from '../lib/voice'
@@ -35,6 +37,7 @@ import { MapStage } from './MapStage'
 import { Panels } from './Panels'
 import { DesktopLayer } from './DesktopLayer'
 import { RouteScreen, type RouteScreenProps } from './RouteScreen'
+import { useSafetyMode } from './useSafetyMode'
 import { useTripActions } from './useTripActions'
 
 const PLAY_MS = 1000
@@ -55,7 +58,8 @@ export function PathPro({ data, loadError }: PathProProps) {
   const demo = isDemoMode()
   const [error, setError] = useState<string | null>(null)
   const [area, setArea] = useState<Area | null>(null)
-  const [cityMode, setCityMode] = useState(false)
+  const [mapMode, setMapMode] = useState<MapMode>('streets')
+  const cityMode = mapMode === 'city'
   const [playing, setPlaying] = useState(false)
   const [welcome, setWelcome] = useState(() => !demo && !hasSeenWelcome())
   const [hiddenSuggestion, setHiddenSuggestion] = useState<string | null>(null)
@@ -106,7 +110,17 @@ export function PathPro({ data, loadError }: PathProProps) {
     destination: view.to,
     departAt: routes?.depart_at ?? null,
   })
-  const reports = useViewportReports(!demo && !cityMode)
+  const reports = useViewportReports(!demo && mapMode === 'streets')
+  const safety = useSafetyMode(mapMode, hour)
+  const reportsViewport = reports.onViewport
+  const safetyViewport = safety.onViewport
+  const onViewport = useCallback(
+    (bbox: Bbox) => {
+      reportsViewport(bbox)
+      safetyViewport(bbox)
+    },
+    [reportsViewport, safetyViewport],
+  )
   const actions = useTripActions({ onNotice: setError, view, update, geo, planner, routines, nav, routes, selectedRoute })
 
   useEffect(() => {
@@ -184,8 +198,11 @@ export function PathPro({ data, loadError }: PathProProps) {
     depart: view.depart,
     onDepart: (d: string) => update({ depart: d }),
     cityAvailable: Boolean(data?.hexCells),
-    cityMode,
-    onCityMode: setCityMode,
+    mapMode,
+    onMapMode: setMapMode,
+    safety: safety.controls
+      ? { ...safety.controls, prefer: view.prefer, onPrefer: (prefer: typeof view.prefer) => update({ prefer }) }
+      : null,
     showReportsLegend: reports.available,
   }
   const canUseLocation = geo.status !== 'denied' && geo.status !== 'unavailable' && planner.origin.status !== 'outside'
@@ -216,8 +233,11 @@ export function PathPro({ data, loadError }: PathProProps) {
             shareStatus: actions.shareStatus,
             onFocusSegment: focusSegment,
             onSelectSegment: onSegment,
+            dayParts: safety.meta?.day_parts,
           }
         : null,
+    prefer: view.prefer,
+    safetyNote: !desktop && safety.legend?.layers.crimes ? () => actions.setPanel({ kind: 'options' }) : null,
   }
 
   if (loadError) return <StatusScreen kind="error" message={loadError} />
@@ -242,8 +262,9 @@ export function PathPro({ data, loadError }: PathProProps) {
         recenterKey={actions.recenterKey}
         focus={focus}
         reports={reports.reports}
-        onViewport={reports.onViewport}
+        onViewport={onViewport}
         hex={hex}
+        safety={safety.mapInput}
       />
       {screen !== 'nav' && (
         <MapControls onLayers={() => actions.setPanel({ kind: 'options' })} onLocate={actions.locate} geoStatus={geo.status} />
@@ -269,12 +290,15 @@ export function PathPro({ data, loadError }: PathProProps) {
             },
             options: { ...optionValues, onClearHistory: routines.clear },
             onAbout: () => actions.setPanel({ kind: 'about' }),
+            safetyAvailable: safety.available,
           }}
           route={routeScreen}
           destination={view.to?.label ?? 'your destination'}
           timeline={timeline}
           welcomeDataThrough={welcome ? data.meta.data_through : null}
           onDismissWelcome={dismissWelcome}
+          safetyAvailable={safety.available}
+          safetyDock={safety.legend}
         />
       ) : (
         <>
@@ -285,11 +309,20 @@ export function PathPro({ data, loadError }: PathProProps) {
               onGo={actions.planSuggestion}
               onDismissSuggestion={dismissSuggestion}
               onOpenSearch={() => actions.openSearch('to')}
-              statusLabel={statusLabel({ cond: view.cond, depart: view.depart, hour: view.hour, cityMode })}
+              statusLabel={statusLabel({
+                cond: view.cond,
+                depart: view.depart,
+                hour: view.hour,
+                cityMode,
+                safetyMode: mapMode === 'safety',
+                prefer: view.prefer,
+              })}
               onOpenOptions={() => actions.setPanel({ kind: 'options' })}
               welcomeDataThrough={welcome ? data.meta.data_through : null}
               onDismissWelcome={dismissWelcome}
               reportsLegend={reports.available}
+              safetyAvailable={safety.available}
+              safetyLegend={safety.legend}
             />
           )}
           {screen === 'route' && <RouteScreen {...routeScreen} />}
@@ -331,6 +364,9 @@ export function PathPro({ data, loadError }: PathProProps) {
           onReported={reports.refresh}
         />
       )}
+      {screen !== 'nav' && safety.pick && (
+        <SafetyPickCard pick={safety.pick} dayLabel={safety.dayLabel} onClose={safety.closePick} />
+      )}
       {error && (
         <div className="banner panel" role="alert">
           <span>{error}</span>
@@ -348,6 +384,7 @@ export function PathPro({ data, loadError }: PathProProps) {
         welcome={welcome}
         onDismissWelcome={dismissWelcome}
         options={{ ...optionValues, timeline }}
+        safetyMeta={safety.meta}
       />
     </main>
   )

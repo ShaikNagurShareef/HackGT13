@@ -1,5 +1,6 @@
 import { useId } from 'react'
 import { useDialog } from '../../hooks/useDialog'
+import { scopeLine } from '../../lib/safety'
 import { Icon } from '../ui/Icon'
 import { SearchPanel, type SearchField, type SearchPanelProps } from './SearchPanel'
 
@@ -18,10 +19,12 @@ export interface SearchSheetProps extends Omit<SearchPanelProps, 'autoFocus'> {
   /** Context line: why location is being asked for, or why a start must be picked. */
   note: string | null
   onClose: () => void
+  /** The server has the personal-safety layer: the welcome line says so. */
+  safetyAvailable?: boolean
 }
 
 /** Full-screen place search (SRCH-01..04): type to search, or pick a routine, saved, recent, or popular place. */
-export function SearchSheet({ welcome, onDismissWelcome, note, onClose, ...panel }: SearchSheetProps) {
+export function SearchSheet({ welcome, onDismissWelcome, note, onClose, safetyAvailable = false, ...panel }: SearchSheetProps) {
   const titleId = useId()
   useDialog(onClose)
 
@@ -38,8 +41,7 @@ export function SearchSheet({ welcome, onDismissWelcome, note, onClose, ...panel
       {welcome && (
         <aside className="welcome-line" aria-label="Welcome">
           <p>
-            <strong>See traffic risk before you walk into it.</strong> Traffic risk only — not crime or personal
-            safety.
+            <strong>See traffic risk before you walk into it.</strong> {scopeLine(safetyAvailable)}
           </p>
           <button type="button" className="icon-btn ghost" aria-label="Dismiss welcome" onClick={onDismissWelcome}>
             <Icon name="close" size={18} />

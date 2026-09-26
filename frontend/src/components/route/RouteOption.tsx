@@ -7,10 +7,12 @@ export interface RouteOptionProps {
   route: Route
   selected: boolean
   onSelect: (kind: RouteLine['kind']) => void
+  /** Compact lighting / help-point line; never mentions crime. */
+  safetyLine?: string | null
 }
 
 /** One selectable route row: the headline line leads, the risk score sits at the edge. */
-export function RouteOption({ line, route, selected, onSelect }: RouteOptionProps) {
+export function RouteOption({ line, route, selected, onSelect, safetyLine = null }: RouteOptionProps) {
   return (
     <button
       type="button"
@@ -24,6 +26,7 @@ export function RouteOption({ line, route, selected, onSelect }: RouteOptionProp
         <span className="route-label">{line.label}</span>
         <span className="route-title num">{line.title}</span>
         <span className="route-sub num">{line.sub}</span>
+        {safetyLine && <span className="route-safety">{safetyLine}</span>}
       </span>
       <span className="route-score num" style={{ color: cssColor(route.risk_score) }}>
         <span className="route-score-value">{route.risk_score}</span>

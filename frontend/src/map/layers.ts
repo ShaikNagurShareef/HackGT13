@@ -3,7 +3,9 @@ import type { Layer, PickingInfo } from '@deck.gl/core'
 import type { Report, Route } from '../api/schemas'
 import { RAMP, widthFor } from '../lib/bands'
 import type { Hotspot } from '../lib/hotspots'
+import type { SafetyMapInput } from '../app/useSafetyMode'
 import { buildHexLayer } from './hexLayer'
+import { buildSafetyLayers } from './safetyLayers'
 
 export interface SegmentPath {
   id: number
@@ -41,6 +43,8 @@ interface LayerInput {
   me?: MeMarker | null
   selectedRoute?: RouteChoice
   reports?: ReadonlyArray<Report>
+  /** Personal safety mode: replaces the street layer, like City Pulse does. */
+  safety?: SafetyMapInput | null
 }
 
 const FAST_GREY: [number, number, number, number] = [154, 166, 178, 235]
@@ -70,6 +74,10 @@ export function buildLayers(input: LayerInput): Layer[] {
     const h = input.hex
     const hexLayer = buildHexLayer(h.cells, h.frame, h.frameKey, reducedMotion, h.onPick)
     return [hexLayer, ...routeLayers(input.fastest, input.pathpro, input.selectedRoute), ...meLayers(input.me)]
+  }
+  if (input.safety) {
+    const safety = buildSafetyLayers(input.safety, reducedMotion)
+    return [...safety, ...routeLayers(input.fastest, input.pathpro, input.selectedRoute), ...meLayers(input.me)]
   }
   const routing = input.fastest != null
   const alpha = routing ? ROUTING_STREET_ALPHA : 230

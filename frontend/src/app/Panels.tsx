@@ -2,6 +2,7 @@ import { About } from '../components/About'
 import { OptionsSheet, type OptionsSheetProps } from '../components/options/OptionsSheet'
 import { SearchSheet } from '../components/search/SearchSheet'
 import type { Meta } from '../api/schemas'
+import type { SafetyMeta } from '../api/safetySchemas'
 import type { Routines } from '../hooks/useRoutines'
 import type { Panel } from './useTripActions'
 import type { useTripActions } from './useTripActions'
@@ -18,12 +19,14 @@ export interface PanelsProps {
   welcome: boolean
   onDismissWelcome: () => void
   options: OptionValues
+  /** Personal-safety meta when the server has the layer (About section, welcome scope). */
+  safetyMeta?: SafetyMeta | null
 }
 
 /** The one modal sheet that can be open at a time: search, options, or About. */
-export function Panels({ panel, meta, actions, routines, canUseLocation, welcome, onDismissWelcome, options }: PanelsProps) {
+export function Panels({ panel, meta, actions, routines, canUseLocation, welcome, onDismissWelcome, options, safetyMeta = null }: PanelsProps) {
   if (!panel) return null
-  if (panel.kind === 'about') return <About meta={meta} onClose={actions.closePanel} />
+  if (panel.kind === 'about') return <About meta={meta} safetyMeta={safetyMeta} onClose={actions.closePanel} />
   if (panel.kind === 'options') {
     return (
       <OptionsSheet
@@ -40,6 +43,7 @@ export function Panels({ panel, meta, actions, routines, canUseLocation, welcome
       key={field}
       field={field}
       welcome={welcome}
+      safetyAvailable={safetyMeta != null}
       onDismissWelcome={onDismissWelcome}
       note={actions.searchNote(field)}
       suggestions={routines.suggestions}

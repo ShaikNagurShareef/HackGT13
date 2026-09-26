@@ -1,12 +1,15 @@
 import { useRef, useState } from 'react'
 import type { Routes } from '../../api/schemas'
+import type { DayPart } from '../../api/safetySchemas'
 import { summarizeRoutes, type RouteLine } from '../../lib/routeSummary'
+import { formatRouteSafety } from '../../lib/safety'
 import { BottomSheet } from '../sheet/BottomSheet'
 import { Icon } from '../ui/Icon'
 import { RouteDetails } from './RouteDetails'
 import { RouteOption } from './RouteOption'
 
 export type RouteKind = RouteLine['kind']
+const NO_DAY_PARTS: ReadonlyArray<DayPart> = []
 
 export interface RouteSheetProps {
   routes: Routes
@@ -22,6 +25,8 @@ export interface RouteSheetProps {
   shareStatus: string | null
   onFocusSegment: (id: number) => void
   onSelectSegment: (id: number) => void
+  /** Personal-safety day parts, to name the time window of reported crimes. */
+  dayParts?: ReadonlyArray<DayPart>
 }
 
 /** Route sheet: the PathPro route headline, the fastest alternative, and big Start (RTE-04). */
@@ -48,6 +53,7 @@ export function RouteSheet(props: RouteSheetProps) {
             route={routeFor(line.kind)}
             selected={selected === line.kind || lines.length === 1}
             onSelect={props.onSelect}
+            safetyLine={formatRouteSafety(routeFor(line.kind).safety)}
           />
         ))}
       </div>
@@ -82,6 +88,7 @@ export function RouteSheet(props: RouteSheetProps) {
         onPreview={props.onPreview}
         onFocusSegment={props.onFocusSegment}
         onSelectSegment={props.onSelectSegment}
+        dayParts={props.dayParts ?? NO_DAY_PARTS}
       />
     </BottomSheet>
   )

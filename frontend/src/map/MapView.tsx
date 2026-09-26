@@ -5,7 +5,9 @@ import { MapLibreOverlay } from '@deck.gl/maplibre'
 import type { Bbox } from '../api/client'
 import type { Report, Route } from '../api/schemas'
 import type { Hotspot } from '../lib/hotspots'
+import type { SafetyMapInput } from '../app/useSafetyMode'
 import { buildLayers, type HexInput, type MeMarker, type RouteChoice, type SegmentPath } from './layers'
+import { safetyTooltip } from './safetyLayers'
 
 const DARK_STYLE = 'https://tiles.openfreemap.org/styles/dark'
 const CENTER: [number, number] = [-84.3905, 33.7765]
@@ -37,6 +39,7 @@ export interface MapViewProps {
   focus?: { path: [number, number][]; key: number } | null
   reports?: ReadonlyArray<Report>
   onViewport?: (bbox: Bbox) => void
+  safety?: SafetyMapInput | null
 }
 
 function viewportOf(map: MlMap): Bbox {
@@ -138,6 +141,7 @@ export function MapView(props: MapViewProps) {
   useEffect(() => {
     overlayRef.current?.setProps({
       layers: buildLayers({ ...props, reducedMotion: prefersReducedMotion(), onSegment: props.onSegment }),
+      getTooltip: props.safety ? safetyTooltip(props.safety.dayLabel) : undefined,
     })
   }, [props])
 
@@ -210,5 +214,8 @@ export function MapView(props: MapViewProps) {
       </div>
     )
   }
-  return <div ref={container} className="map" aria-label="Traffic risk map of Midtown, Georgia Tech, and Downtown Atlanta" />
+  const label = props.safety
+    ? 'Personal safety map: lighting, foot traffic, help points, and reported crimes against persons'
+    : 'Traffic risk map of Midtown, Georgia Tech, and Downtown Atlanta'
+  return <div ref={container} className="map" aria-label={label} />
 }

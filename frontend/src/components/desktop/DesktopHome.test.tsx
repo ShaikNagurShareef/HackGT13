@@ -84,6 +84,6 @@ describe('DesktopHome (persistent sidebar)', () => {
 
   it('states the scope honestly in the footer', () => {
     setup({ safetyAvailable: true })
-    expect(screen.getByRole('contentinfo')).toHaveTextContent('Traffic risk, plus personal-safety signals')
+    expect(screen.getByRole('complementary', { name: 'PathPro' })).toHaveTextContent('Traffic risk, plus personal-safety signals')
   })
 })

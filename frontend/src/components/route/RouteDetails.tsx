@@ -1,5 +1,6 @@
 import type { RefObject } from 'react'
 import type { Routes } from '../../api/schemas'
+import type { DayPart } from '../../api/safetySchemas'
 import { useTypewriter } from '../../hooks/useTypewriter'
 import { cssColor } from '../../lib/bands'
 import { routeReportsLine } from '../../lib/reports'
@@ -7,6 +8,7 @@ import { templateSummary } from '../../lib/routeSummary'
 import { formatClock } from '../../lib/time'
 import { TrustNote } from '../Controls'
 import { Icon } from '../ui/Icon'
+import { RouteSafetyEvidence } from './RouteSafetyEvidence'
 
 export interface RouteDetailsProps {
   routes: Routes
@@ -15,10 +17,12 @@ export interface RouteDetailsProps {
   onPreview: () => void
   onFocusSegment: (id: number) => void
   onSelectSegment: (id: number) => void
+  dayParts: ReadonlyArray<DayPart>
 }
 
 /** Expanded route sheet: why, the evidence, and the preview walk. */
-export function RouteDetails({ routes, explanation, explanationRef, onPreview, onFocusSegment, onSelectSegment }: RouteDetailsProps) {
+export function RouteDetails(props: RouteDetailsProps) {
+  const { routes, explanation, explanationRef, onPreview, onFocusSegment, onSelectSegment, dayParts } = props
   const { fastest, pathpro } = routes
   // Typing lives here, not in the app container, so each tick re-renders only this text.
   const typed = useTypewriter(explanation)
@@ -51,6 +55,7 @@ export function RouteDetails({ routes, explanation, explanationRef, onPreview, o
           <span className="report-dot" aria-hidden="true" /> {routeReportsLine(routes.reports)}
         </p>
       )}
+      <RouteSafetyEvidence routes={routes} dayParts={dayParts} />
       {routes.unavoidable.length > 0 && (
         <p className="faint">Both routes use {routes.unavoidable.join(', ')} — take extra care there.</p>
       )}

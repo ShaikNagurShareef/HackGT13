@@ -1,6 +1,7 @@
 import { DesktopHome, type DesktopHomeProps } from '../components/desktop/DesktopHome'
 import { SidebarBrand } from '../components/desktop/SidebarBrand'
 import { WelcomeToast } from '../components/home/WelcomeToast'
+import { SafetyLegend, type SafetyLegendProps } from '../components/safety/SafetyLegend'
 import { Timeline, type TimelineProps } from '../components/Timeline'
 import { RouteScreen, type RouteScreenProps } from './RouteScreen'
 
@@ -12,10 +13,14 @@ export interface DesktopLayerProps {
   timeline: TimelineProps
   welcomeDataThrough: string | null
   onDismissWelcome: () => void
+  safetyAvailable?: boolean
+  /** Personal safety mode: on the route screen the legend docks on the map (home shows it in the sidebar). */
+  safetyDock?: SafetyLegendProps | null
 }
 
 /** Desktop (≥1024 px): a persistent sidebar beside the map, with Risk Tides docked on the map. */
-export function DesktopLayer({ screen, home, route, destination, timeline, welcomeDataThrough, onDismissWelcome }: DesktopLayerProps) {
+export function DesktopLayer(props: DesktopLayerProps) {
+  const { screen, home, route, destination, timeline, welcomeDataThrough, onDismissWelcome, safetyAvailable, safetyDock } = props
   return (
     <>
       {screen === 'home' && <DesktopHome {...home} />}
@@ -38,7 +43,12 @@ export function DesktopLayer({ screen, home, route, destination, timeline, welco
       )}
       {screen === 'home' && welcomeDataThrough && (
         <div className="desk-toast">
-          <WelcomeToast dataThrough={welcomeDataThrough} onDismiss={onDismissWelcome} />
+          <WelcomeToast dataThrough={welcomeDataThrough} safetyAvailable={safetyAvailable} onDismiss={onDismissWelcome} />
+        </div>
+      )}
+      {screen === 'route' && safetyDock && (
+        <div className="safety-dock">
+          <SafetyLegend {...safetyDock} compact />
         </div>
       )}
     </>
