@@ -30,7 +30,9 @@ PAID_RULES: tuple[tuple[str, str], ...] = (
     (ANY_METHOD, "/geocode"),
     (ANY_METHOD, "/tts"),
     ("POST", "/reports"),
-    ("POST", "/walks"),  # starting a shared walk; position updates have a per-walk throttle
+    ("POST", "/walks"),  # starting a shared walk
+    # PUT position stays on the general limit (one venue NAT, ~12/min per walker); an in-memory
+    # per-walk gate in services/walks.py rejects floods before they reach Mongo.
 )
 IPV6_PREFIX = 64
 

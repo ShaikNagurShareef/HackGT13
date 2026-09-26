@@ -54,7 +54,7 @@ class RouteSafetyOut(BaseModel):
     busy_share: float | None = Field(ge=0, le=1)
     help_points_within_100m: int = Field(ge=0)
     crimes_persons_nearby: int = Field(ge=0)
-    day_part: str
+    day_part: Literal["night", "morning", "afternoon", "evening"]
 
 
 class RouteOut(BaseModel):

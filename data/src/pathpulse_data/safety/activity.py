@@ -17,6 +17,8 @@ def activity_thresholds(rates: pd.DataFrame) -> tuple[float, float]:
     """Terciles pooled over every (place, day part): nights read "quiet" against the day."""
     pooled = rates.to_numpy(float).ravel()
     pooled = pooled[np.isfinite(pooled)]
+    if pooled.size == 0:
+        raise RuntimeError("no StreetLight activity data available for the safety layer")
     lo, hi = np.quantile(pooled, [LOWER_Q, UPPER_Q])
     return float(lo), float(hi)
 

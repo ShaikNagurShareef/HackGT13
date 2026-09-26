@@ -17,6 +17,8 @@ from collections.abc import Callable
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
+from cachetools import TTLCache
+
 from app.api.envelope import AppError
 from app.api.walk_schemas import (
     CreatedWalkOut,
@@ -192,9 +194,35 @@ def _apply(walk: SharedWalk, req: PositionUpdateRequest, now: datetime) -> Share
     )
 
 
+GATE_SIZE = 10_000
+
+
+class RecentUpdates:
+    """Per-walk time of the last accepted update, kept in memory so rapid position posts are
+    throttled before any Mongo read. Only authenticated, saved updates are recorded, so a
+    stranger holding a follow link cannot throttle the walker."""
+
+    def __init__(self) -> None:
+        ttl = MIN_UPDATE_INTERVAL.total_seconds()
+        self._last: TTLCache[str, datetime] = TTLCache(maxsize=GATE_SIZE, ttl=ttl)
+
+    def too_soon(self, walk_id: str, req: PositionUpdateRequest, now: datetime) -> bool:
+        last = self._last.get(walk_id)
+        return req.status is None and last is not None and now - last < MIN_UPDATE_INTERVAL
+
+    def mark(self, walk_id: str, now: datetime) -> None:
+        self._last[walk_id] = now
+
+
 async def update_position(
-    repo: WalksRepository, walk_id: str, req: PositionUpdateRequest, now: datetime
+    repo: WalksRepository,
+    walk_id: str,
+    req: PositionUpdateRequest,
+    now: datetime,
+    gate: RecentUpdates | None = None,
 ) -> WalkSummaryOut:
+    if gate is not None and gate.too_soon(walk_id, req, now):
+        raise throttled()
     walk = await _load(repo, walk_id, now)
     if not token_matches(req.owner_token, walk.token_hash):
         raise forbidden()
@@ -210,4 +238,6 @@ async def update_position(
         raise unavailable() from exc
     if saved is None:  # another update landed between our read and write
         raise throttled()
+    if gate is not None:
+        gate.mark(walk_id, now)
     return summary_out(saved, now)

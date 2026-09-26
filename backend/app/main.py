@@ -38,6 +38,7 @@ from app.services.explain.providers import GeminiProvider, GroqProvider, Provide
 from app.services.explain.service import ExplainService
 from app.services.geocode import GeocodeService
 from app.services.tts import TtsService
+from app.services.walks import RecentUpdates
 from app.services.weather import WeatherService
 
 ROUTES_CACHE_SIZE = 512
@@ -106,6 +107,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     mongo_uri = cfg.mongodb_uri.get_secret_value() if cfg.mongodb_uri else None
     app.state.reports = ReportsRepository(mongo_uri, cfg.mongodb_db)  # no I/O until first use
     app.state.walks = WalksRepository(mongo_uri, cfg.mongodb_db)
+    app.state.walk_gate = RecentUpdates()
     app.add_middleware(
         RateLimitMiddleware,
         per_minute=cfg.rate_limit_per_minute,

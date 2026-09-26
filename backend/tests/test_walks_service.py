@@ -10,6 +10,7 @@ from app.api.walk_schemas import CreateWalkRequest, PositionUpdateRequest
 from app.api.walks import get_clock
 from app.repositories.walks import WalksRepository, parse_walk, walk_doc
 from app.services.walks import (
+    RecentUpdates,
     create_walk,
     get_walk,
     hash_token,
@@ -106,3 +107,41 @@ def walk_doc_for_test() -> dict[str, object]:
     )
     assert walk is not None
     return walk_doc(walk)
+
+
+@pytest.mark.unit
+async def test_rapid_updates_are_throttled_in_memory_before_reading_mongo() -> None:
+    # The venue shares one NAT address, so position updates stay off the shared paid limit;
+    # an in-memory per-walk gate stops floods before they cost an Atlas round trip.
+    repo, fake, walk_id, token = await _created()
+    gate = RecentUpdates()
+    req = PositionUpdateRequest(owner_token=token, lat=33.777, lon=-84.39)
+    await update_position(repo, walk_id, req, T0 + timedelta(seconds=5), gate)
+    reads = 0
+    original_find_one = fake.find_one
+
+    async def counting_find_one(*args: object, **kwargs: object) -> object:
+        nonlocal reads
+        reads += 1
+        return await original_find_one(*args, **kwargs)  # type: ignore[arg-type]
+
+    fake.find_one = counting_find_one  # type: ignore[method-assign]
+
+    with pytest.raises(AppError) as err:
+        await update_position(repo, walk_id, req, T0 + timedelta(seconds=6), gate)
+
+    assert err.value.code == "WALK_THROTTLED"
+    assert reads == 0
+
+
+@pytest.mark.unit
+async def test_status_changes_pass_the_in_memory_gate() -> None:
+    repo, _, walk_id, token = await _created()
+    gate = RecentUpdates()
+    moving = PositionUpdateRequest(owner_token=token, lat=33.777, lon=-84.39)
+    arrived = PositionUpdateRequest(owner_token=token, lat=33.781, lon=-84.3863, status="arrived")
+    await update_position(repo, walk_id, moving, T0 + timedelta(seconds=5), gate)
+
+    out = await update_position(repo, walk_id, arrived, T0 + timedelta(seconds=6), gate)
+
+    assert out.status == "arrived"

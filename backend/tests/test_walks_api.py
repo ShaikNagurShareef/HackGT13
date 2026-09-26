@@ -353,11 +353,3 @@ def test_creating_walks_uses_the_tighter_limit_but_following_does_not() -> None:
     assert is_paid("POST", "/walks")
     assert not is_paid("GET", "/walks/abc")
     assert not is_paid("PUT", "/walks/abc/position")
-
-
-@pytest.mark.unit
-def test_position_updates_use_the_tighter_write_limit() -> None:
-    from app.middleware import is_paid
-
-    assert is_paid("PUT", "/walks/abc123/position")
-    assert not is_paid("GET", "/walks/abc123")

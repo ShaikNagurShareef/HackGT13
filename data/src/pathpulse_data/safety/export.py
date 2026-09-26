@@ -246,12 +246,29 @@ def write_safety(out: Path, result: dict[str, Any]) -> None:
     _dump(out / "manifest.json", manifest)
 
 
+REQUIRED_RAW: tuple[str, ...] = (
+    "safety_apd_crime.parquet",
+    "safety_osm.parquet",
+    "safety_gt_callboxes.parquet",
+)
+
+
 def add_safety(out: Path) -> None:
-    """Pipeline hook (export/bundle.py): skip with a warning when raw pulls are missing."""
-    if not (RAW_DIR / "safety_apd_crime.parquet").exists():
-        log.warning("safety raw data missing; run pathpulse_data.safety.fetch (bundle unchanged)")
+    """Pipeline hook (export/bundle.py): the layer is optional, so missing or partial raw pulls
+    and build failures skip it with a warning and leave the bundle as it was."""
+    missing = [name for name in REQUIRED_RAW if not (RAW_DIR / name).exists()]
+    if missing:
+        log.warning(
+            "safety raw data missing (%s); run pathpulse_data.safety.fetch (bundle unchanged)",
+            ", ".join(missing),
+        )
         return
-    write_safety(out, build(out))
+    try:
+        result = build(out)
+    except (OSError, ValueError, RuntimeError, KeyError) as exc:
+        log.warning("safety layer skipped: %s: %s (bundle unchanged)", type(exc).__name__, exc)
+        return
+    write_safety(out, result)
 
 
 def new_version(source: Path) -> Path:

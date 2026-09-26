@@ -19,6 +19,7 @@ from app.repositories.artifacts import Bundle
 from app.repositories.walks import WalksRepository
 from app.services.walks import (
     Clock,
+    RecentUpdates,
     create_walk,
     get_walk,
     unavailable,
@@ -42,7 +43,13 @@ def get_clock() -> Clock:
     return utcnow
 
 
+def get_update_gate(request: Request) -> RecentUpdates:
+    gate: RecentUpdates = request.app.state.walk_gate
+    return gate
+
+
 WalksDep = Annotated[WalksRepository, Depends(get_walks)]
+GateDep = Annotated[RecentUpdates, Depends(get_update_gate)]
 ClockDep = Annotated[Clock, Depends(get_clock)]
 WalkId = Annotated[str, Path(max_length=MAX_WALK_ID_CHARS)]
 
@@ -62,9 +69,10 @@ async def post_position(
     repo: WalksDep,
     clock: ClockDep,
     bundle: BundleDep,
+    gate: GateDep,
 ) -> Envelope[WalkSummaryOut]:
     """Owner-only: the walker's latest position, ETA, and status."""
-    return ok(await update_position(repo, walk_id, req, clock()), bundle.model_version)
+    return ok(await update_position(repo, walk_id, req, clock(), gate), bundle.model_version)
 
 
 @walks.get("/walks/{walk_id}", response_model=Envelope[WalkOut])
