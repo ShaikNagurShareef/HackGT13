@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import UTC, datetime, timedelta
 
@@ -12,7 +13,7 @@ from app.repositories.reports import (
     INDEX_NAMES,
     ReportsRepository,
 )
-from pymongo.errors import DuplicateKeyError, ServerSelectionTimeoutError
+from pymongo.errors import DuplicateKeyError, InvalidURI, ServerSelectionTimeoutError
 
 from tests.fake_mongo import FakeCollection
 
@@ -216,3 +217,80 @@ def test_every_category_has_a_plain_label() -> None:
     assert len(CATEGORY_LABELS) == 6
     for label in CATEGORY_LABELS.values():
         assert label and not any(word in label.lower() for word in banned)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("op", ["ping", "ensure_indexes", "indexes_ok", "summary", "in_bbox"])
+async def test_each_operation_degrades_on_its_own_failure(op: str) -> None:
+    repo, fake = _repo()
+    fake.fail = ServerSelectionTimeoutError("down")
+    calls = {
+        "ping": lambda: repo.ping(),
+        "ensure_indexes": lambda: repo.ensure_indexes(),
+        "indexes_ok": lambda: repo.indexes_ok(),
+        "summary": lambda: repo.summary(),
+        "in_bbox": lambda: repo.in_bbox(-84.4, 33.7, -84.3, 33.8),
+    }
+
+    result = await calls[op]()
+
+    assert result in ("unavailable", False, None)
+
+
+@pytest.mark.unit
+async def test_slow_cluster_hits_the_budget_and_cools_down() -> None:
+    repo, fake = _repo()
+
+    async def stall(length: int | None = None) -> list[dict[str, object]]:
+        await asyncio.sleep(1)
+        return []
+
+    original = fake.find
+
+    def slow_find(query: dict[str, object], projection: object = None) -> object:
+        cursor = original(query, projection)
+        cursor.to_list = stall  # type: ignore[method-assign]
+        return cursor
+
+    fake.find = slow_find  # type: ignore[method-assign]
+
+    assert await repo.for_segments([1], budget_s=0.01) is None
+    assert await repo.for_segments([1]) is None  # cooling down: no second wait
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "patch",
+    [{"created_at": "yesterday"}, {"category": "crime"}, {"loc": {"coordinates": [1]}}],
+)
+async def test_documents_with_bad_fields_are_skipped(patch: dict[str, object]) -> None:
+    repo, fake = _repo()
+    await repo.report(1, "signal_out", "A St", LON, LAT, NOW)
+    fake.docs[0].update(patch)
+
+    assert await repo.for_segments([1], now=NOW) == []
+
+
+@pytest.mark.unit
+async def test_summary_ignores_unknown_categories() -> None:
+    repo, fake = _repo()
+    await repo.report(1, "signal_out", "A St", LON, LAT, NOW)
+    fake.docs.append({**fake.docs[0], "_id": 2, "category": "other"})
+
+    rows = await repo.summary(now=NOW - timedelta(days=1))
+
+    assert rows is not None and [r.category for r in rows] == ["signal_out"]
+
+
+@pytest.mark.unit
+async def test_invalid_uri_at_client_construction_is_contained(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def boom(*args: object, **kwargs: object) -> None:
+        raise InvalidURI("mongodb://user:secret@")
+
+    monkeypatch.setattr("app.repositories.reports.AsyncMongoClient", boom)
+    repo = ReportsRepository("mongodb://user:secret@")
+
+    assert await repo.ping() == "unavailable"
+    await repo.close()

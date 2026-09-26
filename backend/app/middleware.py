@@ -1,7 +1,9 @@
 """Per-client sliding-window rate limits (NFR-11) without extra services.
 
 - General limit is generous: at the expo, every judge shares one venue NAT address.
-- Paid endpoints (/explain, /geocode) get a tighter per-client limit.
+- Paid endpoints (/explain, /geocode, /tts) and writes (POST /reports) get a tighter
+  per-client limit. Rules are method-aware: the map reads GET /reports on every pan, so
+  viewing reports stays on the general limit.
 - The client key is `request.client.host`, which uvicorn's --proxy-headers sets from Caddy's
   X-Forwarded-For only for trusted proxies, so raw headers cannot spoof it.
 - State lives in a bounded TTL cache so rotating addresses cannot exhaust memory.
@@ -22,8 +24,22 @@ from starlette.types import ASGIApp
 WINDOW_S = 60.0
 MAX_CLIENTS = 50_000
 EXEMPT_PREFIXES = ("/healthz", "/static")
-PAID_PREFIXES = ("/explain", "/geocode", "/tts")
+ANY_METHOD = "*"
+PAID_RULES: tuple[tuple[str, str], ...] = (
+    (ANY_METHOD, "/explain"),
+    (ANY_METHOD, "/geocode"),
+    (ANY_METHOD, "/tts"),
+    ("POST", "/reports"),
+)
 IPV6_PREFIX = 64
+
+
+def is_paid(method: str, path: str) -> bool:
+    """True when this request counts against the tighter paid/write limit."""
+    return any(
+        path.startswith(prefix) and rule in (ANY_METHOD, method.upper())
+        for rule, prefix in PAID_RULES
+    )
 
 
 def client_key(host: str | None) -> str:
@@ -66,7 +82,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         client = client_key(request.client.host if request.client else None)
         now = time.monotonic()
         allowed = self._allow(client, self.per_minute, now)
-        if allowed and path.startswith(PAID_PREFIXES):
+        if allowed and is_paid(request.method, path):
             allowed = self._allow(f"paid:{client}", self.paid_per_minute, now)
         if not allowed:
             return JSONResponse(

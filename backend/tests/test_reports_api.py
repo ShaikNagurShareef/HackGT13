@@ -249,3 +249,60 @@ def test_posting_reports_uses_the_paid_limit_but_viewing_does_not(bundle_dir: Pa
 
     assert posts == [200, 429]
     assert views == [200, 200, 200]
+
+
+@pytest.mark.integration
+def test_reads_return_503_when_atlas_fails(client: TestClient, fake: FakeCollection) -> None:
+    fake.fail = ServerSelectionTimeoutError("down")
+
+    codes = [
+        client.get("/reports", params={"bbox": BBOX}).status_code,
+        client.get("/reports/summary").status_code,
+        client.get(f"/segments/{HOT_SEG}/reports").status_code,
+    ]
+
+    assert codes == [503, 503, 503]
+
+
+@pytest.mark.integration
+def test_startup_warns_when_indexes_cannot_be_ensured(
+    bundle_dir: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    async def no_indexes(self: ReportsRepository) -> bool:
+        return False
+
+    monkeypatch.setattr(ReportsRepository, "ensure_indexes", no_indexes)
+    settings = Settings(
+        artifacts_dir=bundle_dir, mongodb_uri="mongodb://127.0.0.1:1/", _env_file=None
+    )
+
+    with TestClient(create_app(settings)) as c:
+        assert c.app.state.reports.configured  # type: ignore[attr-defined]
+
+    assert "street report indexes not ensured" in caplog.text
+
+
+@pytest.mark.unit
+def test_polyline_midpoint_edge_cases() -> None:
+    import numpy as np
+    from app.services.reports import polyline_midpoint
+
+    single = np.array([[1.0, 2.0]])
+    zero = np.array([[1.0, 2.0], [1.0, 2.0]])
+    bent = np.array([[0.0, 0.0], [0.0, 1.0], [0.0, 3.0]])
+
+    assert polyline_midpoint(single) == (1.0, 2.0)
+    assert polyline_midpoint(zero) == (1.0, 2.0)
+    assert polyline_midpoint(bent) == pytest.approx((0.0, 1.5))
+
+
+@pytest.mark.unit
+async def test_submit_report_requires_a_configured_repository(bundle_dir: Path) -> None:
+    from app.api.envelope import AppError
+    from app.repositories.artifacts import load_bundle
+    from app.services.reports import submit_report
+
+    with pytest.raises(AppError) as err:
+        await submit_report(ReportsRepository(None), load_bundle(bundle_dir), HOT_SEG, "flooding")
+
+    assert err.value.code == "REPORTS_UNAVAILABLE"

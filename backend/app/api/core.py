@@ -20,6 +20,7 @@ from app.api.schemas import (
 from app.domain.router import Router
 from app.domain.timeutil import parse_departure
 from app.repositories.artifacts import Bundle
+from app.services.reports import route_reports
 from app.services.routing import plan_routes
 from app.services.segments import segment_detail
 from app.services.weather import WeatherService
@@ -31,12 +32,14 @@ BundleDep = Annotated[Bundle, Depends(get_bundle)]
 @api.get("/healthz", response_model=Envelope[HealthData])
 async def healthz(request: Request, bundle: BundleDep) -> Envelope[HealthData]:
     database = await request.app.state.history.ping()
+    reports = await request.app.state.reports.ping()
     data = HealthData(
-        status="ok" if database != "unavailable" else "degraded",
+        status="degraded" if "unavailable" in (database, reports) else "ok",
         model_version=bundle.model_version,
         segments=bundle.n_segments,
         graph_nodes=len(bundle.graph.node_lon),
         database=database,
+        reports=reports,
     )
     return ok(data, bundle.model_version)
 
@@ -73,7 +76,10 @@ async def routes(
     router: Annotated[Router, Depends(get_router)],
     weather: Annotated[WeatherService, Depends(get_weather)],
 ) -> Envelope[RoutesData]:
-    data = await plan_routes(bundle, router, weather, req, request.app.state.hexes)
+    planned = await plan_routes(bundle, router, weather, req, request.app.state.hexes)
+    # Community reports are display-only context; the explanation evidence ignores them.
+    reports = await route_reports(request.app.state.reports, planned)
+    data = planned.model_copy(update={"reports": reports})
     request.app.state.routes_cache[data.route_key] = data  # evidence for /explain stays server-side
     return ok(data, bundle.model_version)
 

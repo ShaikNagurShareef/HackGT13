@@ -18,6 +18,7 @@ from pathlib import Path
 ENV = Path(__file__).resolve().parents[1] / "backend" / ".env"
 PATTERNS: dict[str, re.Pattern[str]] = {
     "DATABASE_URL": re.compile(r"^postgres(?:ql)?://\S+$"),
+    "MONGODB_URI": re.compile(r"^mongodb(?:\+srv)?://\S+$"),
     "GROQ_API_KEY": re.compile(r"^gsk_[A-Za-z0-9]{40,}$"),
     "GEMINI_API_KEY": re.compile(r"^(?:AIza[0-9A-Za-z_-]{35}|AQ\.[A-Za-z0-9_.-]{20,})$"),
     "ELEVENLABS_API_KEY": re.compile(r"^sk_[a-f0-9]{40,}$"),

@@ -46,9 +46,12 @@ def _project(doc: dict[str, Any]) -> dict[str, Any]:
 
 
 class FakeCursor:
-    def __init__(self, owner: FakeCollection, docs: list[dict[str, Any]]) -> None:
+    def __init__(
+        self, owner: FakeCollection, docs: list[dict[str, Any]], *, drop_id: bool = True
+    ) -> None:
         self._owner = owner
         self._docs = docs
+        self._drop_id = drop_id
         self.sort_spec: tuple[str, int] | None = None
         self.limit_n: int | None = None
 
@@ -69,7 +72,7 @@ class FakeCursor:
             docs.sort(key=lambda d: d.get(key, 0), reverse=direction < 0)
         if self.limit_n:
             docs = docs[: self.limit_n]
-        return [_project(d) for d in docs]
+        return [_project(d) if self._drop_id else copy.deepcopy(d) for d in docs]
 
 
 class FakeDatabase:
@@ -128,7 +131,7 @@ class FakeCollection:
         self.calls.append(("aggregate", pipeline))
         self.check()
         rows = [d for d in self.docs]
-        cursor = FakeCursor(self, rows)
+        cursor = FakeCursor(self, rows, drop_id=False)
         for stage in pipeline:
             if "$match" in stage:
                 rows = [d for d in rows if matches(d, stage["$match"])]

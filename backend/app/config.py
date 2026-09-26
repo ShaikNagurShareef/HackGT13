@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     tts_daily_budget: int = Field(default=500, ge=0)
     geoapify_api_key: SecretStr | None = None
     database_url: SecretStr | None = None
+    mongodb_uri: SecretStr | None = None
+    mongodb_db: str = "pathpulse"
 
     explain_budget_s: float = 4.0
     groq_budget_s: float = 1.6

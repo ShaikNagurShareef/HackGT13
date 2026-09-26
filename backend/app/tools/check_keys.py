@@ -12,6 +12,7 @@ import httpx
 import psycopg
 
 from app.config import get_settings
+from app.repositories.reports import ReportsRepository
 
 OK, MISSING, FAIL = "OK     ", "MISSING", "FAIL   "
 
@@ -78,6 +79,17 @@ def check_tiger(url: str | None) -> tuple[str, str]:
     return (OK, "timescaledb + postgis available") if not missing else (FAIL, f"missing {missing}")
 
 
+async def check_mongo(repo: ReportsRepository) -> tuple[str, str]:
+    """MongoDB Atlas: ping, then confirm the geo, TTL, and unique indexes exist."""
+    if not repo.configured:
+        return MISSING, "MONGODB_URI (community reports hidden)"
+    if await repo.ping() != "ok":
+        return FAIL, "ping failed (check the URI and Atlas network access list)"
+    if not await repo.indexes_ok():
+        return FAIL, "ping ok, indexes MISSING (start the API once to create them)"
+    return OK, "ping ok, indexes OK"
+
+
 def secret(value: object) -> str | None:
     return value.get_secret_value() if value else None  # type: ignore[attr-defined]
 
@@ -94,6 +106,9 @@ async def main() -> int:
             ),
         }
     results["Tiger Data"] = check_tiger(secret(cfg.database_url))
+    mongo = ReportsRepository(secret(cfg.mongodb_uri), cfg.mongodb_db)
+    results["MongoDB"] = await check_mongo(mongo)
+    await mongo.close()
     for name, (status, note) in results.items():
         print(f"{status} {name:<11} {note}")
     return 1 if any(s == FAIL for s, _ in results.values()) else 0

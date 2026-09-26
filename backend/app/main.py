@@ -22,12 +22,14 @@ from app.api.envelope import (
     validation_error_handler,
 )
 from app.api.extras import extras
+from app.api.reports import reports
 from app.config import Settings, get_settings
 from app.domain.router import Router
 from app.middleware import RateLimitMiddleware
 from app.repositories.artifacts import load_bundle
 from app.repositories.hexes import load_hexes
 from app.repositories.history import HistoryRepository
+from app.repositories.reports import ReportsRepository
 from app.services.explain.providers import GeminiProvider, GroqProvider, Provider
 from app.services.explain.service import ExplainService
 from app.services.geocode import GeocodeService
@@ -77,7 +79,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             app.state.tts = TtsService(
                 client, eleven, cfg.elevenlabs_voice_id, cfg.elevenlabs_model, cfg.tts_daily_budget
             )
+            street_reports: ReportsRepository = app.state.reports
+            if street_reports.configured and not await street_reports.ensure_indexes():
+                log.warning("street report indexes not ensured; community reports may be hidden")
             yield
+            await street_reports.close()
 
     app = FastAPI(title="PathPulse API", version=bundle.model_version, lifespan=lifespan)
     app.state.bundle = bundle
@@ -87,6 +93,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.routes_cache = LRUCache(maxsize=ROUTES_CACHE_SIZE)
     db_url = cfg.database_url.get_secret_value() if cfg.database_url else None
     app.state.history = HistoryRepository(db_url)
+    mongo_uri = cfg.mongodb_uri.get_secret_value() if cfg.mongodb_uri else None
+    app.state.reports = ReportsRepository(mongo_uri, cfg.mongodb_db)  # no I/O until first use
     app.add_middleware(
         RateLimitMiddleware,
         per_minute=cfg.rate_limit_per_minute,
@@ -105,6 +113,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(api)
     app.include_router(extras)
     app.include_router(areas)
+    app.include_router(reports)
     app.mount(
         f"/static/{bundle.model_version}",
         StaticFiles(directory=bundle.root),

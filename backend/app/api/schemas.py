@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+from app.domain.reports import ReportCategory
 
 Condition = Literal["live", "dry", "wet"]
 
@@ -55,6 +58,34 @@ class RouteOut(BaseModel):
     alerts: list[AlertOut] = []
 
 
+class ReportRequest(BaseModel):
+    """Only a segment and a fixed category: location comes from the segment, never the client."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    seg_id: int = Field(ge=0)
+    category: ReportCategory
+
+
+class ReportOut(BaseModel):
+    seg_id: int
+    category: ReportCategory
+    label: str
+    street: str
+    lon: float
+    lat: float
+    confirmations: int
+    updated_at: datetime
+    expires_at: datetime
+
+
+class ReportSummaryOut(BaseModel):
+    category: ReportCategory
+    label: str
+    reports: int
+    confirmations: int
+
+
 class RoutesData(BaseModel):
     condition_used: ConditionUsed
     depart_at: str
@@ -67,6 +98,7 @@ class RoutesData(BaseModel):
     unavoidable: list[str]
     avoided: list[NamedSegmentOut] = []
     route_key: str
+    reports: list[ReportOut] = []  # community context only; never part of scores or evidence
 
 
 class FactorOut(BaseModel):
@@ -119,3 +151,4 @@ class HealthData(BaseModel):
     segments: int
     graph_nodes: int
     database: Literal["ok", "unavailable", "not_configured"]
+    reports: Literal["ok", "unavailable", "not_configured"] = "not_configured"
