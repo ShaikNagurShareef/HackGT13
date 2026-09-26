@@ -2,6 +2,9 @@
 
 **See traffic risk before you walk into it.**
 
+**Try it:** [Live demo (GitHub Pages)](https://shaiknagurshareef.github.io/HackGT13/). This is the scripted Klaus → Midtown MARTA scenario and works offline.
+The full live app (any route, City Pulse, live weather) runs from `deploy/run_live.sh` behind a Cloudflare tunnel. See the Devpost page for the current URL.
+
 PathPulse is a pedestrian traffic-risk forecaster for Atlanta. It learns from public crash records where and when people on foot get hit by vehicles. It turns that into a map that changes by hour and weather (**Risk Tides**). It also offers a walking route that trades a few minutes for much less exposure to high-risk streets.
 
 Every score is explainable: a trained model produces it, the score is split exactly into the factors that drive it, and an LLM turns that evidence into one plain-English sentence. The LLM never produces a number.
@@ -119,6 +122,8 @@ cd frontend && npm test -- --coverage && npx playwright test
 ```
 
 ## Sponsor technology, and the job each one does
+
+These integrations are implemented and tested. Each one switches on when its key is present in `backend/.env`, which `deploy/go.sh` verifies. Without keys, PathPulse falls back gracefully: template explanations, the device voice, and in-memory history.
 
 - **Groq** (`openai/gpt-oss-120b`, fallback `gpt-oss-20b`): fast, grounded one-to-three-sentence explanations.
 - **Gemini API:** second provider in the explanation chain.

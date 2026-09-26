@@ -1,0 +1,37 @@
+# Local production-like server for the Cloudflare quick tunnel (no accounts needed).
+# Mirrors deploy/Caddyfile: SPA + versioned artifacts + /api -> uvicorn on :8000.
+{
+	admin off
+	auto_https off
+	servers {
+		# cloudflared connects from localhost; trust it so visitors keep distinct IPs.
+		trusted_proxies static 127.0.0.1/32 ::1
+		client_ip_headers Cf-Connecting-Ip X-Forwarded-For
+	}
+}
+
+:8080 {
+	encode zstd gzip
+	header {
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(self)"
+		-Server
+	}
+
+	handle_path /api/* {
+		reverse_proxy 127.0.0.1:8000
+	}
+
+	handle_path /static/* {
+		root * {$PP_ROOT}/artifacts
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+
+	handle {
+		root * {$PP_ROOT}/frontend/dist
+		try_files {path} /index.html
+		file_server
+	}
+}

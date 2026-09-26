@@ -48,3 +48,4 @@ data/interim/
 
 # Deploy state
 deploy/.host
+deploy/.tunnel_url
