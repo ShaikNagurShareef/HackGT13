@@ -22,7 +22,9 @@ rsync -az --delete -e "${RSYNC_RSH:-ssh}" \
 rsync -az -e "${RSYNC_RSH:-ssh}" "$ROOT/artifacts/$VERSION" "$HOST:/srv/pathpulse/artifacts/"
 rsync -az --delete -e "${RSYNC_RSH:-ssh}" "$ROOT/frontend/dist/" "$HOST:/srv/pathpulse/web/"
 if [ -f "$ROOT/backend/.env" ]; then
-  rsync -az -e "${RSYNC_RSH:-ssh}" --chmod=F600 "$ROOT/backend/.env" "$HOST:/srv/pathpulse/app/backend/.env"
+  # Stream over ssh with umask 077 so the secrets file is never world-readable (macOS
+  # rsync has no --chmod).
+  ${RSYNC_RSH:-ssh} "$HOST" 'umask 077; cat > /srv/pathpulse/app/backend/.env' <"$ROOT/backend/.env"
 fi
 
 echo "==> installing and restarting"
@@ -46,7 +48,7 @@ systemctl daemon-reload
 systemctl enable --now pathpulse
 systemctl restart pathpulse
 systemctl reload caddy || systemctl restart caddy
-sleep 2
+for _ in \$(seq 1 30); do curl -fsS http://127.0.0.1:8000/healthz >/dev/null 2>&1 && break; sleep 1; done
 curl -fsS http://127.0.0.1:8000/healthz >/dev/null && echo "API healthy"
 EOF
 

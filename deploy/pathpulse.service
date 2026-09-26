@@ -11,6 +11,9 @@ WorkingDirectory=/srv/pathpulse/app/backend
 EnvironmentFile=/srv/pathpulse/app/backend/.env
 Environment=APP_ENV=production
 Environment=ARTIFACTS_DIR=/srv/pathpulse/artifacts/current
+# libpq probes ~/.postgresql for client certs; with ProtectHome=true /home is unreadable and the
+# probe fails the connection. A HOME outside /home keeps the hardening and lets Tiger connect.
+Environment=HOME=/srv/pathpulse
 ExecStart=/srv/pathpulse/app/.venv/bin/uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --workers 1 --proxy-headers --forwarded-allow-ips 127.0.0.1
 Restart=always
 RestartSec=2

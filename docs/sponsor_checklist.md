@@ -15,18 +15,17 @@ Status as of Sat Sep 26, 2026, 7:00 AM ET. Submit on Devpost by **Sun 07:30** (h
 - [ ] Show the hourly chart in the demo video
 
 ### Vultr: Best Use of Vultr
-- [x] Account created and logged in
-- [x] Promo code found in the MLH email "Everything you'll need to know from MLH at HackGT 13"
-- [ ] **Apply it** at Vultr → Billing → Gift Code (sign in through mlh.link/vultr-giftcode). Blocking: Vultr won't enable the API on an unfunded account.
-- [ ] Enable API access, create the key, save `VULTR_API_KEY`
-- [ ] `deploy/go.sh pathpro.tech`: create the VM (Atlanta region), bootstrap, deploy with Caddy and systemd, load Tiger, smoke-test
-- [ ] Stop the laptop tunnel (`deploy/tunnel_watchdog.sh`) once Vultr serves the app
-- [ ] If Vultr isn't live by submission, remove the "Vultr hosts…" claim from `docs/devpost.md` and the README
+- [x] $100 MLH gift code applied (credit expires Oct 27, 2026); API access enabled; `VULTR_API_KEY` in `backend/.env`
+- [x] VM `pathpulse`: Atlanta (`atl`), Ubuntu 24.04, 1 vCPU / 2 GB, IP 155.138.233.35
+- [x] Caddy (automatic HTTPS, security headers) + hardened systemd unit + ufw; deployed with `deploy/go.sh`
+- [x] Live and verified end to end at https://155-138-233-35.sslip.io: routes, Groq explanations, ElevenLabs audio, Geoapify search, Tiger hourly history, MongoDB reports
+- [x] Laptop tunnel retired; Vultr is the only host
+- [ ] Delete the leaked "Default" API key in Vultr → Account → API (the deploy uses the `pathpro-deploy` key)
 
 ### .tech domains: Best .tech Domain
 - [x] .tech promo code claimed on MLH (free for 1 year; **expires Mon Sep 28, 8 PM ET**; redeem at get.tech)
 - [ ] Register **pathpro.tech** ("path protect", a pun as the MLH coach asked) at get.tech with the code from the MLH email. Checked Sep 26: available; backups `walkpro.tech`, `pathde.tech` ("path detect")
-- [ ] Add an A record pointing to the Vultr VM IP; Caddy issues HTTPS automatically
+- [ ] Add an A record `@` → 155.138.233.35 (and `www` → same); Caddy issues HTTPS automatically once DNS resolves
 - [ ] Confirm https://pathpro.tech loads the app
 
 ### ElevenLabs: Best Use of ElevenLabs
@@ -66,7 +65,7 @@ Job: community street reports. Tiger Data stays the system of record for crashes
 - [x] UI: "Report a street issue" chips on the street sheet, violet dots on the map, a line on the route card; hidden in `?demo=1`
 - [x] `check_keys` MongoDB line (ping + indexes); `MONGODB_URI` pattern in `deploy/capture_keys.py`
 - [x] Free M0 cluster `pathpulse` (AWS us-east-1) live; `MONGODB_URI` in `backend/.env`; `/healthz` reports `ok`; live end-to-end test passed (report, confirmation, viewport, summary)
-- [ ] Allow the Vultr VM's IP in Atlas → Network Access when the server exists
+- [x] Vultr VM IP (155.138.233.35) allowed in Atlas → Network Access
 - [ ] Demo it in the video: report "Crossing signal out" on a street, then show the dot on the map and the line on the route card
 
 ## Submission
