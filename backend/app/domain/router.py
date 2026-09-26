@@ -86,6 +86,32 @@ def _signal_length(route: RouteMetrics, penalty: np.ndarray) -> float:
     return float(sum(s.length_m * (penalty[s.edge] - 1.0) for s in route.edges))
 
 
+def choose_lit_plan(
+    default: RoutePlan, candidates: list[RouteMetrics], penalty: np.ndarray, budget: float
+) -> RoutePlan:
+    """The lit-and-busy pick, or `default` unless it is meaningfully better lit or busier.
+
+    Candidates must fit the detour budget and add at most 10% traffic exposure over the
+    fastest route; the one with the least unlit-or-quiet length wins, and it must cut that
+    length by 15% against the route the default plan would show.
+    """
+    fastest = default.fastest
+    shown = default.pathpro or fastest
+    cap = fastest.exposure * (1 + MAX_EXTRA_EXPOSURE)
+    ok = [c for c in candidates if c.duration_s <= budget + 1e-6 and c.exposure <= cap]
+    best = min(
+        ok, key=lambda c: (_signal_length(c, penalty), c.exposure, c.duration_s), default=None
+    )
+    if best is None or best.nodes in (fastest.nodes, shown.nodes):
+        return default
+    base = _signal_length(shown, penalty)
+    if base <= 0 or _signal_length(best, penalty) > base * (1 - MIN_SIGNAL_GAIN):
+        return default
+    unavoidable = tuple(sorted(fastest.high_risk_names & best.high_risk_names))
+    code = "long_trip" if _is_long(fastest) else "ok"
+    return RoutePlan(fastest, best, code, None, unavoidable)
+
+
 class Router:
     PREFERENCES = (DEFAULT_PREFERENCE, LIT_AND_BUSY)
 
@@ -194,8 +220,8 @@ class Router:
         penalty = self._penalty(depart, prefer)
         if penalty is None:
             return default
-        search = (origin, dest, area, budget, density)
-        return self._lit_and_busy(search, fastest, penalty, depart, wet) or default
+        lit = self._lit_candidates(origin, dest, area, density, penalty, depart, wet)
+        return choose_lit_plan(default, lit, penalty, budget)
 
     def _penalty(self, depart: datetime, prefer: str) -> np.ndarray | None:
         """Per undirected edge penalty, only for the lit-and-busy preference after dark."""
@@ -203,34 +229,25 @@ class Router:
             return None
         return signal_penalty(self.signals, day_part_at(depart))
 
-    def _lit_and_busy(
+    def _lit_candidates(
         self,
-        search: tuple[int, int, np.ndarray | None, float, np.ndarray],
-        fastest: RouteMetrics,
+        origin: int,
+        dest: int,
+        area: np.ndarray | None,
+        density: np.ndarray,
         penalty: np.ndarray,
         depart: datetime,
         wet: bool,
-    ) -> RoutePlan | None:
-        origin, dest, area, budget, density = search
+    ) -> list[RouteMetrics]:
         directed = penalty[self.edge_of]
-        candidates = []
-        for lam in (0.0, *LAMBDA_LADDER):
-            cost = self.time_s * (1 + lam * density) * directed
-            candidates.append(self._measure(self._shortest(origin, dest, cost, area), depart, wet))
-        cap = fastest.exposure * (1 + MAX_EXTRA_EXPOSURE)
-        ok = [c for c in candidates if c.duration_s <= budget + 1e-6 and c.exposure <= cap]
-        best = min(
-            ok, key=lambda c: (_signal_length(c, penalty), c.exposure, c.duration_s), default=None
-        )
-        if best is None or best.nodes == fastest.nodes:
-            return None
-        base = _signal_length(fastest, penalty)
-        better_lit = base > 0 and _signal_length(best, penalty) <= base * (1 - MIN_SIGNAL_GAIN)
-        if not (better_lit or _meaningfully_lower(fastest, best)):
-            return None
-        unavoidable = tuple(sorted(fastest.high_risk_names & best.high_risk_names))
-        code = "long_trip" if _is_long(fastest) else "ok"
-        return RoutePlan(fastest, best, code, None, unavoidable)
+        return [
+            self._measure(
+                self._shortest(origin, dest, self.time_s * (1 + lam * density) * directed, area),
+                depart,
+                wet,
+            )
+            for lam in (0.0, *LAMBDA_LADDER)
+        ]
 
     def _decide(
         self, fastest: RouteMetrics, best: RouteMetrics, overall: RouteMetrics
