@@ -15,8 +15,12 @@ const LAMP_ALPHA_RANGE = 130
 const LAMP_RADIUS_PX = 11
 const BUSY_RING: RGBA = [205, 232, 255, 225]
 const BUSY_RADIUS_PX: Record<'moderate' | 'busy', number> = { moderate: 5, busy: 9 }
-const BLUE_LIGHT_PX = 30
-const HELP_PX = 22
+// Help icons are sized on the ground so a campus full of call boxes doesn't bury the map when
+// zoomed out; min/max pixels keep them visible far out and tappable up close.
+const BLUE_LIGHT_M = 26
+const HELP_M = 20
+const ICON_MIN_PX = 9
+const ICON_MAX_PX = 30
 const TRANSITION_MS = 400
 
 export const SAFETY_TOOLTIP_STYLE = {
@@ -99,8 +103,10 @@ function helpLayer(input: SafetyMapInput): Layer {
     iconMapping: mapping,
     getIcon: (d) => d.kind,
     getPosition: (d) => [d.lon, d.lat],
-    getSize: (d) => (d.kind === 'blue_light' ? BLUE_LIGHT_PX : HELP_PX),
-    sizeUnits: 'pixels',
+    getSize: (d) => (d.kind === 'blue_light' ? BLUE_LIGHT_M : HELP_M),
+    sizeUnits: 'meters',
+    sizeMinPixels: ICON_MIN_PX,
+    sizeMaxPixels: ICON_MAX_PX,
     pickable: true,
     onClick: (info: PickingInfo<HelpPoint>) => {
       if (info.object) input.onPick({ kind: 'help', point: info.object })
