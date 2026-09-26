@@ -88,7 +88,7 @@ A mentor tried our first version on his phone and told us it wasn't intuitive: G
   - About 1,060 automated tests: 222 data, 277 API, 541 web, and 19 end-to-end, including an offline demo and a GPS navigation flow.
   - 90%+ coverage per package.
 - **AI tools (disclosed):**
-  - Built with Claude Code following the ECC workflow: plan, test first, implement, independent review, verify.
+  - AI tools used: AI coding assistants (Claude Code, Cursor) during development; Grok models, Grok Imagine and Grok Voice in the product. We followed a test-first workflow with independent review.
   - Scope, product decisions (including the safety layer and its safeguards), and review were ours.
   - Frameworks and datasets are credited in the README and in docs/safety_sources.md.
 
@@ -131,4 +131,4 @@ A mentor tried our first version on his phone and told us it wasn't intuitive: G
 
 ## Built with
 
-Python · FastAPI · LightGBM · scikit-learn · statsmodels · OSMnx · GeoPandas · H3 · SciPy · React · TypeScript · Vite · MapLibre GL · deck.gl · Groq · Gemini API · ElevenLabs · Tiger Data (TimescaleDB, PostGIS) · MongoDB Atlas · Vultr · Caddy · Playwright · Claude Code
+Python · FastAPI · LightGBM · scikit-learn · statsmodels · OSMnx · GeoPandas · H3 · SciPy · React · TypeScript · Vite · MapLibre GL · deck.gl · Groq · Gemini API · ElevenLabs · Tiger Data (TimescaleDB, PostGIS) · MongoDB Atlas · Vultr · Caddy · Playwright

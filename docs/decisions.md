@@ -23,7 +23,7 @@ This log records what we decided while building PathPro, when, why, and what we 
 
 | When | Decision | Why |
 | --- | --- | --- |
-| Fri evening | Build from our PRD (`Requirements (PRD).md`) using the ECC workflow: plan → failing test → implement → independent review → verify. | Hackathon speed without losing correctness; every feature lands with tests. |
+| Fri evening | Build from our PRD (`Requirements (PRD).md`) using a test-first workflow: plan → failing test → implement → independent review → verify. | Hackathon speed without losing correctness; every feature lands with tests. |
 | Fri evening | Use prior hackathon projects (e.g. lumos.ai) as **reference only**, never as code or design to match. | Originality; avoid copying another team's approach. |
 | Fri evening | Core claim: **forecast pedestrian traffic risk from real crash outcomes with pedestrian exposure**, validated on a future year against the City's own High Injury Network. | A model judges can check is stronger than a hand-weighted score. |
 | Fri evening | **Honest numbers only.** Every metric on screen comes from `docs/metrics.json` with confidence intervals; the LLM never produces a number. | Judges and users should be able to trust every figure. |
@@ -117,7 +117,7 @@ This log records what we decided while building PathPro, when, why, and what we 
 | Sat | Keep an **offline demo** (`?demo=1`) with recorded responses for walking, riding, safety, and MARTA. | The expo Wi-Fi may fail. |
 | Sat | Demo video v2 (about 6 min): the CodingClaws intro; motivation (late-night walks, and friends, especially women, planning around well-lit, busier streets); how PathPro differs from existing apps; usability; the risks PathPro shows (traffic, reported crimes against persons, lighting, weather, hazards); who it's for; results and ROI; one scene per sponsor; ElevenLabs narration, burned-in captions plus SRT/VTT, and a soft music bed. | The team's request: 3–5 minutes, slightly over allowed. |
 | Sat | ROI framing from our own holdout numbers: the same budget on 10% of streets reaches about 38% more pedestrian crashes (and about 60% more cyclist crashes) than the High Injury Network. The one national figure (NHTSA's $340 billion economic cost) is cited from its primary source. | Impact claims we can defend. |
-| Sat | Keep "we" throughout. PathPro is a team project, and AI tools (Claude Code with the ECC workflow) are disclosed. | Accurate attribution. |
+| Sat | Keep "we" throughout. PathPro is a team project; AI tools are disclosed on Devpost. | Accurate attribution. |
 
 ## 11. Things we deliberately did not do
 

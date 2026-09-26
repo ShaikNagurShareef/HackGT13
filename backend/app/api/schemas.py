@@ -1,4 +1,4 @@
-"""Request and response schemas (separate models per ECC FastAPI rules)."""
+"""Request and response schemas (separate request and response models)."""
 
 from __future__ import annotations
 

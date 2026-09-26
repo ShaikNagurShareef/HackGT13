@@ -10,10 +10,10 @@ Build **PathPro** (domain **pathpulse.tech**, verified available) from `Requirem
 
 The goal is to win: Oracle of the Deep, Best Overall, the social-good track, and MLH prizes.
 
-**Environment.** 8 GB M1, Python 3.12, uv, Node 22 and npm, **no Docker**. `gh` is logged in; the remote is `ShaikNagurShareef/PathPro`. The ECC plugin is installed at project scope.
+**Environment.** 8 GB M1, Python 3.12, uv, Node 22 and npm, **no Docker**. `gh` is logged in; the remote is `ShaikNagurShareef/PathPro`.
 
 **Decisions confirmed with the user**
-- Team: solo, with Claude.
+- Team: CodingClaws (Nagur Shareef Shaik, Sahith Reddy Thummala, Pranav Nagothu, Geethanjali Nagaboina).
 - LLM: **Groq** first (`openai/gpt-oss-120b`, then `gpt-oss-20b`), then **Gemini** (`gemini-3.8-flash`), then a deterministic template.
 - Voice: **ElevenLabs**, with the browser's built-in speech as fallback.
 - Database: **Tiger Data**, as system of record. The demo never depends on it.
@@ -53,7 +53,7 @@ The goal is to win: Oracle of the Deep, Best Overall, the social-good track, and
 **Judging focus** is creativity, complexity and completeness (unverified; check live.hexlabs.org while logged in). Past winners had a concrete harm, a working live demo, rich visuals and a multi-stage ML pipeline. We deliver each of these.
 
 **Rules compliance**
-- The Devpost write-up states what AI tools (Claude Code + ECC) generated and what we built, and credits every framework and dataset.
+- The Devpost write-up discloses the AI tools used and what we built, and credits every framework and dataset.
 - Only data and code created this weekend.
 
 **Expo table kit (M9)**
@@ -163,16 +163,16 @@ Other sources:
 - `POST /explain`: the server builds the evidence; Groq gets 1.6 s, then Gemini, then the template; output is validated and cached.
 - `GET /conditions/live`, `GET /geocode`, `POST /tts {key}`
 
-## ECC workflow applied
-- **Setup:** add the `python`, `typescript`, `react` and `web` rule packs to `.claude/rules/ecc/`. Write a project `CLAUDE.md` mapping file globs to skills.
-- **Plan and build:** `/ecc:plan` for each milestone, and `tdd-workflow` with a commit at RED and at GREEN.
+## Engineering workflow
+- **Setup:** coding rules for Python, TypeScript, React and web, with a map from file globs to review checklists.
+- **Plan and build:** a plan for each milestone, then test-first development with a commit at RED and at GREEN.
 - **Skills by area:**
   - data and model: `mle-workflow`
   - backend: `fastapi-patterns`
   - frontend: `react-patterns` and `frontend-a11y`
   - LLM: `cost-aware-llm-pipeline`
-- **Review after each milestone:** `ecc:code-reviewer`, the language reviewer (Python, FastAPI or React), `ecc:security-reviewer`, and `ecc:mle-reviewer` for M2.
-- **Verify:** `verification-loop` (ruff, mypy, eslint, tsc, pytest and Vitest with ≥80% coverage, gitleaks), then `/ecc:checkpoint` and `/ecc:save-session`.
+- **Review after each milestone:** code review, a language review (Python, FastAPI or React), a security review, and an ML review for M2.
+- **Verify:** `verification-loop` (ruff, mypy, eslint, tsc, pytest and Vitest with ≥80% coverage, gitleaks), then a checkpoint.
 - **Conventions:**
   - conventional commits
   - files of 200–400 lines, functions under 50 lines

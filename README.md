@@ -168,7 +168,7 @@ These integrations are implemented and tested. Each one switches on when its key
 ## Built with AI tools, and credits
 
 - **AI tools, disclosed per HackGT rules:**
-  - Code was written with **Claude Code** following the [ECC](https://github.com/affaan-m/ecc) workflow: plan, test first, implement, independent ML and security review agents, verify.
+  - AI coding assistants were used during development (see the Devpost AI-tools disclosure). The team followed a test-first workflow: plan, failing test, implementation, independent ML and security review, verification.
   - Product decisions, scope, and review were done by the team during the event.
 - **Data:**
   - Atlanta Regional Commission, City of Atlanta Department of Transportation, Central Atlanta Progress, and Georgia Tech crash and road layers

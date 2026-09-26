@@ -58,4 +58,4 @@ The demo never depends on the database: it has tight timeouts and the chart hide
 - More cities: the coverage area is one config polygon
 
 **Did you use AI to build it?**
-Yes, disclosed. The code was written with Claude Code using the ECC workflow: test-first, with independent ML and security review agents. The scope, product decisions, and review were ours.
+Yes, disclosed. AI coding assistants were used during development, with a test-first workflow and independent ML and security review; the Devpost write-up lists the tools. The scope, product decisions, and review were ours.

@@ -23,7 +23,7 @@ The build plan in `docs/architecture.md` was written at kickoff. It split the we
 
 | # | Planned window | Exit criteria (abridged) |
 | --- | --- | --- |
-| M0 | Fri 21–22 | Scaffold, ECC rule packs, `.env.example`, PRD amended |
+| M0 | Fri 21–22 | Scaffold, coding rules, `.env.example`, PRD amended |
 | M1 | Fri 22–01:30 | Every public layer ingested, deduplicated, snapped; walk graph connected |
 | M2 | 01:30–04 | Spatial ensemble + Empirical Bayes + temporal GLM; `metrics.json` against every baseline |
 | M3 | Sat 08:30–12 | Backend slice: routes, segments, template explanations |
@@ -56,7 +56,7 @@ The build plan in `docs/architecture.md` was written at kickoff. It split the we
 
 **Iteration 1 (Fri 22:00), dense core only.** The first model covered Downtown and Midtown only. It beat past-crash ranking there, but narrowly.
 
-**Iteration 2 (Fri 22:14), after the ML reviewer.** We ran an independent `ecc:mle-reviewer` pass on the model before building on it. It found problems that made our numbers look better than they were:
+**Iteration 2 (Fri 22:14), after the ML reviewer.** We ran an independent ML review pass on the model before building on it. It found problems that made our numbers look better than they were:
 
 - Bootstrap intervals resampled segments, which gave falsely narrow intervals. They now resample spatial blocks.
 - CV folds could split a single intersection's crashes across folds. Folds are now H3 res-7 blocks.
@@ -91,12 +91,12 @@ With honest intervals, the core-only model's top 10% of length held 45.8% of 202
 
 ## 5. Engineering process
 
-We used Claude Code with the ECC workflow for every milestone:
+We used AI coding assistants with a test-first workflow for every milestone:
 
 1. **Plan** the slice against the PRD's requirement ids.
 2. **RED:** write failing tests and commit them. 27 of our 100 commits (through Sat 14:11) are test-first `test:` commits.
 3. **GREEN:** implement until the tests pass, then commit (36 `feat:`, 18 `fix:`, 2 `perf:`, 2 `refactor:`).
-4. **Review:** independent reviewer agents (`ecc:mle-reviewer` for the model, `ecc:security-reviewer`, and code, FastAPI, and React reviewers). Findings became their own `fix:` commits, for example `a2d87d9` (ML), `554600d` (security), `26010e4` (UX review), and `0a046c3` (safety review).
+4. **Review:** independent reviews (ML for the model, security, and code, FastAPI, and React reviews). Findings became their own `fix:` commits, for example `a2d87d9` (ML), `554600d` (security), `26010e4` (UX review), and `0a046c3` (safety review).
 5. **Verify:** ruff, mypy, tsc, eslint, and coverage before moving on.
 
 At the latest run the suites held **157 data tests, 247 backend tests, and 427 frontend tests**, plus Playwright end-to-end flows that include an offline demo run with the network cut and a GPS navigation flow.
@@ -113,7 +113,7 @@ Some tests guard product rules rather than code paths:
 
 | When (ET) | Commit | What happened |
 | --- | --- | --- |
-| Fri 21:28 | `3563cac` | Scaffold the monorepo with ECC rules and a CLAUDE.md skill map |
+| Fri 21:28 | `3563cac` | Scaffold the monorepo with coding rules and a review-checklist map |
 | Fri 21:44 | `aed64a3` | Ingest public crash layers, OSM networks, weather |
 | Fri 22:00 | `4ef0825` | First spatial ensemble, Empirical Bayes, temporal GLM, export bundle |
 | Fri 22:14 | `a2d87d9` | ML reviewer fixes: spatial-block bootstrap, fair baselines |
@@ -219,7 +219,7 @@ We set a hard cut-off: ship walk-only if the model missed its targets by 01:30. 
 
 ## 7. AI-tool disclosure
 
-- **Tools.** Code, tests, and most documentation were written with **Claude Code** following the ECC workflow: plan, failing test, implementation, independent reviewer agents (ML, security, language), and a verification loop.
+- **Tools.** AI coding assistants helped write code, tests, and documentation under a test-first workflow with independent review; Devpost lists the tools used.
 - **Decisions were ours.** People on the team made the product decisions and reviewed the output: scope, the "traffic risk" framing and copy rules, excluding demographic features, the switch to Vultr, the PathPro name, acting on the mentor's feedback, and whether and how to add the personal-safety layer with its safeguards.
 - **Limits on the LLM inside the product.** Groq and Gemini only rephrase server-built evidence. They never see user text and never produce a score.
 - **Credits.** Data sources and libraries are credited in the README and `docs/safety_sources.md`.

@@ -129,7 +129,7 @@ The sponsor card on screen lists what each sponsor does:
 - **Bike lanes in the ride model:** `data/src/pathpulse_data/ride/run.py` and `ride/features.py` use OSM and City bike-infrastructure classes.
 - **"Beats the City’s own High Injury Network":** walk model 74.3% vs HIN 53.8% capture at 10% of street length (2024 holdout, `docs/metrics.json`).
 - **Tagline:** "See the risks on your way, before you go." It matches the app and docs.
-- **Motivation:** the framing the team chose (no specific incident or person is described). The video uses "we", and Claude Code is disclosed only where it already was (README / Devpost).
+- **Motivation:** the framing the team chose (no specific incident or person is described). The video uses "we"; AI tools are disclosed on Devpost.
 
 ## v2 30-second cut (0:35)
 

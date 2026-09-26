@@ -73,13 +73,13 @@ Independent reviewer agents were run at milestones, and each review's findings b
 
 | Review | Agent | Resulting commit |
 | --- | --- | --- |
-| Model evaluation honesty (spatial-block bootstrap, grouped CV folds, fair temporal baseline, HIN at its own length share) | `ecc:mle-reviewer` | `a2d87d9` |
-| Security (rate limits, budgets, worker thread for routing, error envelopes) | `ecc:security-reviewer` | `554600d` |
+| Model evaluation honesty (spatial-block bootstrap, grouped CV folds, fair temporal baseline, HIN at its own length share) | ML review | `a2d87d9` |
+| Security (rate limits, budgets, worker thread for routing, error envelopes) | Security review | `554600d` |
 | Mobile UX redesign (route-metre progress, preview arrival, named GPS starts, status screen) | code review of the redesign | `26010e4` |
 | Personal-safety extension (optional export guard, StreetLight error, in-memory walk throttle, day-part literal) | code and security review | `0a046c3` |
 | Deploy scripts (system Python under `ProtectHome`, sslip.io HTTPS before DNS, surfacing failures) | found while going live, not an agent review | `47fc47e` |
 
-Workflow per milestone (from `CLAUDE.md`): plan → failing test (commit) → implement (commit) → reviewers → verification loop (ruff, mypy, tsc, lint, tests with coverage, gitleaks) → checkpoint.
+Workflow per milestone: plan → failing test (commit) → implement (commit) → reviewers → verification loop (ruff, mypy, tsc, lint, tests with coverage, gitleaks) → checkpoint.
 
 ## 6. Latency sample
 

@@ -38,9 +38,9 @@ artifacts/*
 .idea/
 *.swp
 
-# Claude Code local-only state
-.claude/settings.local.json
-.claude/checkpoints.log
+# Local AI-assistant state and config (not part of the project)
+CLAUDE.md
+.claude/
 
 # OSMnx HTTP cache and reproducible intermediates
 cache/

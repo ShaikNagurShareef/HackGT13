@@ -1,4 +1,4 @@
-"""Consistent response envelope: {success, data, error, model_version} (ECC api-design)."""
+"""Consistent response envelope: {success, data, error, model_version}."""
 
 from __future__ import annotations
 
@@ -51,7 +51,7 @@ async def app_error_handler(request: Request, exc: Exception) -> JSONResponse:
 
 
 async def unexpected_error_handler(request: Request, exc: Exception) -> JSONResponse:
-    """Never leak stack traces or internals (ECC security rules)."""
+    """Never leak stack traces or internals ."""
     body = Envelope[None](
         success=False,
         error=ApiError(code="INTERNAL", message="Something went wrong. Please retry."),
