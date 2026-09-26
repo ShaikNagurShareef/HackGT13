@@ -1,13 +1,9 @@
 import { expect, test } from '@playwright/test'
+import { openOptions, pickPopular } from './helpers'
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('pathpro:first-run-seen', '1'))
 })
-
-async function openOptions(page: import('@playwright/test').Page) {
-  await page.getByRole('button', { name: 'Map options', exact: true }).click()
-  return page.getByRole('dialog', { name: 'Map options' })
-}
 
 test('first run explains traffic risk in a toast and remembers dismissal', async ({ page }) => {
   await page.addInitScript(() => localStorage.removeItem('pathpro:first-run-seen'))
@@ -33,8 +29,7 @@ test('Risk Tides slider is keyboard operable with a spoken value (TIDE-04)', asy
 
 test('without GPS, picking a destination then a start routes between covered places', async ({ page }) => {
   await page.goto('/?t=2026-09-25T22:30&cond=wet')
-  await page.getByRole('button', { name: 'Where to?' }).click()
-  await page.getByRole('list', { name: 'Popular near Georgia Tech' }).getByRole('button', { name: 'Midtown MARTA' }).click()
+  await pickPopular(page, 'Midtown MARTA')
 
   await page.getByRole('button', { name: /From.*Choose a start/ }).click()
   await page.getByRole('dialog', { name: 'Choose a start' }).getByRole('button', { name: 'Klaus Building' }).click()
@@ -72,7 +67,6 @@ test('City Pulse: toggle to citywide hexes and open an area card (CITY-01/02)', 
   await options.getByRole('button', { name: 'City Pulse' }).click()
   await expect(options.getByRole('button', { name: 'City Pulse' })).toHaveAttribute('aria-pressed', 'true')
   await options.getByRole('button', { name: 'Close options' }).click()
-  await expect(page.getByRole('button', { name: /Changed options: .*City Pulse/ })).toBeVisible()
   await page.waitForTimeout(2500) // fly-to animation settles
   await page.mouse.click(700, 450)
 

@@ -40,4 +40,20 @@ test.describe('phone layout (UX-02)', () => {
     const covered = boxes.reduce((sum, b) => sum + b.area, 0)
     expect(covered / ((viewport?.width ?? 1) * (viewport?.height ?? 1))).toBeLessThan(0.2)
   })
+
+  test('home is map-first: one search pill, and search opens as a sheet (UX-01)', async ({ page }) => {
+    await page.goto('/?demo=1')
+    await page.getByRole('button', { name: 'Back to map' }).click()
+
+    await expect(page.getByRole('button', { name: 'Where to?' })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Risk Tides timeline' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /Changed options: ☂ Wet/ })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Where to?' }).click()
+    const search = page.getByRole('dialog', { name: 'Where to?' })
+    await expect(search.getByRole('combobox', { name: 'Search places' })).toBeFocused()
+    await expect(search.getByRole('heading', { name: 'Popular near Georgia Tech' })).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(search).toHaveCount(0)
+  })
 })

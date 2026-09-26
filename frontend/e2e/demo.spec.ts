@@ -66,19 +66,17 @@ test.describe('demo mode (DEMO-01)', () => {
     await expect(options.getByRole('slider', { name: 'Hour of day' })).toHaveAttribute('aria-valuetext', /^10 PM/)
   })
 
-  test('home is map-first: one search pill, and search opens as a sheet (UX-01)', async ({ page }) => {
+  test('desktop home: persistent sidebar with inline search, options, and Risk Tides on the map (UX-03)', async ({ page }) => {
     await page.goto('/?demo=1')
     await page.getByRole('button', { name: 'Back to map' }).click()
 
-    await expect(page.getByRole('button', { name: 'Where to?' })).toBeVisible()
-    await expect(page.getByRole('region', { name: 'Risk Tides timeline' })).toHaveCount(0)
-    await expect(page.getByRole('button', { name: /Changed options: ☂ Wet/ })).toBeVisible()
-
-    await page.getByRole('button', { name: 'Where to?' }).click()
-    const search = page.getByRole('dialog', { name: 'Where to?' })
-    await expect(search.getByRole('combobox', { name: 'Search places' })).toBeFocused()
-    await expect(search.getByRole('heading', { name: 'Popular near Georgia Tech' })).toBeVisible()
-    await page.keyboard.press('Escape')
-    await expect(search).toHaveCount(0)
+    const sidebar = page.getByRole('complementary', { name: 'PathPro' })
+    await expect(sidebar).toContainText('See traffic risk before you walk into it.')
+    await expect(sidebar.getByRole('combobox', { name: 'Search places' })).toBeVisible()
+    await expect(sidebar.getByRole('heading', { name: 'Popular near Georgia Tech' })).toBeVisible()
+    await expect(sidebar.getByRole('button', { name: /Wet/ })).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByRole('region', { name: 'Risk Tides timeline' })).toBeVisible()
+    await expect(page.getByRole('slider', { name: 'Hour of day' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Where to?' })).toHaveCount(0)
   })
 })

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { pickPopular } from './helpers'
 
 // Georgia Tech (Klaus Advanced Computing Building area).
 const GT = { latitude: 33.7766, longitude: -84.3963 }
@@ -10,12 +11,10 @@ test.beforeEach(async ({ context, page }) => {
   await page.addInitScript(() => localStorage.setItem('pathpro:first-run-seen', '1'))
 })
 
-test('two taps: "Where to?" then a place routes from "Your location" (GPS-01)', async ({ page }) => {
+test('one tap on desktop (two on phones): a popular place routes from "Your location" (GPS-01)', async ({ page }) => {
   await page.goto('/')
 
-  await page.getByRole('button', { name: 'Where to?' }).click()
-  const search = page.getByRole('dialog', { name: 'Where to?' })
-  await search.getByRole('list', { name: 'Popular near Georgia Tech' }).getByRole('button', { name: 'Midtown MARTA' }).click()
+  await pickPopular(page, 'Midtown MARTA')
 
   await expect(page.getByRole('button', { name: /From.*Your location/ })).toBeVisible()
   await expect(page).toHaveURL(/from=33\.7766\d*%2C-84\.3963\d*%2CYour\+location/)
@@ -24,8 +23,7 @@ test('two taps: "Where to?" then a place routes from "Your location" (GPS-01)', 
 
 test('Start follows GPS and detects arrival; the trip becomes a recent place (GPS-02, ROUT-01)', async ({ page, context }) => {
   await page.goto('/')
-  await page.getByRole('button', { name: 'Where to?' }).click()
-  await page.getByRole('list', { name: 'Popular near Georgia Tech' }).getByRole('button', { name: 'Midtown MARTA' }).click()
+  await pickPopular(page, 'Midtown MARTA')
   await expect(page.getByRole('region', { name: 'Route comparison' })).toBeVisible()
 
   await page.getByRole('button', { name: 'Start', exact: true }).click()
@@ -40,7 +38,6 @@ test('Start follows GPS and detects arrival; the trip becomes a recent place (GP
   // Standing at Midtown MARTA right after the trip: the learned "return" suggestion appears,
   // naming the GPS start after the nearest known place rather than "Your location".
   await expect(page.getByRole('region', { name: 'Suggested trip' })).toContainText('Heading back to Klaus Building?')
-  await page.getByRole('button', { name: 'Where to?' }).click()
   await expect(page.getByRole('list', { name: 'Recent' })).toContainText('Midtown MARTA')
 })
 
@@ -48,8 +45,7 @@ test('outside Atlanta, PathPro asks for a start instead (GPS-03)', async ({ page
   await context.setGeolocation({ latitude: 34.25, longitude: -84.1 })
   await page.goto('/')
 
-  await page.getByRole('button', { name: 'Where to?' }).click()
-  await page.getByRole('list', { name: 'Popular near Georgia Tech' }).getByRole('button', { name: 'Midtown MARTA' }).click()
+  await pickPopular(page, 'Midtown MARTA')
 
   await expect(page.getByRole('status').filter({ hasText: "You're outside Atlanta" })).toBeVisible()
   await page.getByRole('button', { name: 'Pick a start' }).click()
