@@ -34,8 +34,8 @@ cd /srv/pathpulse/app
 ln -sfn "/srv/pathpulse/artifacts/$VERSION" /srv/pathpulse/artifacts/current
 touch backend/.env
 # Production values always win over whatever the laptop .env had for these.
-sed -i -E '/^(ALLOWED_ORIGINS|ARTIFACTS_DIR|APP_ENV)=/d' backend/.env
-printf 'ALLOWED_ORIGINS=%s\nARTIFACTS_DIR=/srv/pathpulse/artifacts/current\nAPP_ENV=production\n' "$ORIGINS" >>backend/.env
+sed -i -E '/^(ALLOWED_ORIGINS|ARTIFACTS_DIR|APP_ENV|IMAGINE_CACHE_DIR)=/d' backend/.env
+printf 'ALLOWED_ORIGINS=%s\nARTIFACTS_DIR=/srv/pathpulse/artifacts/current\nAPP_ENV=production\nIMAGINE_CACHE_DIR=/var/cache/pathpulse-imagine\n' "$ORIGINS" >>backend/.env
 chmod 600 backend/.env
 chown -R pathpulse:pathpulse /srv/pathpulse
 # The service runs with ProtectHome=true, so the venv must use the system Python, not a

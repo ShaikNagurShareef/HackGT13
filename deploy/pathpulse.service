@@ -18,7 +18,9 @@ ExecStart=/srv/pathpulse/app/.venv/bin/uvicorn app.main:create_app --factory --h
 Restart=always
 RestartSec=2
 
-# Hardening: the API only reads its code and artifacts.
+# Hardening: the API only reads its code and artifacts. Its one writable path is the Grok Imagine
+# image cache, which systemd creates as /var/cache/pathpulse-imagine, owned by the service user.
+CacheDirectory=pathpulse-imagine
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
