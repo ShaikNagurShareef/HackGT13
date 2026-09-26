@@ -1,6 +1,6 @@
 /** Voice output: ElevenLabs via the server, falling back to the device voice (VOX-01/03/04). */
 
-import { API_BASE } from '../api/client'
+import { apiBase } from '../api/client'
 import { isDemoMode } from '../api/demo'
 
 export type SpeakRequest =
@@ -33,7 +33,7 @@ export async function speak(request: SpeakRequest, fallbackText: string): Promis
   stopSpeaking()
   if (!isDemoMode()) {
     try {
-      const resp = await fetch(`${API_BASE}/tts`, {
+      const resp = await fetch(`${apiBase()}/tts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(request),

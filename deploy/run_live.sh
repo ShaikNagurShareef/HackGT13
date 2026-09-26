@@ -16,10 +16,10 @@ pkill -f "cloudflared tunnel --no-autoupdate" 2>/dev/null || true
 (cd "$ROOT" && PP_ROOT="$ROOT" nohup caddy run --config deploy/Caddyfile.local --adapter caddyfile \
   >/tmp/pp_caddy.log 2>&1 &)
 pgrep -x caffeinate >/dev/null || (nohup caffeinate -dimsu >/dev/null 2>&1 &)
-(nohup cloudflared tunnel --no-autoupdate --url http://127.0.0.1:8080 >/tmp/pp_tunnel.log 2>&1 &)
+(nohup cloudflared tunnel --no-autoupdate --protocol http2 --url http://127.0.0.1:8080 >/tmp/pp_tunnel.log 2>&1 &)
 
 for _ in $(seq 1 40); do
-  URL="$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/pp_tunnel.log | head -1 || true)"
+  URL="$(grep -aoE 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/pp_tunnel.log | head -1 || true)"
   [ -n "$URL" ] && break
   sleep 1
 done

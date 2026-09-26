@@ -1,3 +1,5 @@
+import { usingFallbackDemo } from './runtime'
+
 /** Offline demo transport (PRD DEMO-01): answers API calls from recorded fixtures. */
 
 export const DEMO_DEPART = '2026-09-25T22:30'
@@ -19,7 +21,7 @@ export function withBase(path: string): string {
 }
 
 export function isDemoMode(search: string = window.location.search): boolean {
-  return FORCE_DEMO || new URLSearchParams(search).get('demo') === '1'
+  return FORCE_DEMO || usingFallbackDemo() || new URLSearchParams(search).get('demo') === '1'
 }
 
 /** Fetch every fixture up front so the demo keeps working after the network drops. */

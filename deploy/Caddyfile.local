@@ -26,6 +26,8 @@
 	handle_path /static/* {
 		root * {$PP_ROOT}/artifacts
 		header Cache-Control "public, max-age=31536000, immutable"
+		# Public model files; the GitHub Pages front end loads them cross-origin.
+		header Access-Control-Allow-Origin "*"
 		file_server
 	}
 

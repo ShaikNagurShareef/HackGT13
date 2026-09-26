@@ -2,8 +2,11 @@
 
 **See traffic risk before you walk into it.**
 
-**Try it:** [Live demo (GitHub Pages)](https://shaiknagurshareef.github.io/HackGT13/). This is the scripted Klaus → Midtown MARTA scenario and works offline.
-The full live app (any route, City Pulse, live weather) runs from `deploy/run_live.sh` behind a Cloudflare tunnel. See the Devpost page for the current URL.
+**Try it: [shaiknagurshareef.github.io/HackGT13](https://shaiknagurshareef.github.io/HackGT13/)**
+
+- **Full live app** when the live server is running: any route in the City of Atlanta, City Pulse, and live weather. The page reads `live.json`, health-checks the live API, and connects to it.
+- **Offline demo** otherwise: the scripted Klaus → Midtown MARTA scenario. Add `?demo=1` to force it.
+- **Keeping it live:** `deploy/tunnel_watchdog.sh` keeps a Cloudflare tunnel up and republishes `live.json` whenever the tunnel changes.
 
 PathPulse is a pedestrian traffic-risk forecaster for Atlanta. It learns from public crash records where and when people on foot get hit by vehicles. It turns that into a map that changes by hour and weather (**Risk Tides**). It also offers a walking route that trades a few minutes for much less exposure to high-risk streets.
 

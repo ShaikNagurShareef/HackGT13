@@ -3,12 +3,16 @@ import { createRoot } from 'react-dom/client'
 import './styles/app.css'
 import './styles/layout.css'
 import App from './App.tsx'
+import { initRuntime } from './api/runtime'
 
 const root = document.getElementById('root')
 if (!root) throw new Error('missing #root element')
 
-createRoot(root).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
+// Resolve the live API (static hosting only) before first render; falls back to the demo.
+void initRuntime(import.meta.env.BASE_URL).finally(() =>
+  createRoot(root).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  ),
 )

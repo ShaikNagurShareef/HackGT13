@@ -20,8 +20,12 @@ import {
 } from './schemas'
 
 import { demoResponse, isDemoMode } from './demo'
+import { getApiOrigin } from './runtime'
 
-export const API_BASE = '/api'
+/** API prefix: same-origin by default, or the live origin resolved from live.json. */
+export function apiBase(): string {
+  return `${getApiOrigin()}/api`
+}
 const TIMEOUT_MS = 8000
 
 export class ApiError extends Error {
@@ -52,7 +56,7 @@ async function request<T extends z.ZodType>(
   try {
     const raw = isDemoMode()
       ? await demoResponse(init?.method ?? 'GET', path, init?.body as string | undefined)
-      : await fetchJson(`${API_BASE}${path}`, { ...init, signal: controller.signal })
+      : await fetchJson(`${apiBase()}${path}`, { ...init, signal: controller.signal })
     const parsed = envelope(schema).safeParse(raw)
     if (!parsed.success) throw new ApiError('BAD_RESPONSE', 'Unexpected response from PathPulse.')
     const body = parsed.data
@@ -72,7 +76,12 @@ export type LatLon = { lat: number; lon: number }
 export type Condition = 'live' | 'dry' | 'wet'
 
 export const api = {
-  meta: (): Promise<Meta> => request('/meta', metaSchema),
+  meta: async (): Promise<Meta> => {
+    const meta = await request('/meta', metaSchema)
+    // Model files live next to the API; make their paths absolute when the API is remote.
+    const origin = isDemoMode() ? '' : getApiOrigin()
+    return origin ? { ...meta, static_base: `${origin}${meta.static_base}` } : meta
+  },
   routes: (origin: LatLon, destination: LatLon, departAt: string, cond: Condition): Promise<Routes> =>
     request('/routes', routesSchema, {
       method: 'POST',
