@@ -23,6 +23,7 @@ from app.api.envelope import (
 )
 from app.api.extras import extras
 from app.api.reports import reports
+from app.api.walks import walks
 from app.config import Settings, get_settings
 from app.domain.router import Router
 from app.middleware import RateLimitMiddleware
@@ -30,6 +31,7 @@ from app.repositories.artifacts import load_bundle
 from app.repositories.hexes import load_hexes
 from app.repositories.history import HistoryRepository
 from app.repositories.reports import ReportsRepository
+from app.repositories.walks import WalksRepository
 from app.services.explain.providers import GeminiProvider, GroqProvider, Provider
 from app.services.explain.service import ExplainService
 from app.services.geocode import GeocodeService
@@ -82,8 +84,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             street_reports: ReportsRepository = app.state.reports
             if street_reports.configured and not await street_reports.ensure_indexes():
                 log.warning("street report indexes not ensured; community reports may be hidden")
+            shared_walks: WalksRepository = app.state.walks
+            if shared_walks.configured and not await shared_walks.ensure_indexes():
+                log.warning("shared walk indexes not ensured; live sharing may be unavailable")
             yield
             await street_reports.close()
+            await shared_walks.close()
 
     app = FastAPI(title="PathPro API", version=bundle.model_version, lifespan=lifespan)
     app.state.bundle = bundle
@@ -95,6 +101,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.history = HistoryRepository(db_url)
     mongo_uri = cfg.mongodb_uri.get_secret_value() if cfg.mongodb_uri else None
     app.state.reports = ReportsRepository(mongo_uri, cfg.mongodb_db)  # no I/O until first use
+    app.state.walks = WalksRepository(mongo_uri, cfg.mongodb_db)
     app.add_middleware(
         RateLimitMiddleware,
         per_minute=cfg.rate_limit_per_minute,
@@ -103,7 +110,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=cfg.origins,
-        allow_methods=["GET", "POST"],
+        allow_methods=["GET", "POST", "PUT"],
         allow_headers=["Content-Type"],
         allow_credentials=False,
     )
@@ -114,6 +121,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(extras)
     app.include_router(areas)
     app.include_router(reports)
+    app.include_router(walks)
     app.mount(
         f"/static/{bundle.model_version}",
         StaticFiles(directory=bundle.root),

@@ -1,7 +1,7 @@
 """Per-client sliding-window rate limits (NFR-11) without extra services.
 
 - General limit is generous: at the expo, every judge shares one venue NAT address.
-- Paid endpoints (/explain, /geocode, /tts) and writes (POST /reports) get a tighter
+- Paid endpoints (/explain, /geocode, /tts) and writes (POST /reports, POST /walks) get a tighter
   per-client limit. Rules are method-aware: the map reads GET /reports on every pan, so
   viewing reports stays on the general limit.
 - The client key is `request.client.host`, which uvicorn's --proxy-headers sets from Caddy's
@@ -30,6 +30,7 @@ PAID_RULES: tuple[tuple[str, str], ...] = (
     (ANY_METHOD, "/geocode"),
     (ANY_METHOD, "/tts"),
     ("POST", "/reports"),
+    ("POST", "/walks"),  # starting a shared walk; position updates have a per-walk throttle
 )
 IPV6_PREFIX = 64
 
