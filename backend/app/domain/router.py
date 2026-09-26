@@ -129,6 +129,17 @@ def choose_lit_plan(
     return RoutePlan(fastest, best, code, None, unavoidable)
 
 
+def _node_pairs(src: np.ndarray, dst: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Per directed edge: an id for its (src, dst) pair, and whether that pair has parallels."""
+    order = np.lexsort((dst, src))
+    s, d = src[order], dst[order]
+    starts = np.ones(len(order), bool)
+    starts[1:] = (s[1:] != s[:-1]) | (d[1:] != d[:-1])
+    pair = np.empty(len(order), np.int64)
+    pair[order] = np.cumsum(starts) - 1
+    return pair, np.bincount(pair)[pair] > 1
+
+
 class Router:
     PREFERENCES = (DEFAULT_PREFERENCE, LIT_AND_BUSY)
 
@@ -144,6 +155,7 @@ class Router:
         self.length_m = np.concatenate([g.edge_len, g.edge_len]).astype(float)
         self.time_s = self.length_m / WALK_SPEED_MPS
         self.n_nodes = len(g.node_lon)
+        self._pair, self._has_parallel = _node_pairs(self.src, self.dst)
         lat0 = float(np.mean(g.node_lat))
         self._kx = M_PER_DEG * np.cos(np.radians(lat0))
         self._tree = cKDTree(np.column_stack([g.node_lon * self._kx, g.node_lat * M_PER_DEG]))
@@ -168,17 +180,27 @@ class Router:
         inside = np.all((xy >= lo) & (xy <= hi), axis=1)
         return inside[self.src] & inside[self.dst]
 
+    def _cheapest_edges(self, cost: np.ndarray, area: np.ndarray | None) -> np.ndarray:
+        """One directed edge per node pair: the cheapest of any parallel edges.
+
+        Only the few pairs with parallel edges are sorted per call; ties keep the lower id.
+        """
+        inside = area if area is not None else np.ones(len(cost), bool)
+        singles = np.flatnonzero(inside & ~self._has_parallel)
+        multi = np.flatnonzero(inside & self._has_parallel)
+        if len(multi) == 0:
+            return singles
+        ranked = multi[np.lexsort((cost[multi], self._pair[multi]))]
+        pair = self._pair[ranked]
+        first = np.ones(len(ranked), bool)
+        first[1:] = pair[1:] != pair[:-1]
+        return np.concatenate([singles, ranked[first]])
+
     def _shortest(
         self, origin: int, dest: int, cost: np.ndarray, area: np.ndarray | None = None
     ) -> list[int]:
         """Directed-edge ids of the cheapest path (parallel edges resolved by min cost)."""
-        candidates = np.flatnonzero(area) if area is not None else np.arange(len(cost))
-        sub = np.lexsort((cost[candidates], self.dst[candidates], self.src[candidates]))
-        order = candidates[sub]
-        s, d = self.src[order], self.dst[order]
-        first = np.ones(len(order), bool)
-        first[1:] = (s[1:] != s[:-1]) | (d[1:] != d[:-1])
-        keep = order[first]
+        keep = self._cheapest_edges(cost, area)
         shape = (self.n_nodes, self.n_nodes)
         weights = csr_matrix((cost[keep] + 1e-9, (self.src[keep], self.dst[keep])), shape=shape)
         ids = csr_matrix((keep + 1, (self.src[keep], self.dst[keep])), shape=shape)
@@ -202,11 +224,23 @@ class Router:
         return np.exp(log_d - self.bundle.quantiles[HIGH_SCORE_QUANTILE])
 
     def _measure(
-        self, path: list[int], depart: datetime, wet: bool, time_s: np.ndarray
+        self,
+        path: list[int],
+        depart: datetime,
+        wet: bool,
+        time_s: np.ndarray,
+        seen: dict[tuple[int, ...], RouteMetrics] | None = None,
     ) -> RouteMetrics:
-        return measure_route(
+        """Re-score a path at its traversal times; the lambda ladder often repeats paths."""
+        key = tuple(path)
+        if seen is not None and key in seen:
+            return seen[key]
+        metrics = measure_route(
             self.bundle, path, self.edge_of, self.reversed, time_s, self.dst, depart, wet
         )
+        if seen is not None:
+            seen[key] = metrics
+        return metrics
 
     def plan(
         self,
@@ -226,13 +260,14 @@ class Router:
         except RoutingError:
             area = None  # the box cut the only connection; search everything
             fast_path = self._shortest(origin, dest, time_s)
-        fastest = self._measure(fast_path, depart, wet, time_s)
+        seen: dict[tuple[int, ...], RouteMetrics] = {}
+        fastest = self._measure(fast_path, depart, wet, time_s, seen)
         budget = min(fastest.duration_s * DETOUR_RATIO, fastest.duration_s + DETOUR_EXTRA_S)
         density = self._relative_density(depart, wet)
         candidates = []
         for lam in LAMBDA_LADDER:
             path = self._shortest(origin, dest, time_s * (1 + lam * density), area)
-            candidates.append(self._measure(path, depart, wet, time_s))
+            candidates.append(self._measure(path, depart, wet, time_s, seen))
         within = [c for c in candidates if c.duration_s <= budget + 1e-6]
         best = min(within, key=lambda c: (c.exposure, c.duration_s), default=fastest)
         overall = min(candidates, key=lambda c: (c.exposure, c.duration_s))
