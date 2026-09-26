@@ -9,6 +9,7 @@ import type { BundleData } from '../hooks/useBundle'
 import { useDemoMode } from '../hooks/useDemoMode'
 import { useExplanation } from '../hooks/useExplanation'
 import { useGeolocation } from '../hooks/useGeolocation'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useLiveCondition } from '../hooks/useLiveCondition'
 import { useNavigation } from '../hooks/useNavigation'
 import { useRiskFrames } from '../hooks/useRiskFrames'
@@ -31,10 +32,12 @@ import { DetailLayer } from './DetailLayer'
 import { HomeScreen } from './HomeScreen'
 import { MapStage } from './MapStage'
 import { Panels } from './Panels'
-import { RouteScreen } from './RouteScreen'
+import { DesktopLayer } from './DesktopLayer'
+import { RouteScreen, type RouteScreenProps } from './RouteScreen'
 import { useTripActions } from './useTripActions'
 
 const PLAY_MS = 1000
+const DESKTOP_QUERY = '(min-width: 1024px)'
 
 /** The app container: owns view state, data hooks, and which screen (home / route / nav) is showing. */
 export interface PathProProps {
@@ -59,6 +62,7 @@ export function PathPro({ data, loadError }: PathProProps) {
   const [focus, setFocus] = useState<{ path: [number, number][]; key: number } | null>(null)
 
   const geo = useGeolocation()
+  const desktop = useMediaQuery(DESKTOP_QUERY)
   const planner = useTripPlanner({ view, update, geo, bbox: data?.meta.coverage_bbox ?? null })
   const routines = useRoutines(geo.position)
   useDemoMode(demo, view, update, setError)
@@ -170,10 +174,55 @@ export function PathPro({ data, loadError }: PathProProps) {
     onDay: (d: typeof day) => update({ day: d }),
   }
 
+  const etaMin = suggestion && suggestionFrom ? estimateWalkMin(suggestionFrom, suggestion.to) : null
+  const dismissSuggestion = () => setHiddenSuggestion(top?.to.label ?? null)
+  const optionValues = {
+    cond: view.cond,
+    condLabel: routes?.condition_used.label ?? condLabel,
+    onCond: (c: typeof view.cond) => update({ cond: c }),
+    depart: view.depart,
+    onDepart: (d: string) => update({ depart: d }),
+    cityAvailable: Boolean(data?.hexCells),
+    cityMode,
+    onCityMode: setCityMode,
+    showReportsLegend: reports.available,
+  }
+  const canUseLocation = geo.status !== 'denied' && geo.status !== 'unavailable' && planner.origin.status !== 'outside'
+  const routeScreen: RouteScreenProps = {
+    header: {
+      from: view.from,
+      to: view.to,
+      onEditFrom: () => actions.openSearch('from'),
+      onEditTo: () => actions.openSearch('to'),
+      onSwap: planner.swap,
+      onBack: planner.clear,
+    },
+    notice: view.to && !view.from ? originMessage(planner.origin.status) : null,
+    onPickStart: () => actions.openSearch('from'),
+    loading,
+    sheet:
+      routes && !detail && !area
+        ? {
+            routes,
+            selected: kind,
+            onSelect: (k) => setSelection({ key: routes.route_key, kind: k }),
+            explanation: routeText,
+            onStart: actions.start,
+            onPreview: () => nav.start('preview'),
+            startNote: selectedRoute ? startMode(selectedRoute.coords, fix).note : null,
+            onListen: () => void speak({ kind: 'route', route_key: routes.route_key }, routeText ?? ''),
+            onShare: () => void actions.share(),
+            shareStatus: actions.shareStatus,
+            onFocusSegment: focusSegment,
+            onSelectSegment: onSegment,
+          }
+        : null,
+  }
+
   if (loadError) return <StatusScreen kind="error" message={loadError} />
   if (!data) return <StatusScreen kind="loading" />
   return (
-    <main className="app" data-screen={screen}>
+    <main className={desktop ? 'app app-desktop' : 'app'} data-screen={screen}>
       <MapStage
         bbox={data.meta.coverage_bbox}
         outlineUrl={`${data.meta.static_base}/coverage.geojson`}
@@ -198,52 +247,52 @@ export function PathPro({ data, loadError }: PathProProps) {
       {screen !== 'nav' && (
         <MapControls onLayers={() => actions.setPanel({ kind: 'options' })} onLocate={actions.locate} geoStatus={geo.status} />
       )}
-      {screen === 'home' && (
-        <HomeScreen
-          suggestion={suggestion}
-          etaMin={suggestion && suggestionFrom ? estimateWalkMin(suggestionFrom, suggestion.to) : null}
-          onGo={actions.planSuggestion}
-          onDismissSuggestion={() => setHiddenSuggestion(top?.to.label ?? null)}
-          onOpenSearch={() => actions.openSearch('to')}
-          statusLabel={statusLabel({ cond: view.cond, depart: view.depart, hour: view.hour, cityMode })}
-          onOpenOptions={() => actions.setPanel({ kind: 'options' })}
+      {desktop ? (
+        <DesktopLayer
+          screen={screen}
+          home={{
+            suggestion,
+            etaMin,
+            onGo: actions.planSuggestion,
+            onDismissSuggestion: dismissSuggestion,
+            search: {
+              field: 'to',
+              suggestions: routines.suggestions,
+              saved: routines.saved,
+              recents: routines.recents,
+              canUseLocation,
+              onUseLocation: actions.startFromMyLocation,
+              onPick: (place) => actions.pickPlace('to', place),
+              onPickSuggestion: actions.planSuggestion,
+              onEditSaved: actions.editSaved,
+            },
+            options: { ...optionValues, onClearHistory: routines.clear },
+            onAbout: () => actions.setPanel({ kind: 'about' }),
+          }}
+          route={routeScreen}
+          destination={view.to?.label ?? 'your destination'}
+          timeline={timeline}
           welcomeDataThrough={welcome ? data.meta.data_through : null}
           onDismissWelcome={dismissWelcome}
-          reportsLegend={reports.available}
         />
-      )}
-      {screen === 'route' && (
-        <RouteScreen
-          header={{
-            from: view.from,
-            to: view.to,
-            onEditFrom: () => actions.openSearch('from'),
-            onEditTo: () => actions.openSearch('to'),
-            onSwap: planner.swap,
-            onBack: planner.clear,
-          }}
-          notice={view.to && !view.from ? originMessage(planner.origin.status) : null}
-          onPickStart={() => actions.openSearch('from')}
-          loading={loading}
-          sheet={
-            routes && !detail && !area
-              ? {
-                  routes,
-                  selected: kind,
-                  onSelect: (k) => setSelection({ key: routes.route_key, kind: k }),
-                  explanation: routeText,
-                  onStart: actions.start,
-                  onPreview: () => nav.start('preview'),
-                  startNote: selectedRoute ? startMode(selectedRoute.coords, fix).note : null,
-                  onListen: () => void speak({ kind: 'route', route_key: routes.route_key }, routeText ?? ''),
-                  onShare: () => void actions.share(),
-                  shareStatus: actions.shareStatus,
-                  onFocusSegment: focusSegment,
-                  onSelectSegment: onSegment,
-                }
-              : null
-          }
-        />
+      ) : (
+        <>
+          {screen === 'home' && (
+            <HomeScreen
+              suggestion={suggestion}
+              etaMin={etaMin}
+              onGo={actions.planSuggestion}
+              onDismissSuggestion={dismissSuggestion}
+              onOpenSearch={() => actions.openSearch('to')}
+              statusLabel={statusLabel({ cond: view.cond, depart: view.depart, hour: view.hour, cityMode })}
+              onOpenOptions={() => actions.setPanel({ kind: 'options' })}
+              welcomeDataThrough={welcome ? data.meta.data_through : null}
+              onDismissWelcome={dismissWelcome}
+              reportsLegend={reports.available}
+            />
+          )}
+          {screen === 'route' && <RouteScreen {...routeScreen} />}
+        </>
       )}
       {screen === 'nav' && (
         <NavigationView
@@ -282,21 +331,10 @@ export function PathPro({ data, loadError }: PathProProps) {
         meta={data.meta}
         actions={actions}
         routines={routines}
-        canUseLocation={geo.status !== 'denied' && geo.status !== 'unavailable' && planner.origin.status !== 'outside'}
+        canUseLocation={canUseLocation}
         welcome={welcome}
         onDismissWelcome={dismissWelcome}
-        options={{
-          cond: view.cond,
-          condLabel: routes?.condition_used.label ?? condLabel,
-          onCond: (c) => update({ cond: c }),
-          depart: view.depart,
-          onDepart: (d) => update({ depart: d }),
-          cityAvailable: Boolean(data.hexCells),
-          cityMode,
-          onCityMode: setCityMode,
-          timeline,
-          showReportsLegend: reports.available,
-        }}
+        options={{ ...optionValues, timeline }}
       />
     </main>
   )

@@ -10,6 +10,7 @@ import { buildLayers, type HexInput, type MeMarker, type RouteChoice, type Segme
 const DARK_STYLE = 'https://tiles.openfreemap.org/styles/dark'
 const CENTER: [number, number] = [-84.3905, 33.7765]
 const PHONE_MAX_WIDTH = 760
+const DESKTOP_MIN_WIDTH = 1024
 const FOLLOW_ZOOM = 17
 const RECENTER_ZOOM = 16
 const SHEET_SHARE = 0.44 // the route sheet's peek covers roughly this share of a phone screen
@@ -54,6 +55,8 @@ function isPhone(): boolean {
 /** Keep routes clear of the floating chrome: bottom sheet on phones, left panel on desktop. */
 function routePadding(): maplibregl.PaddingOptions {
   if (isPhone()) return { top: 150, bottom: Math.round(window.innerHeight * SHEET_SHARE), left: 36, right: 36 }
+  // Desktop: the sidebar sits beside the map, Risk Tides docks along the bottom.
+  if (window.innerWidth >= DESKTOP_MIN_WIDTH) return { top: 60, bottom: 190, left: 60, right: 100 }
   return { top: 110, bottom: 80, left: 440, right: 90 }
 }
 

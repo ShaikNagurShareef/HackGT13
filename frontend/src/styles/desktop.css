@@ -1,0 +1,192 @@
+/* Desktop (≥1024 px): persistent sidebar beside the map, Risk Tides docked on the map.
+   Phones and tablets keep the map-first layout from home.css / sheets.css. */
+
+@media (min-width: 1024px) {
+  :root {
+    --desk-sidebar: 420px;
+  }
+
+  .app-desktop .map,
+  .app-desktop .map.maplibregl-map {
+    left: var(--desk-sidebar);
+    width: auto;
+    right: 0;
+  }
+
+  .desk-sidebar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: var(--z-sheet);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: var(--desk-sidebar);
+    padding: 20px 20px 24px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-right: 1px solid var(--border);
+    background: radial-gradient(120% 40% at 0% 0%, rgba(63, 209, 198, 0.08), transparent 60%), #081523;
+    box-shadow: 12px 0 40px rgba(0, 0, 0, 0.35);
+  }
+
+  .desk-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 4px;
+  }
+  .desk-brand-name {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .desk-brand-tagline {
+    margin: 2px 0 0;
+    font-size: 13px;
+    color: var(--teal);
+  }
+
+  /* Inline search: the sheet's pieces, flowing inside the sidebar. */
+  .desk-search .search-input-wrap {
+    margin: 0;
+  }
+  .desk-search .search-body {
+    overflow: visible;
+    padding: 0;
+  }
+  .desk-search .search-section:first-child {
+    margin-top: 10px;
+  }
+  .desk-search .place-row {
+    min-height: 48px;
+  }
+  .desk-search .place-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .desk-options {
+    border-top: 1px solid var(--border);
+  }
+  .desk-options .panel {
+    background: none;
+    border: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .desk-options .legend {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+  }
+  .desk-options .options-privacy {
+    border-bottom: 0;
+  }
+  .desk-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: auto;
+  }
+  .desk-nav-note {
+    margin: 0;
+    color: var(--text-muted);
+  }
+
+  /* Route panel inside the sidebar: header and sheet flow instead of floating. */
+  .desk-route .route-top {
+    position: static;
+    width: auto;
+  }
+  .desk-route .trip-header {
+    background: var(--surface-raised);
+    box-shadow: none;
+  }
+  .desk-route .bsheet,
+  .desk-route .route-loading {
+    position: static;
+    width: auto;
+    max-height: none;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    animation: none;
+  }
+  .desk-route .bsheet-body {
+    overflow: visible;
+  }
+
+  /* Street / area details cover the sidebar while open. */
+  .app-desktop .detail-layer {
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--desk-sidebar);
+    max-height: none;
+    padding: 0;
+    z-index: calc(var(--z-sheet) + 1);
+  }
+  .app-desktop .detail-layer > .panel {
+    min-height: 100%;
+    border-radius: 0;
+    padding: 20px;
+    background: #081523;
+  }
+
+  /* Risk Tides: the signature view, always visible along the bottom of the map. */
+  .tides-dock {
+    position: absolute;
+    left: calc(var(--desk-sidebar) + 16px);
+    right: 88px;
+    bottom: 16px;
+    z-index: var(--z-chrome);
+    max-width: 760px;
+  }
+  .tides-dock .timeline {
+    padding: 12px 16px;
+  }
+
+  .desk-toast {
+    position: absolute;
+    top: 16px;
+    left: calc(var(--desk-sidebar) + 16px);
+    width: 380px;
+    z-index: var(--z-chrome);
+  }
+
+  .app-desktop .fab-layers,
+  .app-desktop[data-screen='route'] .fab-layers {
+    top: 16px;
+    bottom: auto;
+  }
+  .app-desktop .fab-locate,
+  .app-desktop[data-screen='route'] .fab-locate {
+    top: 80px;
+    bottom: auto;
+  }
+  .app-desktop .banner {
+    left: calc(var(--desk-sidebar) + 16px);
+    top: 16px;
+  }
+  .app-desktop .search-sheet {
+    inset: 0 auto 0 0;
+    width: var(--desk-sidebar);
+    border-radius: 0;
+    border-width: 0 1px 0 0;
+  }
+  .app-desktop .nav-banner,
+  .app-desktop .nav-bar,
+  .app-desktop .nav-arrived {
+    left: calc(var(--desk-sidebar) + (100% - var(--desk-sidebar)) / 2);
+  }
+}

@@ -5,6 +5,7 @@ import { api } from '../api/client'
 import type { Area } from '../api/schemas'
 import type { Routines } from '../hooks/useRoutines'
 import { meta, routes, segment } from '../test/fixtures'
+import { DesktopLayer, type DesktopLayerProps } from './DesktopLayer'
 import { DetailLayer } from './DetailLayer'
 import { HomeScreen } from './HomeScreen'
 import { Panels, type PanelsProps } from './Panels'
@@ -171,5 +172,43 @@ describe('Panels', () => {
 
     rerender(<Panels {...base} panel={{ kind: 'about' }} />)
     expect(screen.getByRole('dialog', { name: 'How PathPro works' })).toBeInTheDocument()
+  })
+})
+
+describe('DesktopLayer (≥1024 px)', () => {
+  const timeline = { hour: 22, onHour: noop, playing: false, onTogglePlay: noop, medians: [], lights: [], condLabel: 'Wet', day: 'friday' as const, onDay: noop }
+  const base: DesktopLayerProps = {
+    screen: 'home',
+    home: {
+      suggestion: null,
+      etaMin: null,
+      onGo: noop,
+      onDismissSuggestion: noop,
+      search: { field: 'to', suggestions: [], saved: {}, recents: [], canUseLocation: false, onUseLocation: noop, onPick: noop, onPickSuggestion: noop, onEditSaved: noop },
+      options: { cond: 'live', condLabel: 'Live', onCond: noop, depart: 'now', onDepart: noop, cityAvailable: false, cityMode: false, onCityMode: noop, showReportsLegend: false, onClearHistory: noop },
+      onAbout: noop,
+    },
+    route: { header: { from: null, to: { lat: 1, lon: 2, label: 'Midtown MARTA' }, onEditFrom: noop, onEditTo: noop, onSwap: noop, onBack: noop }, notice: null, onPickStart: noop, loading: true, sheet: null },
+    destination: 'Midtown MARTA',
+    timeline,
+    welcomeDataThrough: '2026-09-19',
+    onDismissWelcome: noop,
+  }
+
+  it('home: sidebar, docked Risk Tides, and the welcome toast', () => {
+    render(<DesktopLayer {...base} />)
+    expect(screen.getByRole('complementary', { name: 'PathPro' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Risk Tides timeline' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Welcome to PathPro' })).toBeInTheDocument()
+  })
+
+  it('route: the trip panel moves into the sidebar; navigation hides Risk Tides', () => {
+    const { rerender } = render(<DesktopLayer {...base} screen="route" />)
+    expect(screen.getByRole('region', { name: 'Trip' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Welcome to PathPro' })).toBeNull()
+
+    rerender(<DesktopLayer {...base} screen="nav" />)
+    expect(screen.getByText(/Walking to Midtown MARTA/)).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Risk Tides timeline' })).toBeNull()
   })
 })

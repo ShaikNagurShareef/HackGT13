@@ -5,6 +5,7 @@ import './styles/layout.css'
 import './styles/home.css'
 import './styles/sheets.css'
 import './styles/nav.css'
+import './styles/desktop.css'
 import App from './App.tsx'
 import { initRuntime } from './api/runtime'
 
