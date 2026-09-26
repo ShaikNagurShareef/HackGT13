@@ -5,6 +5,8 @@ import type { Bbox } from '../api/client'
 import type { Area } from '../api/schemas'
 import { MapControls } from '../components/home/MapControls'
 import { NavigationView } from '../components/nav/NavigationView'
+import { ResumedShareBar } from '../components/share/ResumedShareBar'
+import { ResumeSharePrompt } from '../components/share/ResumeSharePrompt'
 import { ShareWalkPanel } from '../components/share/ShareWalkPanel'
 import { StatusScreen } from '../components/StatusScreen'
 import { SafetyPickCard } from '../components/safety/SafetyPickCard'
@@ -38,6 +40,7 @@ import { Panels } from './Panels'
 import { DesktopLayer } from './DesktopLayer'
 import { RouteScreen, type RouteScreenProps } from './RouteScreen'
 import { useSafetyMode } from './useSafetyMode'
+import { useShareResume } from './useShareResume'
 import { useTripActions } from './useTripActions'
 
 const PLAY_MS = 1000
@@ -122,6 +125,11 @@ export function PathPro({ data, loadError }: PathProProps) {
     [reportsViewport, safetyViewport],
   )
   const actions = useTripActions({ onNotice: setError, view, update, geo, planner, routines, nav, routes, selectedRoute })
+  const shareResume = useShareResume({ demo, destination: view.to, route: selectedRoute, nav, onNotice: setError })
+  const resumeSharing = () => {
+    if (geo.status === 'prompt') geo.request() // a tap, so the browser may ask for location here
+    shareResume.resume()
+  }
 
   useEffect(() => {
     if (!playing) return
@@ -359,9 +367,20 @@ export function PathPro({ data, loadError }: PathProProps) {
               accuracy={nav.mode === 'gps' ? (fix?.accuracy ?? null) : null}
               remainingS={nav.remainingS}
               arrived={nav.arrived}
+              resume={shareResume.resumed != null}
             />
           }
         />
+      )}
+      {screen !== 'nav' && shareResume.pending && (
+        <ResumeSharePrompt
+          destination={shareResume.pending.destination.label}
+          onResume={resumeSharing}
+          onStop={shareResume.stopSharing}
+        />
+      )}
+      {screen !== 'nav' && shareResume.resumed && (
+        <ResumedShareBar destination={shareResume.resumed.destination} position={fix} />
       )}
       {screen !== 'nav' && (
         <DetailLayer

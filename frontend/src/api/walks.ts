@@ -61,4 +61,15 @@ export const walksApi = {
       body: JSON.stringify({ owner_token: ownerToken, ...update }),
     }),
   get: (walkId: string): Promise<SharedWalk> => request(walkPath(walkId), sharedWalkSchema),
+  /**
+   * Owner-only: mark a walk ended without a fresh fix (no GPS, or the walker declined to resume).
+   * Re-sends the last shared position (or the destination if none was ever shared), so ending
+   * never reveals a new location. A walk that already finished is left alone.
+   */
+  end: async (walkId: string, ownerToken: string): Promise<void> => {
+    const walk = await walksApi.get(walkId)
+    if (walk.status !== 'walking') return
+    const at = walk.position ?? { ...walk.destination, accuracy_m: null }
+    await walksApi.update(walkId, ownerToken, { lat: at.lat, lon: at.lon, accuracy_m: at.accuracy_m, status: 'ended' })
+  },
 }

@@ -7,6 +7,8 @@ const NOTICE_MS = 6000
 type Props = {
   phase: SharePhase
   notice: string | null
+  /** False where a new walk can't be started (the resumed-walk bar): idle shows only the notice. */
+  canStart?: boolean
   onStart: () => void
   onResend: () => void
   onStop: () => void
@@ -14,7 +16,7 @@ type Props = {
 }
 
 /** "Share my walk" in navigation; "Sharing live · Send link · Stop" once a friend can follow. */
-export function ShareWalkControl({ phase, notice, onStart, onResend, onStop, onDismissNotice }: Props) {
+export function ShareWalkControl({ phase, notice, canStart = true, onStart, onResend, onStop, onDismissNotice }: Props) {
   useEffect(() => {
     if (!notice) return
     const id = window.setTimeout(onDismissNotice, NOTICE_MS)
@@ -39,10 +41,12 @@ export function ShareWalkControl({ phase, notice, onStart, onResend, onStop, onD
           </button>
         </div>
       ) : (
-        <button type="button" className="btn share-btn panel" onClick={onStart} disabled={starting}>
-          <Icon name="share" size={18} />
-          {starting ? 'Starting…' : 'Share my walk'}
-        </button>
+        canStart && (
+          <button type="button" className="btn share-btn panel" onClick={onStart} disabled={starting}>
+            <Icon name="share" size={18} />
+            {starting ? 'Starting…' : 'Share my walk'}
+          </button>
+        )
       )}
       <div className="share-notice-slot" role="status" aria-live="polite">
         {notice && (

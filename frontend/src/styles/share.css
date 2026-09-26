@@ -266,3 +266,51 @@
     animation: none;
   }
 }
+
+/* ---------- After a reload: resume Share my walk ---------- */
+.share-resume,
+.share-resumed {
+  position: absolute;
+  left: calc(var(--safe-left) + 12px);
+  right: calc(var(--safe-right) + 12px);
+  z-index: var(--z-banner);
+}
+.share-resume {
+  bottom: calc(var(--safe-bottom) + 12px);
+}
+/* Below the top bar and notice banner, clear of the route sheet's buttons. */
+.share-resumed {
+  top: calc(var(--safe-top) + 140px);
+}
+.share-resume {
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  border-color: rgba(77, 163, 255, 0.45);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-lift);
+}
+.share-resume-text {
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+.share-resume-actions {
+  display: flex;
+  gap: 10px;
+}
+.share-resume-actions .btn {
+  flex: 1;
+  min-height: var(--tap);
+}
+.share-resumed {
+  pointer-events: none;
+}
+
+@media (min-width: 761px) {
+  .share-resume,
+  .share-resumed {
+    left: 50%;
+    right: auto;
+    width: min(420px, calc(100% - 32px));
+    transform: translateX(-50%);
+  }
+}

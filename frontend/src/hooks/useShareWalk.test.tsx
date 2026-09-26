@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react'
+import { act, cleanup, renderHook } from '@testing-library/react'
 import { StrictMode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { SHARE_SESSION_KEY, loadShareSession, saveShareSession, type StoredShareSession } from '../lib/shareSession'
@@ -63,6 +63,7 @@ describe('useShareWalk', () => {
     vi.stubGlobal('navigator', { share })
   })
   afterEach(() => {
+    cleanup() // unmount while timers are fake, so a deferred end can't leak into the next test
     vi.useRealTimers()
     vi.unstubAllGlobals()
   })
@@ -308,6 +309,7 @@ describe('useShareWalk session persistence', () => {
     vi.stubGlobal('navigator', { share })
   })
   afterEach(() => {
+    cleanup() // unmount while timers are fake, so a deferred end can't leak into the next test
     vi.useRealTimers()
     vi.unstubAllGlobals()
     window.sessionStorage.clear()
@@ -332,7 +334,7 @@ describe('useShareWalk session persistence', () => {
   it('remembers the live walk for this tab only', async () => {
     await startLive()
 
-    expect(loadShareSession()).toEqual(STORED)
+    expect(loadShareSession()).toEqual({ ...STORED, expires_at: sharedWalk().expires_at })
     expect(JSON.stringify({ ...window.localStorage })).not.toContain('secret-token')
     expect(window.location.href).not.toContain('secret-token')
   })
@@ -473,6 +475,23 @@ describe('useShareWalk session persistence', () => {
 
     expect(puts(fetcher).map((b) => b.status)).not.toContain('ended')
     expect(loadShareSession()?.walk_id).toBe('w1')
+  })
+
+  it('ends a walk without a GPS fix at its last shared position', async () => {
+    const { fetcher, result, rerender } = await startLive()
+    fetcher.mockImplementation(async (_url: string, init?: RequestInit) => {
+      const walk = sharedWalk()
+      const data = init?.method === 'PUT' ? { ...walk, status: 'ended', route: undefined } : walk
+      return new Response(JSON.stringify({ success: true, data }), JSON_HEADERS)
+    })
+    rerender(input({ position: null }))
+
+    act(() => result.current.stop())
+    await flush()
+
+    const gets = fetcher.mock.calls.filter(([, init]) => (init?.method ?? 'GET') === 'GET')
+    expect(gets).toHaveLength(1)
+    expect(puts(fetcher).at(-1)).toMatchObject({ status: 'ended', lat: 33.7775, lon: -84.395 })
   })
 
   it('omits the ETA when it is unknown', async () => {

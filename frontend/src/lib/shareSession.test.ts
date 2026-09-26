@@ -138,11 +138,11 @@ describe('sameDestination', () => {
   })
 
   it('ignores rounding noise from the URL', () => {
-    expect(sameDestination(dest, { label: 'Midtown MARTA', lat: 33.781004, lon: -84.386296 })).toBe(true)
+    expect(sameDestination(dest, { lat: 33.781004, lon: -84.386296 })).toBe(true)
   })
 
   it('rejects a different place or no place', () => {
-    expect(sameDestination(dest, { label: 'Midtown MARTA', lat: 33.79, lon: -84.3863 })).toBe(false)
+    expect(sameDestination(dest, { lat: 33.79, lon: -84.3863 })).toBe(false)
     expect(sameDestination(dest, null)).toBe(false)
   })
 })
