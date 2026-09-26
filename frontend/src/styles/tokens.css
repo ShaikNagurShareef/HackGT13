@@ -1,0 +1,35 @@
+/* "Deep water" theme (PRD §7.2): navy night map, risk as light on dark water. */
+:root {
+  --bg: #07121d;
+  --surface: rgba(10, 24, 38, 0.86);
+  --surface-strong: #0d1f31;
+  --surface-hover: rgba(26, 52, 76, 0.9);
+  --border: rgba(120, 170, 200, 0.18);
+  --text: #e7f1f7;
+  --text-muted: #9db4c4;
+  --text-faint: #6f8a9c;
+  --teal: #3fd1c6;
+  --teal-strong: #1fb4aa;
+  --route-fast: #9aa6b2;
+  --danger: #ff8fa8;
+  --focus: #ffd479;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --gutter: 16px;
+  --sheet-width: 380px;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion: 0;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
