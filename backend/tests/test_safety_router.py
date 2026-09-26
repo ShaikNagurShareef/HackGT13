@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import dataclasses
 from datetime import datetime
 from pathlib import Path
 
+import numpy as np
 import pytest
-from app.domain.router import Router
+from app.domain.route_metrics import RouteMetrics
+from app.domain.router import RoutePlan, Router, choose_lit_plan
+from app.domain.safety import signal_penalty
 from app.domain.timeutil import ATLANTA
 from app.repositories.artifacts import Bundle, load_bundle
 from app.repositories.safety import SafetyBundle, load_safety
@@ -101,3 +105,45 @@ def test_crime_counts_never_change_the_route(tmp_path: Path) -> None:
         )
 
     assert plans[0] == plans[1] == plans[2]
+
+
+def _default_and_candidates(router: Router) -> tuple[RoutePlan, list[RouteMetrics], np.ndarray]:
+    plan = router.plan(ORIGIN, DEST, NIGHT, wet=False)
+    assert router.signals is not None and plan.pathpro is not None
+    penalty = signal_penalty(router.signals, "night")
+    bottom = router.plan(ORIGIN, DEST, NIGHT, wet=False, prefer="lit_and_busy").pathpro
+    assert bottom is not None
+    return plan, [plan.fastest, plan.pathpro, bottom], penalty
+
+
+@pytest.mark.unit
+def test_choose_lit_plan_keeps_default_message_when_it_finds_the_same_route(
+    lit_router: Router,
+) -> None:
+    plan, candidates, penalty = _default_and_candidates(lit_router)
+    default = dataclasses.replace(plan, message_code="tradeoff_exists", tradeoff_extra_s=500.0)
+
+    chosen = choose_lit_plan(default, candidates[:2], penalty, budget=1e9)
+
+    assert chosen is default
+
+
+@pytest.mark.unit
+def test_choose_lit_plan_prefers_the_better_lit_candidate(lit_router: Router) -> None:
+    plan, candidates, penalty = _default_and_candidates(lit_router)
+
+    chosen = choose_lit_plan(plan, candidates, penalty, budget=1e9)
+
+    assert chosen.pathpro is candidates[2]
+    assert chosen.message_code == "ok"
+    assert chosen.tradeoff_extra_s is None
+
+
+@pytest.mark.unit
+def test_choose_lit_plan_respects_budget_and_exposure_cap(lit_router: Router) -> None:
+    plan, candidates, penalty = _default_and_candidates(lit_router)
+    lit = candidates[2]
+    too_risky = dataclasses.replace(lit, exposure=plan.fastest.exposure * 1.2)
+
+    assert choose_lit_plan(plan, candidates, penalty, budget=lit.duration_s - 1) is plan
+    assert choose_lit_plan(plan, [*candidates[:2], too_risky], penalty, budget=1e9) is plan
