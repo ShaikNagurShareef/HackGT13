@@ -9,15 +9,27 @@ export const DEMO_ROUTE = {
 type Fixtures = Record<string, unknown>
 let fixturesPromise: Promise<Fixtures> | null = null
 
+/** Static hosting (GitHub Pages) builds set VITE_FORCE_DEMO=1: no backend, fixtures only. */
+export const FORCE_DEMO = import.meta.env.VITE_FORCE_DEMO === '1'
+const BASE = import.meta.env.BASE_URL ?? '/'
+
+/** Prefix an absolute app path with the deploy base (e.g. /HackGT13/ on GitHub Pages). */
+export function withBase(path: string): string {
+  return `${BASE.replace(/\/$/, '')}${path}`
+}
+
 export function isDemoMode(search: string = window.location.search): boolean {
-  return new URLSearchParams(search).get('demo') === '1'
+  return FORCE_DEMO || new URLSearchParams(search).get('demo') === '1'
 }
 
 /** Fetch every fixture up front so the demo keeps working after the network drops. */
 export function loadFixtures(fetcher: typeof fetch = fetch): Promise<Fixtures> {
-  fixturesPromise ??= fetcher('/demo/fixtures.json').then((r) => {
+  fixturesPromise ??= fetcher(withBase('/demo/fixtures.json')).then(async (r) => {
     if (!r.ok) throw new Error('demo fixtures missing')
-    return r.json() as Promise<Fixtures>
+    const fixtures = (await r.json()) as Fixtures
+    const meta = fixtures['GET /meta'] as { data?: { static_base?: string } } | undefined
+    if (meta?.data?.static_base) meta.data.static_base = withBase(meta.data.static_base)
+    return fixtures
   })
   return fixturesPromise
 }

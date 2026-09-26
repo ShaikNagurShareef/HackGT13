@@ -1,6 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react'
 import { ApiError, api } from './api/client'
-import { DEMO_DEPART, DEMO_ROUTE, loadFixtures } from './api/demo'
+import { DEMO_DEPART, DEMO_ROUTE, isDemoMode, loadFixtures } from './api/demo'
 import type { Area, Routes, SegmentDetail } from './api/schemas'
 import { AreaCard } from './components/AreaCard'
 import { About, FirstRun } from './components/About'
@@ -45,13 +45,14 @@ function readSeen(): boolean {
 export default function App() {
   const { data, error: loadError } = useBundle()
   const [view, update] = useViewState()
+  const demo = isDemoMode()
   const [frames, setFrames] = useState<FrameSet | null>(null)
   const [routes, setRoutes] = useState<Routes | null>(null)
   const [detail, setDetail] = useState<SegmentDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [playing, setPlaying] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
-  const [firstRun, setFirstRun] = useState(() => !readSeen() && !view.demo)
+  const [firstRun, setFirstRun] = useState(() => !readSeen() && !demo)
   const [liveWet, setLiveWet] = useState(false)
   const [liveLabel, setLiveLabel] = useState<string | null>(null)
   const [cityMode, setCityMode] = useState(false)
@@ -63,7 +64,7 @@ export default function App() {
 
   // Demo mode (DEMO-01/02): preload fixtures, open the scripted route, enable shortcuts.
   useEffect(() => {
-    if (!view.demo) return
+    if (!demo) return
     void loadFixtures().catch(() => setError('Demo data is missing. Run the demo recorder.'))
     if (!view.from && !view.to) update({ ...DEMO_ROUTE, depart: DEMO_DEPART, cond: 'wet' })
     const onKey = (e: KeyboardEvent) => {
@@ -77,7 +78,7 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
     // Shortcut handler must see the latest cond; from/to only matter on first load.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view.demo, view.cond, update])
+  }, [demo, view.cond, update])
   const departDate = routes ? new Date(routes.depart_at) : now
   const hour = view.hour ?? atlantaParts(departDate).hour
   const day = view.day ?? dayGroupOf(departDate)

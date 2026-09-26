@@ -4,6 +4,8 @@ import { defineConfig } from 'vitest/config'
 const API_TARGET = process.env.PATHPULSE_API ?? 'http://127.0.0.1:8000'
 
 export default defineConfig({
+  // GitHub Pages serves the static demo under /<repo>/; the VM/tunnel build uses /.
+  base: process.env.VITE_BASE ?? '/',
   plugins: [react()],
   server: {
     proxy: {
