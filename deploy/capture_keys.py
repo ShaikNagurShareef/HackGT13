@@ -19,7 +19,7 @@ ENV = Path(__file__).resolve().parents[1] / "backend" / ".env"
 PATTERNS: dict[str, re.Pattern[str]] = {
     "DATABASE_URL": re.compile(r"^postgres(?:ql)?://\S+$"),
     "GROQ_API_KEY": re.compile(r"^gsk_[A-Za-z0-9]{40,}$"),
-    "GEMINI_API_KEY": re.compile(r"^AIza[0-9A-Za-z_-]{35}$"),
+    "GEMINI_API_KEY": re.compile(r"^(?:AIza[0-9A-Za-z_-]{35}|AQ\.[A-Za-z0-9_.-]{20,})$"),
     "ELEVENLABS_API_KEY": re.compile(r"^sk_[a-f0-9]{40,}$"),
     "VULTR_API_KEY": re.compile(r"^[A-Z0-9]{36}$"),
     "ELEVENLABS_VOICE_ID": re.compile(r"^[A-Za-z0-9]{20}$"),
@@ -54,11 +54,34 @@ def write_key(name: str, value: str) -> None:
     ENV.chmod(0o600)
 
 
+ASSIGNMENT = re.compile(r"^(?:export\s+)?([A-Z_]+)\s*[=:]\s*(.+)$")
+
+
+def unwrap(text: str) -> tuple[str | None, str]:
+    """Strip quotes and `export NAME=value` / `NAME: value` wrappers some copy buttons add."""
+    hinted: str | None = None
+    match = ASSIGNMENT.match(text.strip())
+    if match:
+        hinted, text = match.group(1), match.group(2)
+    return hinted, text.strip().strip("'\"").strip()
+
+
 def classify(text: str) -> str | None:
+    hinted, value = unwrap(text)
+    if hinted in PATTERNS and value:
+        return hinted
     for name, pattern in PATTERNS.items():
-        if pattern.match(text):
+        if pattern.match(value):
             return name
     return None
+
+
+def shape(text: str) -> str:
+    """Describe unrecognized text without revealing it: length and character classes."""
+    classes = [label for label, rx in (("A-Z", "[A-Z]"), ("a-z", "[a-z]"), ("0-9", "[0-9]"),
+               ("_", "_"), ("-", "-"), ("space", r"\s"), ("other", r"[^A-Za-z0-9_\-\s]"))
+               if re.search(rx, text)]
+    return f"len={len(text)} chars=[{' '.join(classes)}]"
 
 
 def main(minutes: float) -> int:
@@ -75,11 +98,11 @@ def main(minutes: float) -> int:
             last = text
             name = classify(text)
             if name is None:
-                print("copied text is not a recognized key format (ignored)", flush=True)
-            elif current_values().get(name) == text:
+                print(f"not a recognized key format (ignored): {shape(text)}", flush=True)
+            elif current_values().get(name) == unwrap(text)[1]:
                 print(f"already have {name}", flush=True)
             else:
-                write_key(name, text)
+                write_key(name, unwrap(text)[1])
                 left = [k for k in PATTERNS if not current_values().get(k)]
                 print(f"captured {name} | still needed: {', '.join(left) or 'none'}", flush=True)
         time.sleep(POLL_S)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -9,6 +10,7 @@ from app.api.schemas import RoutesData, SegmentDetail
 from app.domain.timeutil import ATLANTA
 
 MAX_FACTORS = 3
+_TEXT_NUMBER_RE = re.compile(r"\d+(?:\.\d+)?")
 
 
 @dataclass(frozen=True)
@@ -23,6 +25,9 @@ def _collect_numbers(value: Any, out: set[float]) -> None:
         return
     if isinstance(value, int | float):
         out.add(round(float(value), 1))
+    elif isinstance(value, str):
+        # Numbers inside evidence text (the "2020-2024" period) may be reworded freely.
+        out.update(round(float(n), 1) for n in _TEXT_NUMBER_RE.findall(value))
     elif isinstance(value, dict):
         for v in value.values():
             _collect_numbers(v, out)

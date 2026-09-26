@@ -48,6 +48,11 @@ def load_segments(cur: psycopg.Cursor) -> int:
     return len(rows)
 
 
+def _text(value: object) -> str | None:
+    """Missing values arrive as NaN floats; COPY needs NULL."""
+    return None if pd.isna(value) else str(value)
+
+
 def load_crashes(cur: psycopg.Cursor) -> int:
     snaps = pd.read_parquet(INTERIM_DIR / "crash_segments.parquet")
     timed = snaps.loc[snaps["stream"] == "timed"]
@@ -67,9 +72,9 @@ def load_crashes(cur: psycopg.Cursor) -> int:
                 int(r.seg_id),
                 float(r.weight),
                 bool(r.is_ped),
-                r.severity,
-                r.light_report,
-                r.surface_report,
+                _text(r.severity),
+                _text(r.light_report),
+                _text(r.surface_report),
                 f"SRID=4326;POINT({r.lon} {r.lat})",
             )
             for r in rows.itertuples()

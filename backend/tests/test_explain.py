@@ -73,6 +73,19 @@ def test_validator_accepts_grounded_text_with_street_numbers() -> None:
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize("period", ["2020\u20132024", "2020 to 2024", "between 2020 and 2024"])
+def test_validator_accepts_evidence_years_in_any_wording(period: str) -> None:
+    text = f"I-85 Access Road recorded 107 crashes from {period}, 1 involving a pedestrian."
+
+    assert validation_errors(text, SEGMENT) == []
+
+
+@pytest.mark.unit
+def test_validator_still_rejects_years_not_in_evidence() -> None:
+    assert "unknown_number:2019" in validation_errors("Crashes rose in 2019.", SEGMENT)
+
+
+@pytest.mark.unit
 @pytest.mark.parametrize("evidence", [ROUTE, SEGMENT])
 def test_templates_always_validate(evidence: Evidence) -> None:
     text = template.render(evidence)
