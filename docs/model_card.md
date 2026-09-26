@@ -129,3 +129,33 @@ Added 2026-09-26. It sits beside the traffic-risk model and never changes its sc
   - Never used in routing cost, the traffic model, or LLM explanations. A test scales crime counts by 1,000 and asserts routes are unchanged.
   - Always shown with a fairness note: reports reflect where police record incidents, not how people should feel about a neighborhood.
 - **Limits:** police reports undercount some incidents and overcount heavily patrolled areas. The foot-traffic data is from 2021. Lighting coverage is sparse.
+
+## Ride model (bike, e-bike, scooter)
+
+Added 2026-09-26. It ranks streets by traffic risk to people on bikes and scooters, and runs on OpenStreetMap's bike network. The walk model and its files are unchanged.
+
+- **Network and features:**
+  - OSMnx `network_type="bike"` over the City of Atlanta: 49,824 nodes and 65,997 edges.
+  - Road features (speed, lanes, AADT, class) are conflated as for walking.
+  - Bike infrastructure comes from the City's `Bike_Facilities_Public_View` (existing facilities: protected, painted, shared) and OSM cycleway tags, plus Atlanta BeltLine adjacency (ABI layer and OSM).
+- **Labels:** cyclist-involved crashes (ARC `Bicycle_Related` flag, 2020–2024: 29, 95, 123, 132, 175 by year). 551 of 554 snapped to a road segment. Rider ages are dropped.
+- **Exposure is a proxy.** The City publishes no StreetLight bicycle layer. We use ARC's Strava 2024 ride and e-bike origins and destinations per H3 res-8 hex, plus facility presence and pedestrian activity. Dropping Strava gives 69.5% [63.9, 75.8] on 2024, so it does not drive the result.
+- **Training label: pooled pedestrian + cyclist crashes, always scored on cyclist crashes only.** It was chosen on the 2023 validation year: 69.0% pooled vs 59.7% cyclist-only.
+  - The cyclist-only candidate scored 57.4% [48.1, 65.6] on 2024 and lost to simply reusing the walk model.
+  - We looked at 2024 during development, so 2023 is the cleaner check.
+- **2024 holdout (174 cyclist crashes), top 10% of street length:**
+
+  | Method | Capture |
+  | --- | --- |
+  | Ride model | **69.9% [64.0, 76.1]** |
+  | Walk model reused | 66.4% (gain +1.3 to +6.2 points) |
+  | City High Injury Network | 43.6% |
+  | Past cyclist crashes only | 30.4% (gain +30.9 to +46.3 points) |
+  | Random | 12.0% |
+
+  ROC-AUC is 0.866. On the 2023 validation year the model captures 69.0%, against 22.1% for past crashes.
+- **Temporal model:** a cyclist Poisson GLM on 48 cyclist crashes plus the all-mode hourly shape. It beats the walk structure on held-out 2022–23 crashes (deviance 0.516 vs 0.580). Light and rain add little; the wet effect is ×0.86 because exposure is counted in clock hours, not riders. The shipped model is a 2017–2023 refit of the evaluated 2017–2021 model.
+- **Limits:**
+  - Pooled training means the counts are **not calibrated for cyclists**; we claim ranking only.
+  - E-bike and scooter reuse this model with different speeds (22 and 18 km/h). Scooter crashes are identified only in the K/A layer (75 serious or fatal) and are not counted as cyclists.
+  - Today's bike facilities are applied to past years.
