@@ -14,14 +14,15 @@ interface Props {
   view: ViewState
   status: GeoStatus
   position: GeoFix | null
+  bbox?: ReadonlyArray<number> | null
 }
 
 function setup(initial: Props) {
   const update = vi.fn()
   const request = vi.fn()
   const hook = renderHook(
-    ({ view, status, position }: Props) =>
-      useTripPlanner({ view, update, geo: { status, position, request, error: null }, bbox: BBOX }),
+    ({ view, status, position, bbox = BBOX }: Props) =>
+      useTripPlanner({ view, update, geo: { status, position, request, error: null }, bbox }),
     { initialProps: initial },
   )
   return { ...hook, update, request }
@@ -74,5 +75,12 @@ describe('useTripPlanner', () => {
     expect(update).toHaveBeenLastCalledWith({ from: MIDTOWN, seg: null })
     result.current.clear()
     expect(update).toHaveBeenLastCalledWith({ from: null, to: null, seg: null })
+  })
+
+  it('waits for the coverage area before trusting a GPS start', () => {
+    const { result, update } = setup({ view: { ...DEFAULT_STATE, to: MIDTOWN }, status: 'granted', position: HERE, bbox: null })
+
+    expect(result.current.origin).toEqual({ place: null, status: 'locating' })
+    expect(update).not.toHaveBeenCalled()
   })
 })
