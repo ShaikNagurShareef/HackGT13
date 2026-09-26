@@ -81,6 +81,15 @@ describe('useNavigation', () => {
     expect(result.current.arrived).toBe(false)
   })
 
+  it('also arrives within 30 m of the chosen destination when the route ends at a snapped node', () => {
+    const snapped = route({ coords: [[-84.3962, 33.7771], [-84.3868, 33.7806]] })
+    const { result, rerender } = setup({ r: snapped, gps: gpsAt(START) })
+
+    act(() => result.current.start('gps'))
+    rerender({ r: snapped, gps: gpsAt({ lat: 33.7811, lon: -84.3864 }) })
+    expect(result.current.arrived).toBe(true)
+  })
+
   it('names the street it is on when no stretch is near', () => {
     const quiet = route({ alerts: [] })
     const { result } = setup({ r: quiet, gps: gpsAt(START) })
