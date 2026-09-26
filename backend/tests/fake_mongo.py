@@ -1,7 +1,8 @@
 """A tiny in-memory stand-in for pymongo's AsyncCollection.
 
-It implements only the operators the reports repository uses ($inc/$set/$setOnInsert upserts,
-$in/$gt/$geoWithin filters, and a $match/$group/$sort pipeline) and records every call so
+It implements only the operators the reports and shared-walks repositories use ($inc/$set/
+$setOnInsert upserts, insert_one/find_one, $in/$gt/$geoWithin filters, and a $match/$group/$sort
+pipeline) and records every call so
 tests can assert query shapes. Set `fail` to an exception to simulate Atlas being down.
 """
 
@@ -122,6 +123,21 @@ class FakeCollection:
         for field, step in update.get("$inc", {}).items():
             doc[field] = doc.get(field, 0) + step
         return _project(doc)
+
+    async def insert_one(self, doc: dict[str, Any]) -> dict[str, Any]:
+        self.calls.append(("insert_one", doc))
+        self.check()
+        stored = {"_id": len(self.docs) + 1, **copy.deepcopy(doc)}
+        self.docs.append(stored)
+        return {"inserted_id": stored["_id"]}
+
+    async def find_one(
+        self, query: dict[str, Any], projection: dict[str, int] | None = None
+    ) -> dict[str, Any] | None:
+        self.calls.append(("find_one", query))
+        self.check()
+        doc = next((d for d in self.docs if matches(d, query)), None)
+        return _project(doc) if doc is not None else None
 
     def find(self, query: dict[str, Any], projection: dict[str, int] | None = None) -> FakeCursor:
         self.calls.append(("find", query))
