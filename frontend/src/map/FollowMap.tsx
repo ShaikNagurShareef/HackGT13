@@ -108,12 +108,13 @@ export function FollowMap(props: FollowMapProps) {
     }
   }, [supported])
 
+  // Rebuild layers only when the walk data changes (the page re-renders every second for "12 s ago").
+  const { walker, destination, route } = props
   useEffect(() => {
-    overlayRef.current?.setProps({ layers: followLayers(props) })
-  }, [props])
+    overlayRef.current?.setProps({ layers: followLayers({ walker, destination, route }) })
+  }, [walker, destination, route])
 
   // Frame the walk once, then keep the walker on screen as they move.
-  const { walker, destination, route } = props
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
