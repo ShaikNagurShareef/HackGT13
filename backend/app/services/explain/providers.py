@@ -19,6 +19,7 @@ Rules:
 - 1 to 3 short sentences, plain English, calm tone.
 - Say "traffic risk", "lower-risk", "historical crashes". Never say safe, safest, guaranteed,
   crime, or dangerous area/neighborhood. Never mention people, neighborhoods, or demographics.
+- The lower-risk route in the "pathpro" evidence: call it "the PathPro route".
 - Name at most three factors or streets and at most one concrete action.
 - Do not invent scores, times, or percentages. Output only the explanation text."""
 
