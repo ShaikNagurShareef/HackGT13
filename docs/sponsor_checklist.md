@@ -16,14 +16,15 @@ Status as of Sat Sep 26, 2026, 7:00 AM ET. Submit on Devpost by **Sun 07:30** (h
 
 ### Vultr: Best Use of Vultr
 - [x] Account created and logged in
-- [ ] **Apply the MLH gift code** at Vultr → Billing → Gift Code (code in the MLH email "Everything you'll need to know from MLH at HackGT 13", or ask the MLH coach). Blocking: Vultr won't enable the API on an unfunded account.
+- [x] Promo code found in the MLH email "Everything you'll need to know from MLH at HackGT 13"
+- [ ] **Apply it** at Vultr → Billing → Gift Code (sign in through mlh.link/vultr-giftcode). Blocking: Vultr won't enable the API on an unfunded account.
 - [ ] Enable API access, create the key, save `VULTR_API_KEY`
 - [ ] `deploy/go.sh pathpro.tech`: create the VM (Atlanta region), bootstrap, deploy with Caddy and systemd, load Tiger, smoke-test
 - [ ] Stop the laptop tunnel (`deploy/tunnel_watchdog.sh`) once Vultr serves the app
 - [ ] If Vultr isn't live by submission, remove the "Vultr hosts…" claim from `docs/devpost.md` and the README
 
 ### .tech domains: Best .tech Domain
-- [ ] Get the .tech code from the same MLH email
+- [x] .tech promo code claimed on MLH (free for 1 year; **expires Mon Sep 28, 8 PM ET**; redeem at get.tech)
 - [ ] Register **pathpro.tech** ("path protect", a pun as the MLH coach asked) at get.tech with the code from the MLH email. Checked Sep 26: available; backups `walkpro.tech`, `pathde.tech` ("path detect")
 - [ ] Add an A record pointing to the Vultr VM IP; Caddy issues HTTPS automatically
 - [ ] Confirm https://pathpro.tech loads the app
@@ -55,6 +56,9 @@ Status as of Sat Sep 26, 2026, 7:00 AM ET. Submit on Devpost by **Sun 07:30** (h
 
 ### Create-X
 - [ ] Tick the Create-X interest box on Devpost
+
+### MongoDB Atlas (MLH, listed in the email)
+- Not used: Tiger Data is our database. Skip this prize rather than bolt on a second database.
 
 ## Submission
 - [ ] Devpost: every category above, the AI-tool disclosure (Claude Code + ECC) and data credits (already in `docs/devpost.md`)
