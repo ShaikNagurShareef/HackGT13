@@ -1,0 +1,103 @@
+{
+  "sources": {
+    "arc_crashes_2020_2024": {
+      "records_in": 251440,
+      "missing_coords": 0,
+      "zero_coords": 0,
+      "outside_georgia": 0,
+      "kept": 251440
+    },
+    "coa_pedbike_2022": {
+      "records_in": 548,
+      "missing_coords": 0,
+      "zero_coords": 0,
+      "outside_georgia": 0,
+      "kept": 548
+    },
+    "coa_all_2022": {
+      "records_in": 35769,
+      "missing_coords": 0,
+      "zero_coords": 0,
+      "outside_georgia": 0,
+      "kept": 35769
+    },
+    "cap_downtown_2017_2021": {
+      "records_in": 32847,
+      "missing_coords": 0,
+      "zero_coords": 0,
+      "outside_georgia": 0,
+      "kept": 32847
+    },
+    "coa_midtown_2019_2023": {
+      "records_in": 5922,
+      "missing_coords": 0,
+      "zero_coords": 0,
+      "outside_georgia": 0,
+      "kept": 5922
+    },
+    "coa_ka_since_2013": {
+      "records_in": 6004,
+      "missing_coords": 0,
+      "zero_coords": 0,
+      "outside_georgia": 0,
+      "kept": 6004
+    },
+    "gt_pedcyc_2021_2025": {
+      "records_in": 483,
+      "missing_coords": 0,
+      "zero_coords": 0,
+      "outside_georgia": 0,
+      "kept": 483
+    },
+    "marta_all_2023": {
+      "records_in": 46613,
+      "missing_coords": 0,
+      "zero_coords": 0,
+      "outside_georgia": 0,
+      "kept": 46613
+    }
+  },
+  "dedupe": {
+    "timed_in": 127011,
+    "timed_out": 122257,
+    "merged": 4754
+  },
+  "timed": {
+    "core_total": 55596,
+    "core_ped": 1044,
+    "snapped": 42024,
+    "snapped_ped": 1002,
+    "dropped_far_from_road": 13572
+  },
+  "yearly": {
+    "core_total": 43188,
+    "core_ped": 811,
+    "snapped": 32909,
+    "snapped_ped": 784,
+    "dropped_far_from_road": 10279
+  },
+  "timed_ped_by_year": {
+    "2013": 11,
+    "2014": 11,
+    "2015": 18,
+    "2016": 14,
+    "2017": 106,
+    "2018": 113,
+    "2019": 151,
+    "2020": 74,
+    "2021": 137,
+    "2022": 152,
+    "2023": 167,
+    "2024": 46,
+    "2025": 41,
+    "2026": 3
+  },
+  "yearly_ped_by_year": {
+    "2020": 100,
+    "2021": 163,
+    "2022": 152,
+    "2023": 166,
+    "2024": 230
+  },
+  "data_through": "2026-09-19"
+}

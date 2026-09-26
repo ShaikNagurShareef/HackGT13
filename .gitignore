@@ -41,3 +41,7 @@ artifacts/*
 # Claude Code local-only state
 .claude/settings.local.json
 .claude/checkpoints.log
+
+# OSMnx HTTP cache and reproducible intermediates
+cache/
+data/interim/
