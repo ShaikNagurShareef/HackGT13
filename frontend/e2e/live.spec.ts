@@ -4,19 +4,26 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('pathpro:first-run-seen', '1'))
 })
 
-test('first run explains traffic risk and remembers dismissal', async ({ page }) => {
+async function openOptions(page: import('@playwright/test').Page) {
+  await page.getByRole('button', { name: 'Map options', exact: true }).click()
+  return page.getByRole('dialog', { name: 'Map options' })
+}
+
+test('first run explains traffic risk in a toast and remembers dismissal', async ({ page }) => {
   await page.addInitScript(() => localStorage.removeItem('pathpro:first-run-seen'))
   await page.goto('/')
 
-  const dialog = page.getByRole('dialog', { name: 'PathPro' })
-  await expect(dialog).toContainText('Traffic risk only — not crime or personal safety')
-  await dialog.getByRole('button', { name: 'Got it' }).click()
-  await expect(dialog).toBeHidden()
+  const toast = page.getByRole('region', { name: 'Welcome to PathPro' })
+  await expect(toast).toContainText('Traffic risk only — not crime or personal safety')
+  await toast.getByRole('button', { name: 'Got it' }).click()
+  await expect(toast).toBeHidden()
+  expect(await page.evaluate(() => localStorage.getItem('pathpro:first-run-seen'))).toBe('1')
 })
 
 test('Risk Tides slider is keyboard operable with a spoken value (TIDE-04)', async ({ page }) => {
   await page.goto('/?h=21&day=friday&cond=dry')
-  const slider = page.getByRole('slider', { name: 'Hour of day' })
+  const options = await openOptions(page)
+  const slider = options.getByRole('slider', { name: 'Hour of day' })
   await expect(slider).toHaveAttribute('aria-valuetext', /^9 PM, dry, citywide median risk \d+$/)
 
   await slider.focus()
@@ -24,11 +31,13 @@ test('Risk Tides slider is keyboard operable with a spoken value (TIDE-04)', asy
   await expect(slider).toHaveAttribute('aria-valuetext', /^10 PM/)
 })
 
-test('quick picks route between two covered places', async ({ page }) => {
+test('without GPS, picking a destination then a start routes between covered places', async ({ page }) => {
   await page.goto('/?t=2026-09-25T22:30&cond=wet')
-  const picks = page.getByRole('group', { name: /Quick picks/ })
-  await picks.getByRole('button', { name: 'Klaus Building' }).click()
-  await picks.getByRole('button', { name: 'Midtown MARTA' }).click()
+  await page.getByRole('button', { name: 'Where to?' }).click()
+  await page.getByRole('list', { name: 'Popular near Georgia Tech' }).getByRole('button', { name: 'Midtown MARTA' }).click()
+
+  await page.getByRole('button', { name: /From.*Choose a start/ }).click()
+  await page.getByRole('dialog', { name: 'Choose a start' }).getByRole('button', { name: 'Klaus Building' }).click()
 
   await expect(page.getByRole('region', { name: 'Route comparison' })).toContainText(/min/)
   await expect(page).toHaveURL(/from=.*Klaus/)
@@ -48,7 +57,8 @@ test('origin equal to destination is handled (EC-02)', async ({ page }) => {
 
 test('About shows the model card and emergency numbers (TRUST-01/03)', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('button', { name: 'About PathPro' }).click()
+  const options = await openOptions(page)
+  await options.getByRole('button', { name: 'About PathPro' }).click()
 
   const about = page.getByRole('dialog', { name: 'How PathPro works' })
   await expect(about).toContainText('held-out')
@@ -58,8 +68,11 @@ test('About shows the model card and emergency numbers (TRUST-01/03)', async ({ 
 
 test('City Pulse: toggle to citywide hexes and open an area card (CITY-01/02)', async ({ page }) => {
   await page.goto('/?h=22&day=friday&cond=wet')
-  await page.getByRole('button', { name: 'City Pulse' }).click()
-  await expect(page.getByRole('button', { name: 'City Pulse' })).toHaveAttribute('aria-pressed', 'true')
+  const options = await openOptions(page)
+  await options.getByRole('button', { name: 'City Pulse' }).click()
+  await expect(options.getByRole('button', { name: 'City Pulse' })).toHaveAttribute('aria-pressed', 'true')
+  await options.getByRole('button', { name: 'Close options' }).click()
+  await expect(page.getByRole('button', { name: /Changed options: .*City Pulse/ })).toBeVisible()
   await page.waitForTimeout(2500) // fly-to animation settles
   await page.mouse.click(700, 450)
 

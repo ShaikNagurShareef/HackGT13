@@ -1,7 +1,8 @@
 /** Where a walk starts: the GPS fix when it is inside coverage, otherwise a friendly ask. */
 
 import type { Place } from '../state/urlState'
-import { inBbox } from './places'
+import { distanceM } from './navigation'
+import { PLACES, inBbox } from './places'
 
 export const YOUR_LOCATION = 'Your location'
 
@@ -48,4 +49,19 @@ const MESSAGES: Record<OriginStatus, string | null> = {
 
 export function originMessage(status: OriginStatus): string | null {
   return MESSAGES[status]
+}
+
+/** A GPS start this close to a curated place is recorded under that place's name. */
+const NAMED_START_RADIUS_M = 200
+const UNNAMED_START = 'Start point'
+
+/** Trip history never stores "Your location" (it would read "Heading back to Your location?"). */
+export function describeStart(place: Place): Place {
+  if (place.label !== YOUR_LOCATION) return place
+  let best: { label: string; d: number } | null = null
+  for (const p of PLACES) {
+    const d = distanceM(place, p)
+    if (d <= NAMED_START_RADIUS_M && (!best || d < best.d)) best = { label: p.label, d }
+  }
+  return { ...place, label: best?.label ?? UNNAMED_START }
 }

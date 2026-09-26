@@ -27,7 +27,9 @@ export function RouteOption({ line, route, selected, onSelect }: RouteOptionProp
       </span>
       <span className="route-score num" style={{ color: cssColor(route.risk_score) }}>
         <span className="route-score-value">{route.risk_score}</span>
-        <span className="route-score-band">{route.band}</span>
+        <span className="route-score-band" title={`${route.band} on the citywide 0–100 scale`}>
+          risk
+        </span>
       </span>
     </button>
   )

@@ -379,3 +379,44 @@
 .street-reports-status:empty {
   margin: 0; /* stays mounted (not display:none) so the polite live region announces */
 }
+
+/* Loading / failure before the bundle is ready. */
+.status-screen {
+  display: grid;
+  place-items: center;
+  padding: var(--gutter);
+  background: radial-gradient(90% 60% at 50% 30%, rgba(63, 209, 198, 0.1), transparent 70%), var(--bg);
+}
+.status-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 360px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.status-card p {
+  margin: 0;
+}
+.status-brand {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+}
+.status-card .route-loading-bar {
+  width: 180px;
+  margin-top: 6px;
+}
+.status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+a.btn {
+  text-decoration: none;
+  color: var(--text);
+}

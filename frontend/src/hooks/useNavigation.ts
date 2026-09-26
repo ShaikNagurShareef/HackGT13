@@ -10,6 +10,7 @@ import {
   type NavInstruction,
 } from '../lib/navigation'
 import type { GeoFix } from '../lib/origin'
+import { arrivalAt as arrivalAtTime } from '../lib/routeSummary'
 import { deviceSpeak } from '../lib/voice'
 import { WALK_SPEED_MPS, alertText, cumulativeDistances, dueAlert } from '../lib/walk'
 import type { Place } from '../state/urlState'
@@ -22,6 +23,8 @@ export interface NavigationInput {
   gps: GeoFix | null
   streets: ReadonlyArray<NamedPath>
   destination: Place | null
+  /** Planned departure (routes.depart_at): a preview walk arrives on that schedule. */
+  departAt: string | null
 }
 
 export interface Navigation {
@@ -48,7 +51,7 @@ const CLOCK_TICK_MS = 15_000
  * Navigation mode: follows GPS (or the simulated preview walker) along the route, derives the
  * banner, and speaks each high-risk stretch once (VOX-02).
  */
-export function useNavigation({ route, gps, streets, destination }: NavigationInput): Navigation {
+export function useNavigation({ route, gps, streets, destination, departAt }: NavigationInput): Navigation {
   const [active, setActive] = useState(false)
   const [mode, setMode] = useState<NavMode>('gps')
   const [gpsArrived, setGpsArrived] = useState(false)
@@ -59,7 +62,11 @@ export function useNavigation({ route, gps, streets, destination }: NavigationIn
   const [clock, setClock] = useState(() => Date.now())
 
   const cum = useMemo(() => (route ? cumulativeDistances(route.coords) : []), [route])
-  const totalM = cum.length ? cum[cum.length - 1] : 0
+  // The drawn geometry can run longer than the routed walk (repeated segment vertices), while
+  // alerts and durations are in routed metres; measure progress as a share of the geometry.
+  const geometryM = cum.length ? cum[cum.length - 1] : 0
+  const totalM = route && route.distance_m > 0 ? route.distance_m : geometryM
+  const toRouteM = geometryM > 0 ? totalM / geometryM : 1
   const live = active && route != null
   const position: [number, number] | null = !live
     ? null
@@ -68,7 +75,8 @@ export function useNavigation({ route, gps, streets, destination }: NavigationIn
       : gps
         ? [gps.lon, gps.lat]
         : null
-  const alongM = route && position ? projectOnRoute(route.coords, cum, { lon: position[0], lat: position[1] }).alongM : 0
+  const alongM =
+    route && position ? projectOnRoute(route.coords, cum, { lon: position[0], lat: position[1] }).alongM * toRouteM : 0
   const end = route?.coords[route.coords.length - 1]
   const hasPosition = position != null
 
@@ -146,7 +154,8 @@ export function useNavigation({ route, gps, streets, destination }: NavigationIn
     heading: mode === 'gps' ? (gps?.heading ?? null) : null,
     alongM,
     remainingS,
-    arrivalAt: new Date(clock + remainingS * 1000),
+    arrivalAt:
+      mode === 'preview' && departAt && route ? arrivalAtTime(departAt, route.duration_s) : new Date(clock + remainingS * 1000),
     remainingM: Math.max(0, totalM - alongM),
     instruction,
     start,

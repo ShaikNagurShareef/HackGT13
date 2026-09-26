@@ -61,6 +61,8 @@ const HEADING_BASE_M = 9
 const HEADING_SPREAD_DEG = 40
 const M_PER_DEG_LAT = 111_320
 const DIM = 0.45
+/** With a route on screen the citywide streets drop to ~35% so the routes stand out. */
+const ROUTING_STREET_ALPHA = 90
 
 export function buildLayers(input: LayerInput): Layer[] {
   const { frame, frameKey, reducedMotion } = input
@@ -70,7 +72,7 @@ export function buildLayers(input: LayerInput): Layer[] {
     return [hexLayer, ...routeLayers(input.fastest, input.pathpro, input.selectedRoute), ...meLayers(input.me)]
   }
   const routing = input.fastest != null
-  const alpha = routing ? 110 : 230
+  const alpha = routing ? ROUTING_STREET_ALPHA : 230
   const duration = reducedMotion ? 0 : 400
   const score = (id: number) => (frame ? frame[id] : 0)
 

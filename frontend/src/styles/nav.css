@@ -133,3 +133,16 @@
     animation: none;
   }
 }
+
+/* Messages never cover the navigation banner: they stack below it. */
+[data-screen='nav'] .banner {
+  top: calc(var(--safe-top) + 132px);
+}
+@media (min-width: 761px) {
+  [data-screen='nav'] .banner {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: min(560px, calc(100% - 32px));
+  }
+}

@@ -5,7 +5,7 @@ import type { Geolocation } from '../hooks/useGeolocation'
 import type { Navigation } from '../hooks/useNavigation'
 import type { TripPlanner } from '../hooks/useTripPlanner'
 import { startMode } from '../lib/navigation'
-import { originMessage } from '../lib/origin'
+import { describeStart, originMessage } from '../lib/origin'
 import type { RoutineSuggestion, SavedKind } from '../lib/routines'
 import { shareLink, shareableUrl } from '../lib/share'
 import type { Routines } from '../hooks/useRoutines'
@@ -19,7 +19,7 @@ const SHARE_FAILED = "Couldn't share. Copy the link from the address bar instead
 const LOCATION_OFF = 'Location is off. Allow it in your browser settings to start walks from where you are.'
 
 interface Deps {
-  onNotice: (message: string) => void
+  onNotice: (message: string | null) => void
   view: ViewState
   update: (patch: Partial<ViewState>) => void
   geo: Geolocation
@@ -79,7 +79,8 @@ export function useTripActions({ onNotice, view, update, geo, planner, routines,
 
   const start = () => {
     if (!selectedRoute || !view.to) return
-    if (view.from) routines.record({ from: view.from, to: view.to, at: new Date().toISOString() })
+    onNotice(null) // earlier messages would cover the navigation banner
+    if (view.from) routines.record({ from: describeStart(view.from), to: view.to, at: new Date().toISOString() })
     nav.start(startMode(selectedRoute.coords, geo.position).mode)
   }
 

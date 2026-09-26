@@ -5,8 +5,8 @@ test.describe('demo mode (DEMO-01)', () => {
     await page.goto('/?demo=1')
 
     const card = page.getByRole('region', { name: 'Route comparison' })
-    await expect(card).toContainText('less traffic-risk exposure')
-    await expect(page.getByTestId('route-pp')).toBeVisible()
+    await expect(card).toContainText('less traffic risk')
+    await expect(page.getByTestId('route-pp')).toContainText(/arrive \d{1,2}:\d{2} [AP]M/)
     await expect(page.getByTestId('route-fast')).toBeVisible()
     await expect(page.getByTestId('route-explanation')).not.toBeEmpty()
 
@@ -27,6 +27,23 @@ test.describe('demo mode (DEMO-01)', () => {
     await expect(card).toBeVisible()
   })
 
+  test('Start previews the walk offline with the navigation banner, then ends (VOX-05)', async ({ page, context }) => {
+    await page.goto('/?demo=1')
+    await expect(page.getByRole('region', { name: 'Route comparison' })).toBeVisible()
+    await context.setOffline(true)
+
+    await page.getByRole('button', { name: 'Start', exact: true }).click()
+
+    const banner = page.getByRole('status').filter({ hasText: /traffic risk|Continue on/ })
+    await expect(banner).toBeVisible()
+    await expect(page.getByText('Preview walk', { exact: true })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Trip progress' })).toContainText(/\d+ min/)
+    await expect(banner).toContainText('High traffic risk', { timeout: 20_000 })
+
+    await page.getByRole('button', { name: 'End', exact: true }).click()
+    await expect(page.getByRole('region', { name: 'Route comparison' })).toBeVisible()
+  })
+
   test('copy never promises safety (EC-60/61)', async ({ page }) => {
     await page.goto('/?demo=1')
     await expect(page.getByRole('region', { name: 'Route comparison' })).toBeVisible()
@@ -41,8 +58,27 @@ test.describe('demo mode (DEMO-01)', () => {
     await expect(page.getByRole('region', { name: 'Route comparison' })).toBeVisible()
 
     await page.keyboard.press('r')
-    await expect(page.getByRole('button', { name: 'Dry' })).toHaveAttribute('aria-pressed', 'true')
     await page.keyboard.press('t')
-    await expect(page.getByRole('slider', { name: 'Hour of day' })).toHaveAttribute('aria-valuetext', /^10 PM/)
+    await page.getByRole('button', { name: 'Map options', exact: true }).click()
+
+    const options = page.getByRole('dialog', { name: 'Map options' })
+    await expect(options.getByRole('button', { name: 'Dry' })).toHaveAttribute('aria-pressed', 'true')
+    await expect(options.getByRole('slider', { name: 'Hour of day' })).toHaveAttribute('aria-valuetext', /^10 PM/)
+  })
+
+  test('home is map-first: one search pill, and search opens as a sheet (UX-01)', async ({ page }) => {
+    await page.goto('/?demo=1')
+    await page.getByRole('button', { name: 'Back to map' }).click()
+
+    await expect(page.getByRole('button', { name: 'Where to?' })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Risk Tides timeline' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /Changed options: ☂ Wet/ })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Where to?' }).click()
+    const search = page.getByRole('dialog', { name: 'Where to?' })
+    await expect(search.getByRole('combobox', { name: 'Search places' })).toBeFocused()
+    await expect(search.getByRole('heading', { name: 'Popular near Georgia Tech' })).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(search).toHaveCount(0)
   })
 })

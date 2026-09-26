@@ -4,6 +4,7 @@ import { isDemoMode } from '../api/demo'
 import type { Area } from '../api/schemas'
 import { MapControls } from '../components/home/MapControls'
 import { NavigationView } from '../components/nav/NavigationView'
+import { StatusScreen } from '../components/StatusScreen'
 import type { BundleData } from '../hooks/useBundle'
 import { useDemoMode } from '../hooks/useDemoMode'
 import { useExplanation } from '../hooks/useExplanation'
@@ -93,7 +94,13 @@ export function PathPro({ data, loadError }: PathProProps) {
     const ids = new Set(selectedRoute?.segment_ids ?? [])
     return (data?.segments ?? []).filter((s) => ids.has(s.id))
   }, [data, selectedRoute])
-  const nav = useNavigation({ route: selectedRoute, gps: geo.position, streets: routeStreets, destination: view.to })
+  const nav = useNavigation({
+    route: selectedRoute,
+    gps: geo.position,
+    streets: routeStreets,
+    destination: view.to,
+    departAt: routes?.depart_at ?? null,
+  })
   const reports = useViewportReports(!demo && !cityMode)
   const actions = useTripActions({ onNotice: setError, view, update, geo, planner, routines, nav, routes, selectedRoute })
 
@@ -163,20 +170,8 @@ export function PathPro({ data, loadError }: PathProProps) {
     onDay: (d: typeof day) => update({ day: d }),
   }
 
-  if (loadError) {
-    return (
-      <main className="app app-error">
-        <p>{loadError}</p>
-      </main>
-    )
-  }
-  if (!data) {
-    return (
-      <main className="app app-loading" aria-busy="true">
-        <p>Loading PathPro…</p>
-      </main>
-    )
-  }
+  if (loadError) return <StatusScreen kind="error" message={loadError} />
+  if (!data) return <StatusScreen kind="loading" />
   return (
     <main className="app" data-screen={screen}>
       <MapStage
