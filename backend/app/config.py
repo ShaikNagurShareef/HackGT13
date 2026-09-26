@@ -31,6 +31,13 @@ class Settings(BaseSettings):
     elevenlabs_voice_id: str | None = None
     elevenlabs_model: str = "eleven_flash_v2_5"
     tts_daily_budget: int = Field(default=500, ge=0)
+    # xAI (Grok): explanations, voice, and Imagine street redesign illustrations; all optional.
+    xai_api_key: SecretStr | None = None
+    xai_model: str = "grok-4.20-0309-non-reasoning"
+    xai_image_model: str = "grok-imagine-image-2.0"
+    xai_tts_voice: str = "eve"
+    imagine_daily_budget: int = Field(default=40, ge=0)
+    imagine_cache_dir: Path = BACKEND_DIR / "cache" / "imagine"  # git-ignored (cache/)
     geoapify_api_key: SecretStr | None = None
     database_url: SecretStr | None = None
     mongodb_uri: SecretStr | None = None

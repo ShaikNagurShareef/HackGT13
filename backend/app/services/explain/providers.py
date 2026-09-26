@@ -1,16 +1,17 @@
-"""LLM providers behind one interface: Groq (OpenAI-compatible) and Gemini REST."""
+"""LLM providers behind one interface: Grok and Groq (OpenAI-compatible) and Gemini REST."""
 
 from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol
 
 import httpx
 
 from app.services.explain.evidence import Evidence
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+XAI_CHAT_URL = "https://api.x.ai/v1/chat/completions"
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
 SYSTEM_PROMPT = """You explain TRAFFIC risk scores for a walking and riding map of Atlanta.
@@ -37,8 +38,17 @@ def require_text(value: object) -> str:
     return value.strip()
 
 
+def chat_text(payload: Any) -> str:
+    """Text of an OpenAI-compatible chat completion; truncated or empty answers are errors."""
+    choice = payload["choices"][0]
+    if choice.get("finish_reason") != "stop":
+        raise ValueError(f"incomplete completion: {choice.get('finish_reason')}")
+    return require_text(choice["message"].get("content"))
+
+
 class Provider(Protocol):
-    name: str
+    @property
+    def name(self) -> str: ...  # read-only, so frozen dataclass providers satisfy it
 
     async def complete(self, evidence: Evidence, timeout_s: float) -> str: ...
 
@@ -72,10 +82,36 @@ class GroqProvider:
             timeout=timeout_s,
         )
         resp.raise_for_status()
-        choice = resp.json()["choices"][0]
-        if choice.get("finish_reason") != "stop":
-            raise ValueError(f"incomplete completion: {choice.get('finish_reason')}")
-        return require_text(choice["message"].get("content"))
+        return chat_text(resp.json())
+
+
+@dataclass(frozen=True)
+class GrokProvider:
+    """xAI Grok chat completions (OpenAI-compatible; non-reasoning model, no reasoning knob)."""
+
+    client: httpx.AsyncClient
+    api_key: str
+    model: str
+    name: str = "grok"
+
+    async def complete(self, evidence: Evidence, timeout_s: float) -> str:
+        body = {
+            "model": self.model,
+            "temperature": 0.2,
+            "max_completion_tokens": MAX_TOKENS,
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_message(evidence)},
+            ],
+        }
+        resp = await self.client.post(
+            XAI_CHAT_URL,
+            json=body,
+            headers={"Authorization": f"Bearer {self.api_key}"},
+            timeout=timeout_s,
+        )
+        resp.raise_for_status()
+        return chat_text(resp.json())
 
 
 @dataclass(frozen=True)

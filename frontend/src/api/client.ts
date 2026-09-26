@@ -5,6 +5,7 @@ import {
   explainSchema,
   geoResultsSchema,
   hourlySchema,
+  imagineSchema,
   areaSchema,
   metaSchema,
   reportSchema,
@@ -16,6 +17,7 @@ import {
   type Explanation,
   type GeoResult,
   type Hourly,
+  type Imagined,
   type Area,
   type Meta,
   type Report,
@@ -35,6 +37,8 @@ export function apiBase(): string {
   return `${getApiOrigin()}/api`
 }
 const TIMEOUT_MS = 8000
+/** Image generation takes tens of seconds; the server itself gives up after 60 s. */
+const IMAGINE_TIMEOUT_MS = 75_000
 
 export class ApiError extends Error {
   readonly code: string
@@ -58,9 +62,10 @@ export async function request<T extends z.ZodType>(
   path: string,
   schema: T,
   init?: RequestInit,
+  timeoutMs: number = TIMEOUT_MS,
 ): Promise<z.infer<T>> {
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
     const raw = isDemoMode()
       ? await demoResponse(init?.method ?? 'GET', path, init?.body as string | undefined)
@@ -138,6 +143,14 @@ export const api = {
       body: JSON.stringify({ kind: 'segment', seg_id: id, t, cond }),
     }),
   segmentHourly: (id: number): Promise<Hourly> => request(`/segments/${id}/hourly`, hourlySchema),
+  /** Grok Imagine: the server writes the prompt from the street's risk factors; only the id is sent. */
+  imagineSegment: (id: number): Promise<Imagined> =>
+    request(
+      '/imagine/segment',
+      imagineSchema,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seg_id: id }) },
+      IMAGINE_TIMEOUT_MS,
+    ),
   areaAt: (lat: number, lon: number, t: string, cond: Condition): Promise<Area> =>
     request(`/areas/lookup?lat=${lat}&lon=${lon}&t=${encodeURIComponent(t)}&cond=${cond}`, areaSchema),
   area: (cell: string, t: string, cond: Condition): Promise<Area> =>

@@ -31,6 +31,16 @@ async def check_groq(client: httpx.AsyncClient, key: str | None, model: str) -> 
     return (OK, f"models reachable, using {model}") if code == 200 else (FAIL, f"HTTP {code}")
 
 
+async def check_xai(client: httpx.AsyncClient, key: str | None, model: str) -> tuple[str, str]:
+    """xAI (Grok explanations, voice, Imagine): list models, never a paid call."""
+    if not key:
+        return MISSING, "XAI_API_KEY (Grok off; Groq/Gemini explain, ElevenLabs/device voice)"
+    code = await _get(
+        client, "https://api.x.ai/v1/models", headers={"Authorization": f"Bearer {key}"}
+    )
+    return (OK, f"models reachable, using {model}") if code == 200 else (FAIL, f"HTTP {code}")
+
+
 async def check_gemini(client: httpx.AsyncClient, key: str | None, model: str) -> tuple[str, str]:
     if not key:
         return MISSING, "GEMINI_API_KEY"
@@ -98,6 +108,7 @@ async def main() -> int:
     cfg = get_settings()
     async with httpx.AsyncClient() as client:
         results = {
+            "xAI Grok": await check_xai(client, secret(cfg.xai_api_key), cfg.xai_model),
             "Groq": await check_groq(client, secret(cfg.groq_api_key), cfg.groq_model),
             "Gemini": await check_gemini(client, secret(cfg.gemini_api_key), cfg.gemini_model),
             "Geoapify": await check_geoapify(client, secret(cfg.geoapify_api_key)),

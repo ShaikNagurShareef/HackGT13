@@ -380,6 +380,51 @@
   margin: 0; /* stays mounted (not display:none) so the polite live region announces */
 }
 
+/* Grok Imagine street redesign illustration (planner view). */
+.imagine {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.imagine-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.imagine-btn[aria-disabled='true'] {
+  opacity: 0.7;
+  cursor: progress;
+}
+.imagine-figure {
+  margin: 0;
+  border-radius: var(--radius-sm);
+}
+.imagine-figure:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.imagine-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+}
+.imagine-caption {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+.imagine-label {
+  font-weight: 600;
+}
+.imagine-status:empty {
+  margin: 0; /* stays mounted so the polite live region announces errors */
+}
+
 /* Loading / failure before the bundle is ready. */
 .status-screen {
   display: grid;

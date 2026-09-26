@@ -12,6 +12,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from pydantic import SecretStr
 
 from app.api.areas import areas
 from app.api.core import api
@@ -22,6 +23,7 @@ from app.api.envelope import (
     validation_error_handler,
 )
 from app.api.extras import extras
+from app.api.imagine import imagine as imagine_routes
 from app.api.reports import reports
 from app.api.safety import safety as safety_routes
 from app.api.transit import transit
@@ -35,20 +37,34 @@ from app.repositories.history import HistoryRepository
 from app.repositories.reports import ReportsRepository
 from app.repositories.safety import load_safety
 from app.repositories.walks import WalksRepository
-from app.services.explain.providers import GeminiProvider, GroqProvider, Provider
+from app.services.explain.providers import (
+    GeminiProvider,
+    GrokProvider,
+    GroqProvider,
+    Provider,
+)
 from app.services.explain.service import ExplainService
 from app.services.geocode import GeocodeService
-from app.services.tts import TtsService
+from app.services.imagine import ImagineService
+from app.services.tts import GrokTtsService, TtsService, VoiceChain
 from app.services.walks import RecentUpdates
 from app.services.weather import WeatherService
 
 ROUTES_CACHE_SIZE = 512
 
 
+def secret(value: SecretStr | None) -> str | None:
+    """The plain key, or None when unset or blank."""
+    return (value.get_secret_value() or None) if value else None
+
+
 def build_providers(cfg: Settings, client: httpx.AsyncClient) -> list[Provider]:
-    """Groq gpt-oss-120b, then Gemini, then Groq gpt-oss-20b; missing keys drop a provider."""
+    """Grok, Groq gpt-oss-120b, Gemini, then Groq gpt-oss-20b; missing keys drop a provider."""
     providers: list[Provider] = []
-    groq_key = cfg.groq_api_key.get_secret_value() if cfg.groq_api_key else None
+    xai_key = secret(cfg.xai_api_key)
+    if xai_key:
+        providers.append(GrokProvider(client, xai_key, cfg.xai_model))
+    groq_key = secret(cfg.groq_api_key)
     if groq_key:
         providers.append(GroqProvider(client, groq_key, cfg.groq_model))
     if cfg.gemini_api_key:
@@ -57,6 +73,19 @@ def build_providers(cfg: Settings, client: httpx.AsyncClient) -> list[Provider]:
     if groq_key:
         providers.append(GroqProvider(client, groq_key, cfg.groq_fallback_model, name="groq-20b"))
     return providers
+
+
+def build_voices(cfg: Settings, client: httpx.AsyncClient) -> VoiceChain:
+    """Grok voice, then ElevenLabs; the browser's device voice covers the rest (VOX-04)."""
+    grok = GrokTtsService(client, secret(cfg.xai_api_key), cfg.xai_tts_voice, cfg.tts_daily_budget)
+    eleven = TtsService(
+        client,
+        secret(cfg.elevenlabs_api_key),
+        cfg.elevenlabs_voice_id,
+        cfg.elevenlabs_model,
+        cfg.tts_daily_budget,
+    )
+    return VoiceChain((grok, eleven))
 
 
 log = logging.getLogger(__name__)
@@ -81,9 +110,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
             geo_key = cfg.geoapify_api_key.get_secret_value() if cfg.geoapify_api_key else None
             app.state.geocoder = GeocodeService(client, geo_key, cfg.geocode_daily_budget)
-            eleven = cfg.elevenlabs_api_key.get_secret_value() if cfg.elevenlabs_api_key else None
-            app.state.tts = TtsService(
-                client, eleven, cfg.elevenlabs_voice_id, cfg.elevenlabs_model, cfg.tts_daily_budget
+            app.state.tts = build_voices(cfg, client)
+            app.state.imagine = ImagineService(
+                client,
+                secret(cfg.xai_api_key),
+                cfg.xai_image_model,
+                cfg.imagine_cache_dir,
+                cfg.imagine_daily_budget,
             )
             street_reports: ReportsRepository = app.state.reports
             if street_reports.configured and not await street_reports.ensure_indexes():
@@ -134,6 +167,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(walks)
     app.include_router(safety_routes)
     app.include_router(transit)
+    app.include_router(imagine_routes)
     app.mount(
         f"/static/{bundle.model_version}",
         StaticFiles(directory=bundle.root),

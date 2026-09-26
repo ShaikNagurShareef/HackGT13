@@ -1,9 +1,9 @@
 """Per-client sliding-window rate limits (NFR-11) without extra services.
 
 - General limit is generous: at the expo, every judge shares one venue NAT address.
-- Paid endpoints (/explain, /geocode, /tts) and writes (POST /reports, POST /walks) get a tighter
-  per-client limit. Rules are method-aware: the map reads GET /reports on every pan, so
-  viewing reports stays on the general limit.
+- Paid endpoints (/explain, /geocode, /tts, POST /imagine) and writes (POST /reports,
+  POST /walks) get a tighter per-client limit. Rules are method-aware: the map reads
+  GET /reports on every pan, so viewing reports stays on the general limit.
 - The client key is `request.client.host`, which uvicorn's --proxy-headers sets from Caddy's
   X-Forwarded-For only for trusted proxies, so raw headers cannot spoof it.
 - State lives in a bounded TTL cache so rotating addresses cannot exhaust memory.
@@ -29,6 +29,7 @@ PAID_RULES: tuple[tuple[str, str], ...] = (
     (ANY_METHOD, "/explain"),
     (ANY_METHOD, "/geocode"),
     (ANY_METHOD, "/tts"),
+    ("POST", "/imagine"),  # Grok Imagine generation; GET only serves already-cached images
     ("POST", "/reports"),
     ("POST", "/walks"),  # starting a shared walk
     # PUT position stays on the general limit (one venue NAT, ~12/min per walker); an in-memory

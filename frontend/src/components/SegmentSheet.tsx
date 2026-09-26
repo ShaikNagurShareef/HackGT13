@@ -2,6 +2,7 @@ import type { SegmentDetail } from '../api/schemas'
 import { cssColor } from '../lib/bands'
 import { atlantaParts, formatClock } from '../lib/time'
 import { HourlyChart } from './HourlyChart'
+import { ImagineStreet } from './ImagineStreet'
 import { StreetReports } from './StreetReports'
 
 /** Local one-line summary used when the explanation service is unreachable. */
@@ -136,6 +137,7 @@ export function SegmentSheet({ detail, explanation, onClose, onAbout, onListen, 
       </dl>
       {!rideNetwork && <HourlyChart segId={detail.seg_id} highlightHour={atlantaParts(new Date(detail.at)).hour} />}
       {!rideNetwork && <StreetReports key={detail.seg_id} segId={detail.seg_id} onReported={onReported} />}
+      {!rideNetwork && <ImagineStreet key={detail.seg_id} segId={detail.seg_id} streetName={detail.name} />}
       {detail.confidence === 'limited' && (
         <p className="faint">Few recorded crashes here — estimate based mostly on street characteristics.</p>
       )}

@@ -194,6 +194,16 @@ export const hourlySchema = z.object({
   source: z.literal('tiger_data'),
 })
 export type Hourly = z.infer<typeof hourlySchema>
+/** Grok Imagine street redesign illustration (backend/app/api/imagine.py). */
+export const imagineSchema = z.object({
+  seg_id: z.number().int(),
+  image_url: z.string().regex(/^\/imagine\/segment\/\d+\.png$/),
+  prompt_summary: z.string(),
+  fixes: z.array(z.string()),
+  label: z.string(),
+  cached: z.boolean(),
+})
+export type Imagined = z.infer<typeof imagineSchema>
 export const areaSchema = z.object({
   cell: z.string(),
   lat: z.number(),

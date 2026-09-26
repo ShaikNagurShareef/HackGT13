@@ -25,7 +25,11 @@ PATTERNS: dict[str, re.Pattern[str]] = {
     "VULTR_API_KEY": re.compile(r"^[A-Z0-9]{36}$"),
     "ELEVENLABS_VOICE_ID": re.compile(r"^[A-Za-z0-9]{20}$"),
     "GEOAPIFY_API_KEY": re.compile(r"^[a-f0-9]{32}$"),
+    "XAI_API_KEY": re.compile(r"^xai-[A-Za-z0-9]{20,}$"),
 }
+# Recognized when copied, but the watcher does not wait for them.
+OPTIONAL: frozenset[str] = frozenset({"XAI_API_KEY"})
+REQUIRED = [k for k in PATTERNS if k not in OPTIONAL]
 POLL_S = 0.5
 
 
@@ -90,9 +94,9 @@ def main(minutes: float) -> int:
     last = clipboard()  # ignore whatever was already on the clipboard
     print(f"watching clipboard for {minutes:.0f} min", flush=True)
     while time.monotonic() < deadline:
-        missing = [k for k in PATTERNS if not current_values().get(k)]
+        missing = [k for k in REQUIRED if not current_values().get(k)]
         if not missing:
-            print("all keys captured", flush=True)
+            print("all required keys captured", flush=True)
             return 0
         text = clipboard()
         if text and text != last:
@@ -104,7 +108,7 @@ def main(minutes: float) -> int:
                 print(f"already have {name}", flush=True)
             else:
                 write_key(name, unwrap(text)[1])
-                left = [k for k in PATTERNS if not current_values().get(k)]
+                left = [k for k in REQUIRED if not current_values().get(k)]
                 print(f"captured {name} | still needed: {', '.join(left) or 'none'}", flush=True)
         time.sleep(POLL_S)
     print("clipboard watch timed out", flush=True)

@@ -18,7 +18,7 @@ from app.services.explain.evidence import route_evidence, segment_evidence
 from app.services.explain.service import ExplainService
 from app.services.geocode import GeocodeService
 from app.services.segments import segment_detail
-from app.services.tts import TtsService
+from app.services.tts import VoiceChain
 from app.services.weather import WeatherService
 
 extras = APIRouter()
@@ -99,7 +99,7 @@ async def tts(
 ) -> Response:
     """Speak an explanation the server itself produced; clients cannot supply text."""
     text = (await _explanation(req, request, bundle, weather)).text
-    service: TtsService = request.app.state.tts
+    service: VoiceChain = request.app.state.tts
     audio = await service.speak(text)
     if audio is None:
         raise AppError("TTS_UNAVAILABLE", "Voice is unavailable; using the device voice.", 503)

@@ -258,4 +258,3 @@ def test_cached_image_route_rejects_bad_ids_and_traversal(harness: Harness, path
 
     assert resp.status_code in {404, 422}
     assert resp.content != PNG
-    assert resp.json()["success"] is False

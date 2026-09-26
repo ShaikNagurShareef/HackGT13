@@ -1,4 +1,7 @@
-"""Explanation chain: cache -> Groq -> Gemini -> template, all validated (GEN-01..04, EC-40/41)."""
+"""Explanation chain: cache -> Grok -> Groq -> Gemini -> template, all validated.
+
+PRD GEN-01..04, EC-40/41.
+"""
 
 from __future__ import annotations
 
@@ -24,7 +27,7 @@ CACHE_SIZE = 4096
 @dataclass(frozen=True)
 class Explanation:
     text: str
-    source: str  # groq | gemini | template | cache
+    source: str  # grok | groq | gemini | groq-20b | template | cache
 
 
 class DailyBudget:
