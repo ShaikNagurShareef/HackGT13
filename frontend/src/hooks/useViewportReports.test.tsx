@@ -81,6 +81,31 @@ describe('useViewportReports', () => {
     expect(result.current.reports).toHaveLength(1)
   })
 
+  it('keeps the last good markers through a transient error', async () => {
+    respond({ success: true, data: [report()] })
+    const { result } = renderHook(() => useViewportReports(true))
+    act(() => result.current.onViewport(VIEW))
+    await settle()
+
+    vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('offline'))))
+    act(() => result.current.refresh())
+    await settle(0)
+
+    expect(result.current.reports).toHaveLength(1)
+    expect(result.current.available).toBe(true)
+  })
+
+  it('cancels a pending fetch when switched off (e.g. City Pulse)', async () => {
+    const fetcher = respond({ success: true, data: [report()] })
+    const { result, rerender } = renderHook(({ on }) => useViewportReports(on), { initialProps: { on: true } })
+
+    act(() => result.current.onViewport(VIEW))
+    rerender({ on: false })
+    await settle()
+
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+
   it('does nothing while disabled (demo mode, City Pulse)', async () => {
     const fetcher = respond({ success: true, data: [report()] })
     const { result } = renderHook(() => useViewportReports(false))

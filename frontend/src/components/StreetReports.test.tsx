@@ -62,6 +62,23 @@ describe('StreetReports', () => {
     expect(onReported).toHaveBeenCalled()
   })
 
+  it('keeps focus on the chip while sending and does not double-post', async () => {
+    const fetcher = serve({
+      'GET /api/segments/11/reports': () => ({ success: true, data: [] }),
+      'POST /api/reports': () => ({ success: true, data: report({ category: 'fast_traffic', label: 'Fast-moving traffic', confirmations: 1 }) }),
+    })
+    render(<StreetReports segId={11} />)
+
+    const chip = await screen.findByRole('button', { name: 'Fast-moving traffic' })
+    await userEvent.click(chip)
+    await vi.waitFor(() => expect(chip).toHaveAttribute('aria-pressed', 'true'))
+    await userEvent.click(chip)
+
+    expect(chip).toHaveFocus()
+    expect(chip).not.toBeDisabled()
+    expect(fetcher.mock.calls.filter((c) => (c[1] as RequestInit | undefined)?.method === 'POST')).toHaveLength(1)
+  })
+
   it('hides entirely when reports are unavailable', async () => {
     const fetcher = serve({ 'GET /api/segments/11/reports': () => UNAVAILABLE })
 
