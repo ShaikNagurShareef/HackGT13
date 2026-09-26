@@ -76,7 +76,7 @@ def test_design_matrix_appends_ride_extras_and_leaves_walk_columns_alone(
 
     assert list(ride_x.columns) == [*walk_x.columns, *RIDE_EXTRA_COLUMNS]
     pd.testing.assert_frame_equal(design_matrix(ride_as_walk, years), walk_x)
-    pd.testing.assert_frame_equal(ride_x[RIDE_EXTRA_COLUMNS], ride.extra, check_names=False)
+    pd.testing.assert_frame_equal(ride_x[list(RIDE_EXTRA_COLUMNS)], ride.extra, check_names=False)
 
 
 @pytest.mark.unit
