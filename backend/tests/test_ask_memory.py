@@ -625,3 +625,33 @@ def test_memory_tokens_work_with_the_per_process_secret(bundle_dir: Path) -> Non
 
         assert data["memory"] == "on"
         assert _body(messages)["assistant_id"] == CLONE
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("kind", "expected"),
+    [("segment", "Readonly"), ("route", "Readonly"), ("area", "Readonly"), ("conditions", "Auto")],
+)
+async def test_context_questions_never_write_memory_even_on_a_clone(
+    kind: str, expected: str
+) -> None:
+    from app.services.explain.evidence import _with_numbers
+
+    evidence = _with_numbers(kind, {"time": "9 PM", "conditions": "dry"})
+    with respx.mock(assert_all_called=True) as mock:
+        mock.post(CLONE_THREADS_URL).mock(
+            return_value=httpx.Response(200, json={"thread_id": THREAD})
+        )
+        messages = mock.post(MESSAGES_URL).mock(return_value=_reply())
+        async with httpx.AsyncClient() as client:
+            answer = await _service(client, memory_tokens=MEMORY).ask(
+                "How was the model tested?",
+                None,
+                client=CLIENT,
+                evidence=evidence,
+                memory_token=MEMORY.issue(CLONE),
+            )
+
+    body = _body(messages)
+    assert body["assistant_id"] == CLONE and body["memory"] == expected
+    assert answer.memory == "on"
