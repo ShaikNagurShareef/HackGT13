@@ -1,8 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import type { Area } from '../api/schemas'
 import { meta, segment } from '../test/fixtures'
 import { About } from './About'
+import { AreaCard } from './AreaCard'
 import { ConditionsChip, DepartPicker, Legend, TrustNote } from './Controls'
 import { FactorBars, ScoreDial, SegmentSheet } from './SegmentSheet'
 import { Timeline, hourAt, positionOf } from './Timeline'
@@ -37,6 +39,48 @@ describe('SegmentSheet (EXP-01..05)', () => {
   it('clamps the dial', () => {
     render(<ScoreDial score={140} band="High" />)
     expect(screen.getByRole('img')).toHaveAccessibleName('Traffic risk 140 of 100, High')
+  })
+
+  it('offers "Ask about this street" only when Ask PathPro is available', async () => {
+    const onAsk = vi.fn()
+    const { rerender } = render(<SegmentSheet detail={segment()} explanation="Because." onClose={vi.fn()} onAbout={vi.fn()} onAsk={onAsk} />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ask about this street' }))
+    expect(onAsk).toHaveBeenCalledTimes(1)
+
+    rerender(<SegmentSheet detail={segment()} explanation="Because." onClose={vi.fn()} onAbout={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: 'Ask about this street' })).toBeNull()
+  })
+})
+
+describe('AreaCard (CITY-02)', () => {
+  const area: Area = {
+    cell: '8844c0a305fffff',
+    lat: 33.77,
+    lon: -84.39,
+    score: 70,
+    band: 'Elevated',
+    confidence: 'medium',
+    baseline_points: 50,
+    factors: [],
+    remainder_points: 20,
+    crashes: 12,
+    ped_crashes: 2,
+    period: '2020-2024',
+    in_street_coverage: true,
+    condition_used: { cond: 'dry', source: 'override', label: 'Dry' },
+    at: '2026-09-25T22:30:00-04:00',
+  }
+
+  it('offers "Ask about this area" only when Ask PathPro is available', async () => {
+    const onAsk = vi.fn()
+    const { rerender } = render(<AreaCard area={area} onClose={vi.fn()} onAbout={vi.fn()} onAsk={onAsk} />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ask about this area' }))
+    expect(onAsk).toHaveBeenCalledTimes(1)
+
+    rerender(<AreaCard area={area} onClose={vi.fn()} onAbout={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: 'Ask about this area' })).toBeNull()
   })
 })
 

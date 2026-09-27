@@ -161,6 +161,37 @@ describe('DetailLayer', () => {
     vi.unstubAllGlobals()
   })
 
+  it('asks about the street with its context and a "<street> · <hour>" label', async () => {
+    vi.spyOn(api, 'explainSegment').mockResolvedValue({ text: 'Because.', source: 'template' })
+    vi.spyOn(api, 'segmentHourly').mockRejectedValue(new Error('down'))
+    vi.spyOn(api, 'segmentReports').mockResolvedValue([])
+    vi.stubGlobal('matchMedia', () => ({ matches: true }))
+    const onAsk = vi.fn()
+    render(<DetailLayer area={null} detail={segment()} cond="wet" mode="bike" onCloseArea={noop} onCloseDetail={noop} onAbout={noop} onReported={noop} onAsk={onAsk} />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ask about this street' }))
+
+    expect(onAsk).toHaveBeenCalledWith(
+      { kind: 'segment', seg_id: 11, t: '2026-09-25T22:30:00-04:00', cond: 'wet', mode: 'bike' },
+      'Fifth Street Northwest · 10 PM',
+    )
+    vi.unstubAllGlobals()
+  })
+
+  it('asks about a City Pulse area with its cell, time, and conditions', async () => {
+    const onAsk = vi.fn()
+    render(<DetailLayer area={area} detail={null} cond="live" onCloseArea={noop} onCloseDetail={noop} onAbout={noop} onReported={noop} onAsk={onAsk} />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ask about this area' }))
+
+    expect(onAsk).toHaveBeenCalledWith({ kind: 'area', cell: '8844c0a305fffff', t: '2026-09-25T22:30:00-04:00', cond: 'live' }, 'this area')
+  })
+
+  it('hides the Ask entry points when Ask PathPro is unavailable (demo)', () => {
+    render(<DetailLayer area={area} detail={null} cond="dry" onCloseArea={noop} onCloseDetail={noop} onAbout={noop} onReported={noop} />)
+    expect(screen.queryByRole('button', { name: 'Ask about this area' })).toBeNull()
+  })
+
   it('renders nothing without a selection', () => {
     const { container } = render(<DetailLayer area={null} detail={null} cond="wet" onCloseArea={noop} onCloseDetail={noop} onAbout={noop} onReported={noop} />)
     expect(container).toBeEmptyDOMElement()
@@ -208,6 +239,22 @@ describe('Panels', () => {
     rerender(<Panels {...base} panel={{ kind: 'about' }} />)
     expect(screen.getByRole('dialog', { name: 'How PathPro works' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: /Personal safety layer/ })).toBeNull()
+  })
+
+  it('opens Ask PathPro with the context chip when Ask is available, and not in demo', () => {
+    const panel = { kind: 'ask', context: { kind: 'route', route_key: 'rk-123' }, contextLabel: 'this route' } as const
+    const { rerender } = render(<Panels {...base} panel={panel} askAvailable />)
+    expect(screen.getByRole('dialog', { name: 'Ask PathPro' })).toBeInTheDocument()
+    expect(screen.getByText('About: this route')).toBeInTheDocument()
+
+    rerender(<Panels {...base} panel={panel} askAvailable={false} />)
+    expect(screen.queryByRole('dialog', { name: 'Ask PathPro' })).toBeNull()
+  })
+
+  it('opens general Ask PathPro from Options without a context', async () => {
+    render(<Panels {...base} panel={{ kind: 'options' }} askAvailable />)
+    await userEvent.click(screen.getByRole('button', { name: /Ask PathPro/ }))
+    expect(actions.setPanel).toHaveBeenCalledWith({ kind: 'ask' })
   })
 
   it('adds the personal safety section to About when the layer is available', () => {

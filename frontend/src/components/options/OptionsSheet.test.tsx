@@ -1,6 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_SAFETY_LAYERS, FAIRNESS_NOTE } from '../../lib/safety'
 import { helpPoint, safetyMeta } from '../../test/fixtures'
 import { OptionsSheet, type OptionsSheetProps } from './OptionsSheet'
@@ -85,6 +85,51 @@ describe('OptionsSheet', () => {
     setup()
     expect(screen.queryByRole('button', { name: 'Personal safety' })).toBeNull()
     expect(screen.queryByRole('group', { name: 'Route preference' })).toBeNull()
+  })
+
+  describe('Ask PathPro memory', () => {
+    const TOKEN = '33333333-3333-4333-8333-333333333333.bWVtb3J5LXRva2VuLXNpZ25hdHVyZQ'
+    const KEY = 'pathpro:ask-memory:v1'
+    afterEach(() => {
+      vi.unstubAllGlobals()
+      window.localStorage.clear()
+    })
+
+    it('shows no forget button when this browser has no Ask memory', () => {
+      setup()
+      expect(screen.queryByRole('button', { name: 'Forget Ask PathPro memory' })).toBeNull()
+    })
+
+    it('forgets Ask PathPro memory next to Clear history and confirms it', async () => {
+      const user = userEvent.setup()
+      window.localStorage.setItem(KEY, JSON.stringify({ token: TOKEN, on: true }))
+      const fetcher = vi.fn(
+        async () => new Response(JSON.stringify({ success: true, data: { forgotten: true } }), { headers: { 'content-type': 'application/json' } }),
+      )
+      vi.stubGlobal('fetch', fetcher)
+      setup()
+
+      await user.click(screen.getByRole('button', { name: 'Forget Ask PathPro memory' }))
+
+      expect(await screen.findByRole('status')).toHaveTextContent('Ask PathPro memory deleted.')
+      const [url, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit]
+      expect(url).toBe('/api/ask/memory/forget')
+      expect(JSON.parse(String(init.body))).toEqual({ memory_token: TOKEN })
+      expect(window.localStorage.getItem(KEY)).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Forget Ask PathPro memory' })).toBeNull()
+    })
+
+    it('keeps the memory and says so when it cannot be deleted right now', async () => {
+      const user = userEvent.setup()
+      window.localStorage.setItem(KEY, JSON.stringify({ token: TOKEN, on: true }))
+      vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('offline'))))
+      setup()
+
+      await user.click(screen.getByRole('button', { name: 'Forget Ask PathPro memory' }))
+
+      await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/couldn't delete/i))
+      expect(window.localStorage.getItem(KEY)).not.toBeNull()
+    })
   })
 })
 

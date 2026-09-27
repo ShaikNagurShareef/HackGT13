@@ -95,6 +95,21 @@ describe('RouteSheet (RTE-04, mobile route sheet)', () => {
     expect(screen.queryByTestId('route-pp')).toBeNull()
     expect(screen.queryByRole('button', { name: /Preview walk/ })).toBeInTheDocument()
   })
+
+  it('offers "Ask about this route" in the details only when Ask PathPro is available', async () => {
+    const user = userEvent.setup()
+    const onAsk = vi.fn()
+    setup({ onAsk })
+
+    await user.click(screen.getByRole('button', { name: /Why\?/ }))
+    await user.click(screen.getByRole('button', { name: 'Ask about this route' }))
+    expect(onAsk).toHaveBeenCalledTimes(1)
+  })
+
+  it('has no "Ask about this route" without Ask PathPro (demo)', () => {
+    setup()
+    expect(screen.queryByRole('button', { name: 'Ask about this route' })).toBeNull()
+  })
 })
 
 describe('RouteSheet personal-safety signals', () => {

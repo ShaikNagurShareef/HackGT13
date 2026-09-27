@@ -143,4 +143,15 @@ describe('useTripActions', () => {
     expect(nav.end).toHaveBeenCalled()
     expect(planner.clear).toHaveBeenCalled()
   })
+
+  it('opens Ask PathPro with or without an on-screen context', () => {
+    const { result } = setup()
+    const context = { kind: 'route', route_key: 'rk-123' } as const
+
+    act(() => result.current.openAsk(context, 'this route'))
+    expect(result.current.panel).toEqual({ kind: 'ask', context, contextLabel: 'this route' })
+
+    act(() => result.current.openAsk())
+    expect(result.current.panel).toEqual({ kind: 'ask' })
+  })
 })

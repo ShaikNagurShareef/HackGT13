@@ -117,8 +117,8 @@ describe('community reports client', () => {
     const data = { answer: 'A.', thread_id: token, source: 'backboard', note: 'n' }
     const fetcher = respond({ success: true, data })
 
-    expect(await api.ask('How was the model tested?', null)).toEqual(data)
-    expect(await api.ask('Follow up?', token)).toEqual(data)
+    expect(await api.ask('How was the model tested?', null)).toMatchObject(data)
+    expect(await api.ask('Follow up?', token)).toMatchObject(data)
 
     const bodies = fetcher.mock.calls.map((c) => JSON.parse(String((c as unknown as [string, RequestInit])[1].body)))
     expect(bodies).toEqual([{ question: 'How was the model tested?' }, { question: 'Follow up?', thread_id: token }])
@@ -128,7 +128,113 @@ describe('community reports client', () => {
     const data = { answer: 'A.', thread_id: null, source: 'fallback', note: 'n' }
     respond({ success: true, data })
 
-    expect(await api.ask('How was the model tested?', null)).toEqual(data)
+    expect(await api.ask('How was the model tested?', null)).toMatchObject(data)
+  })
+
+  it('fills the v2 Ask fields with safe defaults when an older server leaves them out', async () => {
+    respond({ success: true, data: { answer: 'A.', thread_id: null, source: 'fallback', note: 'n' } })
+
+    expect(await api.ask('How was the model tested?', null)).toEqual({
+      answer: 'A.',
+      thread_id: null,
+      source: 'fallback',
+      note: 'n',
+      sources: [],
+      memory: 'off',
+      context_used: 'conditions',
+      context_dropped: false,
+    })
+  })
+
+  it('sends the on-screen context and the memory token with a question', async () => {
+    const memoryToken = '33333333-3333-4333-8333-333333333333.bWVtb3J5LXRva2VuLXNpZ25hdHVyZQ'
+    const fetcher = respond({
+      success: true,
+      data: {
+        answer: 'A.',
+        thread_id: null,
+        source: 'backboard',
+        note: 'n',
+        sources: [{ label: 'Model card', url: 'https://github.com/pathpro/docs/model_card.md' }],
+        memory: 'on',
+        context_used: 'segment',
+        context_dropped: false,
+      },
+    })
+    const context = { kind: 'segment', seg_id: 11, t: '2026-09-25T22:30:00-04:00', cond: 'wet', mode: 'walk' } as const
+
+    const reply = await api.ask('Why is this street high-risk at this hour?', null, { context, memoryToken })
+
+    expect(reply.memory).toBe('on')
+    expect(reply.context_used).toBe('segment')
+    expect(reply.sources).toEqual([{ label: 'Model card', url: 'https://github.com/pathpro/docs/model_card.md' }])
+    const [url, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe('/api/ask')
+    expect(JSON.parse(String(init.body))).toEqual({
+      question: 'Why is this street high-risk at this hour?',
+      context,
+      memory_token: memoryToken,
+    })
+  })
+
+  it('drops Ask sources that are not plain https links, keeping the rest', async () => {
+    respond({
+      success: true,
+      data: {
+        answer: 'A.',
+        thread_id: null,
+        source: 'backboard',
+        note: 'n',
+        sources: [
+          { label: 'Model card', url: 'https://github.com/pathpro/docs/model_card.md' },
+          { label: 'Sneaky', url: 'javascript:alert(1)' },
+          { label: 'Plain', url: 'http://example.com/x' },
+          'not-an-object',
+        ],
+        memory: 'sometimes',
+        context_used: 'weather',
+        context_dropped: 'yes',
+      },
+    })
+
+    const reply = await api.ask('How was the model tested?', null)
+
+    expect(reply.sources).toEqual([{ label: 'Model card', url: 'https://github.com/pathpro/docs/model_card.md' }])
+    expect(reply.memory).toBe('off')
+    expect(reply.context_used).toBe('conditions')
+    expect(reply.context_dropped).toBe(false)
+  })
+
+  it('turns Ask memory on and returns the signed memory token', async () => {
+    const memoryToken = '33333333-3333-4333-8333-333333333333.bWVtb3J5LXRva2VuLXNpZ25hdHVyZQ'
+    const fetcher = respond({ success: true, data: { memory_token: memoryToken } })
+
+    expect(await api.askMemoryOn()).toBe(memoryToken)
+
+    const [url, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe('/api/ask/memory')
+    expect(init.method).toBe('POST')
+    expect(JSON.parse(String(init.body))).toEqual({})
+  })
+
+  it('rejects a malformed memory token and surfaces the daily memory limit', async () => {
+    respond({ success: true, data: { memory_token: 'not-a-token' } })
+    await expect(api.askMemoryOn()).rejects.toMatchObject({ code: 'BAD_RESPONSE' })
+
+    respond({ success: false, data: null, error: { code: 'ASK_MEMORY_LIMIT', message: 'limit' } })
+    await expect(api.askMemoryOn()).rejects.toMatchObject({ code: 'ASK_MEMORY_LIMIT' })
+  })
+
+  it('forgets Ask memory by posting the token', async () => {
+    const memoryToken = '33333333-3333-4333-8333-333333333333.bWVtb3J5LXRva2VuLXNpZ25hdHVyZQ'
+    const fetcher = respond({ success: true, data: { forgotten: true } })
+
+    await api.askMemoryForget(memoryToken)
+
+    const [url, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe('/api/ask/memory/forget')
+    expect(init.method).toBe('POST')
+    expect(JSON.parse(String(init.body))).toEqual({ memory_token: memoryToken })
   })
 
   it('rejects an Ask answer carrying a bare, unsigned thread id', async () => {
