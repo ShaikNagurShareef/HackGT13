@@ -13,6 +13,10 @@ export interface ModeTabsProps {
   compact?: boolean
 }
 
+/** Mode glyphs read at a glance: 28 px in the tabs, 22 px in the compact search row. */
+const TAB_ICON = 28
+const COMPACT_ICON = 22
+
 function durationText(d: TabDuration | null | undefined): string | null {
   if (!d) return null
   return `${d.estimated ? '~' : ''}${d.minutes} min`
@@ -53,9 +57,11 @@ export function ModeTabs({ options, selected, onSelect, durations = {}, compact 
               data-mode={option.key}
               onClick={() => handleClick(option)}
             >
-              <Icon name={option.key} size={compact ? 18 : 20} />
+              <span className="mode-tab-icon" aria-hidden="true">
+                <Icon name={option.key} size={compact ? COMPACT_ICON : TAB_ICON} />
+              </span>
               {!compact && <span className="mode-tab-label">{label}</span>}
-              {!compact && time && <span className="mode-tab-time num">{time}</span>}
+              {!compact && <span className="mode-tab-time num">{option.available ? (time ?? '\u00a0') : 'Soon'}</span>}
             </button>
           )
         })}
