@@ -38,6 +38,34 @@ describe('home chrome', () => {
     expect(screen.getByRole('button', { name: 'Location is off' })).toBeInTheDocument()
   })
 
+  it('map controls add the Ask PathPro agent button only when Ask is available', async () => {
+    const onAsk = vi.fn()
+    const { rerender } = render(<MapControls onLayers={vi.fn()} onLocate={vi.fn()} geoStatus="prompt" onAsk={onAsk} />)
+
+    const agent = screen.getByRole('button', { name: 'Ask PathPro' })
+    expect(agent).toHaveAttribute('aria-expanded', 'false')
+    expect(agent).toHaveAttribute('title', 'Ask PathPro')
+    await userEvent.click(agent)
+    expect(onAsk).toHaveBeenCalledTimes(1)
+
+    rerender(<MapControls onLayers={vi.fn()} onLocate={vi.fn()} geoStatus="prompt" onAsk={onAsk} askOpen />)
+    expect(screen.getByRole('button', { name: 'Ask PathPro' })).toHaveAttribute('aria-expanded', 'true')
+
+    rerender(<MapControls onLayers={vi.fn()} onLocate={vi.fn()} geoStatus="prompt" />)
+    expect(screen.queryByRole('button', { name: 'Ask PathPro' })).toBeNull()
+  })
+
+  it('the agent button pulses on its first appearance in a session only', () => {
+    window.sessionStorage.clear()
+    const { unmount } = render(<MapControls onLayers={vi.fn()} onLocate={vi.fn()} geoStatus="prompt" onAsk={vi.fn()} />)
+    expect(screen.getByRole('button', { name: 'Ask PathPro' })).toHaveAttribute('data-intro', 'true')
+    unmount()
+
+    render(<MapControls onLayers={vi.fn()} onLocate={vi.fn()} geoStatus="prompt" onAsk={vi.fn()} />)
+    expect(screen.getByRole('button', { name: 'Ask PathPro' })).not.toHaveAttribute('data-intro')
+    window.sessionStorage.clear()
+  })
+
   it('legend chip expands to the full legend', async () => {
     render(<LegendChip reports />)
     const chip = screen.getByRole('button', { name: /Lower.*High traffic risk/ })

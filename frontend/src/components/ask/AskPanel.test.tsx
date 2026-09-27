@@ -1,6 +1,7 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { axe } from 'vitest-axe'
 import { resetRuntimeForTests } from '../../api/runtime'
 import { ASK_ERROR, ASK_SUGGESTIONS, ASK_THREAD_KEY, AskPanel } from './AskPanel'
 
@@ -81,7 +82,7 @@ describe('AskPanel (Ask PathPro on Backboard)', () => {
     await userEvent.type(input, 'What data does PathPro use?{enter}')
     await screen.findByText('First answer.')
     await userEvent.type(input, 'And how often is it updated?')
-    await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByText('Second answer.')
 
     expect(sentBody(fetcher, 0)).toEqual({ question: 'What data does PathPro use?' })
@@ -143,7 +144,7 @@ describe('AskPanel (Ask PathPro on Backboard)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'How was the model tested?' }))
 
     expect(screen.getByRole('status')).toHaveTextContent(/looking through pathpro's docs/i)
-    expect(screen.getByRole('button', { name: 'Ask' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
     release(new Response(JSON.stringify(answer('Done.')), JSON_HEADERS))
     await screen.findByText('Done.')
   })
@@ -488,5 +489,85 @@ describe('AskPanel v2: opt-in memory', () => {
     window.localStorage.setItem(MEMORY_KEY, JSON.stringify({ token: MEMORY_TOKEN, on: true }))
     const { container } = render(<AskPanel onClose={vi.fn()} />)
     expect(container.textContent ?? '').not.toMatch(BANNED)
+  })
+})
+
+describe('AskPanel chat layout', () => {
+  beforeEach(() => {
+    window.sessionStorage.clear()
+    window.localStorage.clear()
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    resetRuntimeForTests()
+    window.sessionStorage.clear()
+    window.localStorage.clear()
+  })
+
+  it('names the assistant in the header and says it is powered by Backboard', () => {
+    render(<AskPanel onClose={vi.fn()} />)
+
+    const dialog = screen.getByRole('dialog', { name: 'Ask PathPro' })
+    expect(within(dialog).getByRole('heading', { name: 'Ask PathPro' })).toBeInTheDocument()
+    expect(within(dialog).getByText('Powered by Backboard')).toBeInTheDocument()
+  })
+
+  it('shows the question as a message with a typing indicator while waiting', async () => {
+    let release: (r: Response) => void = () => undefined
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>((resolve) => (release = resolve))))
+    render(<AskPanel onClose={vi.fn()} />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'How was the model tested?' }))
+
+    const log = screen.getByRole('log')
+    expect(log).toHaveTextContent('How was the model tested?')
+    expect(within(log).getByTestId('ask-typing')).toBeInTheDocument()
+    release(new Response(JSON.stringify(answer('Done.')), JSON_HEADERS))
+    await screen.findByText('Done.')
+    expect(within(log).queryByTestId('ask-typing')).toBeNull()
+    expect(within(log).getAllByText('How was the model tested?')).toHaveLength(1)
+  })
+
+  it('drops the pending question when the answer fails, keeping the error line', async () => {
+    respondWith({ success: false, data: null, error: { code: 'ASK_UNAVAILABLE', message: 'x' } })
+    render(<AskPanel onClose={vi.fn()} />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'How was the model tested?' }))
+
+    expect(await screen.findByText(ASK_ERROR)).toBeInTheDocument()
+    expect(screen.getByRole('log')).not.toHaveTextContent('How was the model tested?')
+  })
+
+  it('marks a fallback answer so it reads as a muted message', async () => {
+    respondWith(answer('I could not answer that.', null, 'fallback'), answer('Real answer.'))
+    render(<AskPanel onClose={vi.fn()} />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'How was the model tested?' }))
+    const fallback = await screen.findByText('I could not answer that.')
+    await userEvent.type(screen.getByRole('textbox', { name: /your question/i }), 'Try again please{enter}')
+    const real = await screen.findByText('Real answer.')
+
+    expect(fallback.closest('[data-variant]')).toHaveAttribute('data-variant', 'fallback')
+    expect(real.closest('[data-variant]')).toHaveAttribute('data-variant', 'answer')
+  })
+
+  it('tucks the memory privacy note under an info button', async () => {
+    render(<AskPanel onClose={vi.fn()} />)
+
+    const info = screen.getByRole('button', { name: 'What memory keeps' })
+    const note = screen.getByText(PRIVACY_NOTE)
+    expect(info).toHaveAttribute('aria-expanded', 'false')
+    expect(note).not.toBeVisible()
+    expect(screen.getByRole('switch', { name: 'Remember my preferences' })).toHaveAccessibleDescription(PRIVACY_NOTE)
+
+    await userEvent.click(info)
+
+    expect(info).toHaveAttribute('aria-expanded', 'true')
+    expect(note).toBeVisible()
+  })
+
+  it('has no axe violations with a context chip', async () => {
+    const { container } = render(<AskPanel onClose={vi.fn()} context={SEGMENT_CONTEXT} contextLabel={STREET_LABEL} />)
+    expect((await axe(container)).violations).toEqual([])
   })
 })
