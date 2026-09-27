@@ -85,6 +85,13 @@ button {
   white-space: nowrap;
 }
 
+.chip {
+  transition: border-color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
+}
+.chip:hover:not(:disabled):not([aria-pressed='true']):not(.active) {
+  border-color: rgba(63, 209, 198, 0.45);
+}
+
 .chip[aria-pressed='true'],
 .chip.active {
   background: var(--teal);
@@ -96,7 +103,7 @@ button {
 .btn {
   min-height: 44px;
   padding: 10px 16px;
-  border-radius: var(--radius-sm);
+  border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--surface-strong);
 }
