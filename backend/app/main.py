@@ -118,7 +118,13 @@ def build_ask(cfg: Settings, client: httpx.AsyncClient) -> tuple[AskService, Ask
         thread_tokens=ThreadTokens(secret_bytes),
         memory_tokens=memory_tokens,
     )
-    memory = AskMemory(backboard, assistant_id, memory_tokens, daily_budget=cfg.ask_memory_daily)
+    memory = AskMemory(
+        backboard,
+        assistant_id,
+        memory_tokens,
+        daily_budget=cfg.ask_memory_daily,
+        per_client_daily=cfg.ask_memory_per_client_daily,
+    )
     return service, memory
 
 

@@ -53,6 +53,7 @@ class Settings(BaseSettings):
     # Opt-in private memory: Backboard assistant clones created per day across all visitors
     # (each client address may create ASK_MEMORY_PER_CLIENT_DAILY = 3 per day).
     ask_memory_daily: int = Field(default=100, ge=0)
+    ask_memory_per_client_daily: int = Field(default=3, ge=0)  # raise at a shared venue NAT
     # Signs Ask thread and memory tokens; unset: random per process (both reset on restart).
     ask_thread_secret: SecretStr | None = None
     database_url: SecretStr | None = None
