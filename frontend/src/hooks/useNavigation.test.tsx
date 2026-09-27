@@ -1,7 +1,9 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { api } from '../api/client'
 import type { Route } from '../api/schemas'
 import type { GeoFix } from '../lib/origin'
+import { spokenTexts, stubAudio, stubBlobUrls } from '../test/audio'
 import { route } from '../test/fixtures'
 import { useNavigation } from './useNavigation'
 
@@ -154,5 +156,70 @@ describe('useNavigation', () => {
     act(() => ride.result.current.start('preview'))
     act(() => void vi.advanceTimersByTime(1000))
     expect(ride.result.current.alongM).toBeGreaterThan(walk.result.current.alongM * 2)
+  })
+
+  describe('Grok Voice alerts', () => {
+    const KEY = 'aaaaaaaaaaaaaaaa'
+    const withVoice = () =>
+      renderHook(() =>
+        useNavigation({ route: route(), gps: null, streets: STREETS, destination: DEST, departAt: DEPART, routeKey: KEY, routeKind: 'fast' }),
+      )
+    const walkToTheEnd = () => {
+      for (let i = 0; i < 120; i++) act(() => void vi.advanceTimersByTime(500))
+    }
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+      window.history.replaceState(null, '', '/')
+    })
+
+    it('prefetches the route alert clips on start and plays the Grok clip for each stretch', async () => {
+      vi.useFakeTimers()
+      stubBlobUrls()
+      const audio = stubAudio()
+      const fetchClip = vi.spyOn(api, 'ttsAlert').mockResolvedValue(new Blob(['mp3']))
+      const { result } = withVoice()
+
+      act(() => result.current.start('preview'))
+      await act(async () => {})
+      expect(fetchClip).toHaveBeenCalledTimes(1)
+      expect(fetchClip).toHaveBeenCalledWith(KEY, 0, 'fast', expect.any(AbortSignal))
+
+      walkToTheEnd()
+      expect(audio.sources).toEqual(['blob:clip-0'])
+      expect(spokenTexts(speak).filter((t) => t.includes('Spring Street'))).toHaveLength(0)
+      expect(spokenTexts(speak)).toContain("You've arrived.")
+    })
+
+    it('falls back to the device voice, with the distance, when the clip is missing', async () => {
+      vi.useFakeTimers()
+      stubBlobUrls()
+      const audio = stubAudio()
+      vi.spyOn(api, 'ttsAlert').mockRejectedValue(new Error('503'))
+      const { result } = withVoice()
+
+      act(() => result.current.start('preview'))
+      await act(async () => {})
+      walkToTheEnd()
+
+      expect(audio.sources).toEqual([])
+      expect(spokenTexts(speak).filter((t) => t.includes('Spring Street'))).toEqual([
+        'In 60 meters, Spring Street has high traffic risk. Take extra care crossing.',
+      ])
+    })
+
+    it('keeps the device voice in demo mode', async () => {
+      vi.useFakeTimers()
+      window.history.replaceState(null, '', '/?demo=1')
+      const fetchClip = vi.spyOn(api, 'ttsAlert')
+      const { result } = withVoice()
+
+      act(() => result.current.start('preview'))
+      await act(async () => {})
+      walkToTheEnd()
+
+      expect(fetchClip).not.toHaveBeenCalled()
+      expect(spokenTexts(speak).filter((t) => t.includes('Spring Street'))).toHaveLength(1)
+    })
   })
 })

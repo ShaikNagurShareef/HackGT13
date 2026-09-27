@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { stubAudio, stubSpeech } from '../test/audio'
 import { route } from '../test/fixtures'
 import { usePreviewWalk } from './usePreviewWalk'
 
@@ -38,5 +39,23 @@ describe('usePreviewWalk (VOX-05)', () => {
     act(() => result.current.stop())
     expect(result.current.active).toBe(false)
     expect(result.current.banner).toBeNull()
+  })
+
+  it('plays the prefetched clip for an alert when voice is on, and stays silent when it is off', () => {
+    vi.useFakeTimers()
+    const speakSpy = stubSpeech()
+    const audio = stubAudio()
+    const clipFor = (i: number) => (i === 0 ? 'blob:clip-0' : null)
+    const r = route()
+    const on = renderHook(() => usePreviewWalk(r, true, undefined, clipFor))
+    const off = renderHook(() => usePreviewWalk(r, false, undefined, clipFor))
+
+    act(() => on.result.current.start())
+    act(() => off.result.current.start())
+    act(() => void vi.advanceTimersByTime(60_000))
+
+    expect(on.result.current.banner).toContain('Spring Street')
+    expect(audio.sources).toEqual(['blob:clip-0'])
+    expect(speakSpy).not.toHaveBeenCalled()
   })
 })

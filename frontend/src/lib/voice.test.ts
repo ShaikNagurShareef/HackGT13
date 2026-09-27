@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { deviceSpeak, speak } from './voice'
+import { stubAudio } from '../test/audio'
+import { deviceSpeak, playAlert, speak } from './voice'
 
 function stubSpeech() {
   const speakSpy = vi.fn()
@@ -33,5 +34,23 @@ describe('voice (VOX-01/04)', () => {
   it('reports none when the device has no speech synthesis', () => {
     vi.stubGlobal('speechSynthesis', undefined)
     expect(deviceSpeak('hello')).toBe(false)
+  })
+
+  it('plays a prefetched alert clip instead of the device voice', async () => {
+    const speakSpy = stubSpeech()
+    const audio = stubAudio()
+
+    expect(await playAlert('blob:clip-0', 'In 60 meters, Spring Street has high traffic risk.')).toBe('server')
+    expect(audio.sources).toEqual(['blob:clip-0'])
+    expect(speakSpy).not.toHaveBeenCalled()
+  })
+
+  it('speaks the alert text on the device when there is no clip or it cannot play', async () => {
+    const speakSpy = stubSpeech()
+    stubAudio(true)
+
+    expect(await playAlert(null, 'no clip')).toBe('device')
+    expect(await playAlert('blob:clip-1', 'blocked clip')).toBe('device')
+    expect(speakSpy.mock.calls.map(([u]) => (u as { text: string }).text)).toEqual(['no clip', 'blocked clip'])
   })
 })
