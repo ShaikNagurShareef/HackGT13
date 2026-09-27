@@ -1,12 +1,13 @@
 import { useId, useRef, useState, type FormEvent } from 'react'
 import { api } from '../../api/client'
+import { ASK_THREAD_TOKEN_RE } from '../../api/schemas'
 import { useDialog } from '../../hooks/useDialog'
 import { Icon } from '../ui/Icon'
 
 /**
  * Ask PathPro: questions about how PathPro works, answered by a Backboard assistant from the
  * model card and docs. The server validates every answer (or sends a fixed fallback); the
- * opaque thread id lives in this tab's sessionStorage only and is never tied to identity.
+ * server-signed thread token lives in this tab's sessionStorage only and is never tied to identity.
  */
 export const ASK_SUGGESTIONS = [
   "Why isn't crime used for routing?",
@@ -18,7 +19,6 @@ export const ASK_ERROR = "Ask PathPro can't answer right now. About PathPro has 
 const LOADING = "Looking through PathPro's docs…"
 const MIN_CHARS = 3
 const MAX_CHARS = 300
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 interface Turn {
   id: number
@@ -37,7 +37,7 @@ function storage(): Storage | null {
 function readThread(): string | null {
   try {
     const value = storage()?.getItem(ASK_THREAD_KEY) ?? null
-    return value && UUID_RE.test(value) ? value : null
+    return value && ASK_THREAD_TOKEN_RE.test(value) ? value : null
   } catch {
     return null
   }

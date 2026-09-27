@@ -37,6 +37,7 @@ KEY = "bb-test-key-do-not-print"
 ASSISTANT = "11111111-1111-4111-8111-111111111111"
 THREAD = "22222222-2222-4222-8222-222222222222"
 OTHER_THREAD = "33333333-3333-4333-8333-333333333333"
+HEX_THREAD = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"  # has letters, so case matters
 CORPUS = (
     "On the 2024 holdout the top 10% of street length held 74.3% of pedestrian crashes, "
     "versus 53.8% for the High Injury Network. metrics: 0.412. Routes cut exposure 54%. "
@@ -120,7 +121,7 @@ def test_thread_token_signature_is_long_enough() -> None:
 
 @pytest.mark.unit
 def test_thread_token_is_canonicalized_before_signing() -> None:
-    assert TOKENS.issue(THREAD.upper()) == TOKENS.issue(THREAD)
+    assert TOKENS.issue(HEX_THREAD.upper()) == TOKENS.issue(HEX_THREAD)
 
 
 @pytest.mark.unit
@@ -130,7 +131,7 @@ def test_thread_token_is_canonicalized_before_signing() -> None:
         None,
         "",
         THREAD,  # a bare Backboard thread id is never accepted
-        THREAD.upper(),
+        HEX_THREAD.upper() + "." + "A" * 32,
         "not-a-uuid",
         "../../assistants",
         THREAD + ".",
@@ -151,8 +152,11 @@ def test_thread_token_signature_is_bound_to_the_uuid_and_secret() -> None:
     assert ThreadTokens(b"z" * 32).verify(TOKENS.issue(THREAD)) is None  # another secret
     tampered = TOKENS.issue(THREAD)[:-1] + ("A" if TOKENS.issue(THREAD)[-1] != "A" else "B")
     assert TOKENS.verify(tampered) is None
-    upper = TOKENS.issue(THREAD).replace(THREAD, THREAD.upper())
+    upper = TOKENS.issue(HEX_THREAD).replace(HEX_THREAD, HEX_THREAD.upper())
     assert TOKENS.verify(upper) is None  # only the canonical form the server issued
+    sig = TOKENS.issue(HEX_THREAD).split(".", 1)[1]
+    moved_hyphen = "aaaaaaaab-bbb-4ccc-8ddd-eeeeeeeeeeee"  # parses to the same UUID
+    assert TOKENS.verify(f"{moved_hyphen}.{sig}") is None
 
 
 @pytest.mark.unit
@@ -628,7 +632,12 @@ def _client(bundle_dir: Path, **over: object) -> Iterator[tuple[TestClient, resp
 
 @pytest.fixture
 def ask_api(bundle_dir: Path) -> Iterator[tuple[TestClient, respx.MockRouter]]:
-    yield from _client(bundle_dir, backboard_api_key=KEY, backboard_assistant_id=ASSISTANT)
+    yield from _client(
+        bundle_dir,
+        backboard_api_key=KEY,
+        backboard_assistant_id=ASSISTANT,
+        ask_thread_secret=SECRET.decode(),  # so tests can mint tokens this app accepts
+    )
 
 
 @pytest.mark.integration

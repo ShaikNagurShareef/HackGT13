@@ -16,12 +16,11 @@ import binascii
 import logging
 import re
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import httpx
-from cachetools import TTLCache
 
 from app.api.envelope import AppError
 from app.api.schemas import SegmentDetail
@@ -35,6 +34,7 @@ from app.services.imagine_check import (
     read_sidecar,
     sidecar_json,
 )
+from app.services.limits import ClientDailyLimit
 from app.services.segments import segment_detail
 from app.services.weather import Resolved
 
@@ -47,8 +47,6 @@ BUDGET_MESSAGE = "Today's street illustrations are used up. Please try again tom
 CLIENT_LIMIT_MESSAGE = "You've reached today's limit for new street illustrations."
 REJECTED_MESSAGE = "Could not draw a clean illustration of this street right now. Please try again."
 MAX_ATTEMPTS = 2  # one retry when the check flags text, logos, or faces (budget permitting)
-MAX_TRACKED_CLIENTS = 50_000
-DAY_S = 86_400
 TIMEOUT_S = 60.0
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 MAX_FIXES = 4
@@ -163,24 +161,6 @@ def _atomic_write(path: Path, content: bytes) -> None:
     tmp = path.with_suffix(".tmp")
     tmp.write_bytes(content)
     tmp.replace(path)  # atomic: readers never see a half-written file
-
-
-class ClientDailyLimit:
-    """Caps new (paid) illustrations per client per day so one client cannot spend the budget."""
-
-    def __init__(self, limit: int) -> None:
-        self._limit = limit
-        self._used: TTLCache[tuple[date, str], int] = TTLCache(
-            maxsize=MAX_TRACKED_CLIENTS, ttl=DAY_S
-        )
-
-    def take(self, client: str, today: date | None = None) -> bool:
-        key = (today or date.today(), client)
-        used = self._used.get(key, 0)
-        if used >= self._limit:
-            return False
-        self._used[key] = used + 1
-        return True
 
 
 class ImagineService:

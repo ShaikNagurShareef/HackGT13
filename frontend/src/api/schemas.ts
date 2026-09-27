@@ -212,10 +212,12 @@ export const imagineSchema = z.object({
     .nullish(),
 })
 export type Imagined = z.infer<typeof imagineSchema>
+/** Server-signed Ask thread token "<uuid>.<sig>"; a bare Backboard thread id never validates. */
+export const ASK_THREAD_TOKEN_RE = /^[0-9a-f-]{36}\.[A-Za-z0-9_-]{22,}$/
 /** Ask PathPro (Backboard): a validated answer, or the fixed fallback that points to the model card. */
 export const askSchema = z.object({
   answer: z.string(),
-  thread_id: z.guid().nullable(),
+  thread_id: z.string().regex(ASK_THREAD_TOKEN_RE).nullable(),
   source: z.enum(['backboard', 'fallback']),
   note: z.string(),
 })

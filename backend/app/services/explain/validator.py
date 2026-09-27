@@ -130,12 +130,61 @@ def _crime_framing(text: str) -> bool:
     return False
 
 
+# Answers carry no links, domains or email addresses (a prompt-injected docs page or a model
+# slip could otherwise point people elsewhere); only PathPro's own domain may be named.
+# The allowed domain may end a sentence ("pathpro.tech.") but not prefix another host.
+_ALLOWED_DOMAIN_RE = re.compile(
+    r"(?<![\w.@/-])(?:https?://)?(?:www\.)?pathpro\.tech\b/?(?![\w@-]|\.\w)", re.IGNORECASE
+)
+_LINK_RE = re.compile(
+    r"https?://|\bwww\.|@|\b[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9-]+)*\.[a-z]{2,24}\b",
+    re.IGNORECASE,
+)
+# The answer must be about PathPro: at least one of its terms (word start, any case).
+ASK_TOPIC_TERMS = (
+    "PathPro",
+    "traffic risk",
+    "route",
+    "crash",
+    "model",
+    "street",
+    "walk",
+    "ride",
+    "MARTA",
+    "High Injury Network",
+    "score",
+    "lighting",
+    "help point",
+    "Risk Tides",
+    "City Pulse",
+    "Share my walk",
+)
+_TOPIC_RE = re.compile(
+    r"\b(?:"
+    + "|".join(r"[\s-]+".join(re.escape(w) for w in t.split()) for t in ASK_TOPIC_TERMS)
+    + r")",
+    re.IGNORECASE,
+)
+
+
+def _has_link(text: str) -> bool:
+    return _LINK_RE.search(_ALLOWED_DOMAIN_RE.sub(" ", text)) is not None
+
+
+def _on_topic(text: str) -> bool:
+    return _TOPIC_RE.search(_ALLOWED_DOMAIN_RE.sub(" ", text)) is not None
+
+
 def ask_validation_errors(text: str, allowed: frozenset[float]) -> list[str]:
     """Why an Ask PathPro answer may not be shown; every number must come from the corpus."""
     stripped = text.strip()
     if not stripped:
         return ["empty"]
     errors: list[str] = []
+    if _has_link(stripped):
+        errors.append("link")
+    if not _on_topic(stripped):
+        errors.append("off_topic")
     if len(stripped) > ASK_MAX_CHARS or len(stripped.split()) > ASK_MAX_WORDS:
         errors.append("too_long")
     if _ASK_BANNED_RE.search(stripped):

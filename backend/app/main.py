@@ -40,6 +40,7 @@ from app.repositories.safety import load_safety
 from app.repositories.walks import WalksRepository
 from app.services.ask import AskService
 from app.services.ask_corpus import load_allowed_numbers
+from app.services.ask_threads import ThreadTokens
 from app.services.backboard import Backboard
 from app.services.explain.providers import (
     GeminiProvider,
@@ -96,6 +97,8 @@ def build_voices(cfg: Settings, client: httpx.AsyncClient) -> VoiceChain:
 def build_ask(cfg: Settings, client: httpx.AsyncClient) -> AskService:
     """Ask PathPro (Backboard); disabled (503) without both a key and an assistant id."""
     key = secret(cfg.backboard_api_key)
+    thread_secret = secret(cfg.ask_thread_secret)
+    tokens = ThreadTokens(thread_secret.encode()) if thread_secret else ThreadTokens.random()
     return AskService(
         Backboard(client, key) if key else None,
         cfg.backboard_assistant_id or None,
@@ -103,6 +106,8 @@ def build_ask(cfg: Settings, client: httpx.AsyncClient) -> AskService:
         llm_provider=cfg.backboard_llm_provider,
         model_name=cfg.backboard_model,
         daily_budget=cfg.ask_daily_budget,
+        per_client_daily=cfg.ask_per_client_daily,
+        thread_tokens=tokens,
     )
 
 
