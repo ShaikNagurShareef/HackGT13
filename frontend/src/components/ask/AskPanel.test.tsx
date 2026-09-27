@@ -47,11 +47,8 @@ describe('AskPanel (Ask PathPro on Backboard)', () => {
     render(<AskPanel onClose={vi.fn()} />)
 
     expect(screen.getByRole('dialog', { name: 'Ask PathPro' })).toBeInTheDocument()
-    expect(ASK_SUGGESTIONS).toEqual([
-      "Why isn't crime used for routing?",
-      'How was the model tested?',
-      "What does '54% less traffic risk' mean?",
-    ])
+    expect(ASK_SUGGESTIONS).toEqual(['What does the risk score mean?', 'How do I use PathPro?', 'How was the model tested?'])
+    expect(screen.queryByRole('button', { name: "Why isn't crime used for routing?" })).toBeNull()
     for (const q of ASK_SUGGESTIONS) expect(screen.getByRole('button', { name: q })).toBeInTheDocument()
     const input = screen.getByRole('textbox', { name: /your question/i })
     expect(input).toHaveAttribute('maxLength', '300')
