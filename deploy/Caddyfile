@@ -32,6 +32,10 @@
 		file_server
 	}
 
+	# Web app manifest: Go's MIME table has no .webmanifest type, and nosniff is on.
+	@manifest path /manifest.webmanifest
+	header @manifest Content-Type "application/manifest+json"
+
 	# Single-page app.
 	handle {
 		root * /srv/pathpulse/web
