@@ -1,0 +1,44 @@
+sequenceDiagram
+  autonumber
+  participant B as Browser (SPA)
+  participant C as Caddy
+  participant A as FastAPI
+  participant W as WeatherService
+  participant R as Router (worker thread)
+  participant M as MongoDB Atlas
+  participant L as LLM chain<br/>(Grok, Groq, Gemini)
+  participant E as Voice<br/>(Grok Voice, ElevenLabs)
+  participant T as Tiger Data
+  B->>C: POST /api/routes {origin, destination, depart_at, cond, prefer?, mode?}
+  C->>A: POST /routes (prefix stripped, X-Forwarded-For set)
+  A->>A: rate limit (general bucket) and pydantic validation
+  A->>A: mode_context: walk bundle, or ride_ bundle (503 MODE_UNAVAILABLE)
+  A->>A: parse departure, city-hex coverage check, snap both ends within 150 m
+  A->>W: resolve(cond, departure)
+  W-->>A: dry or wet, source live / override / assumed
+  A->>R: asyncio.to_thread(router.plan)
+  Note over R: fastest path, then 7 cost-ladder candidates,<br/>each re-scored at its traversal times,<br/>best one inside the detour budget
+  R-->>A: RoutePlan (fastest, pathpro or none, message code)
+  A->>A: alerts, safety summary (walk only), route_key = sha256(...)[:16]
+  opt walk mode and Atlas configured
+    A->>M: active reports on the recommended route (0.5 s budget)
+    M-->>A: reports, or [] on any failure
+  end
+  A->>A: routes_cache[route_key] = RoutesData
+  A-->>B: {success, data: RoutesData, model_version}
+  rect rgb(238, 243, 250)
+    Note over B,T: Follow-up calls the route sheet makes
+    B->>A: POST /api/explain {kind: route, route_key}
+    A->>L: evidence JSON (see 6.2)
+    L-->>A: 1 to 3 sentences, validated
+    A-->>B: {text, source}
+    B->>A: POST /api/tts (same body, only on Listen)
+    A->>E: server-written text
+    E-->>A: MP3 from the first voice that answers<br/>(or 503, then device voice)
+    B->>A: POST /api/tts/alert {route_key, index, kind} (navigation start, up to 12 clips, 2 at a time)
+    A->>E: server-written alert line from the cached route
+    E-->>A: MP3 (cached per route, kind, index, voice) or 503, then device voice
+    B->>A: GET /api/segments/{id}/hourly (street sheet)
+    A->>T: SELECT from crashes_hourly (800 ms timeout)
+    T-->>A: 24 hourly sums (or 503, chart hidden)
+  end

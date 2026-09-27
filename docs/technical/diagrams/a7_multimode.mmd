@@ -1,0 +1,16 @@
+flowchart LR
+  subgraph dir["artifacts/{version}/ (one directory, one manifest)"]
+    wfiles["Walk model (bare names)<br/>seg_meta.json, factors.json,<br/>spatial_factors.npy, walk_graph.npz,<br/>segments.geojson, frames_*.bin,<br/>hotspot_nodes.json, metrics.json"]
+    rfiles["Ride model (ride_ prefix)<br/>ride_seg_meta.json, ride_factors.json,<br/>ride_spatial_factors.npy, ride_graph.npz,<br/>ride_segments.geojson, ride_frames_*.bin,<br/>ride_hotspot_nodes.json, ride_metrics.json"]
+    shared["Shared layers<br/>hex_* (City Pulse), safety_*, help_points.json,<br/>segment_safety.npy, edge_safety.npy, coverage.geojson"]
+    man["manifest.json<br/>sha256 of every file, modes.walk, modes.ride"]
+  end
+  wfiles -->|"load_bundle(prefix='') required, fail fast"| wb["walk Bundle + Router<br/>(with EdgeSignals)"]
+  rfiles -->|"load_ride_bundle() optional"| rb["ride Bundle + Router"]
+  man --> wb
+  man --> rb
+  req["request mode = walk | bike | ebike | scooter"] --> ctx{"mode_context()"}
+  ctx -->|walk| wb
+  ctx -->|"bike / ebike / scooter"| rb
+  ctx -->|"ride bundle missing"| e503["503 MODE_UNAVAILABLE"]
+  meta["/meta modes[].static_prefix"] --> spa["SPA loads {prefix}segments.geojson<br/>and {prefix}frames_* on first use"]

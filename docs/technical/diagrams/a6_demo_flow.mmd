@@ -1,0 +1,14 @@
+flowchart TB
+  rec["backend/app/tools/record_demo.py<br/>runs create_app in a TestClient"] -->|"234 recorded responses"| fx["frontend/public/demo/fixtures.json<br/>(committed)"]
+  rec -->|"copies geometry and frames"| st["frontend/public/demo/static/{version}/<br/>(gitignored, built into the SPA)"]
+  url["Browser opens /?demo=1"] --> isdemo{"isDemoMode()"}
+  isdemo -->|yes| load["loadFixtures(): fetch fixtures.json once, up front"]
+  load --> req["api/client.request()"]
+  req --> key["fixtureKey(method, path, body)<br/>e.g. 'POST /routes 33.7771,-84.3962>33.7810,-84.3863|wet'"]
+  key -->|recorded| ans["recorded envelope"]
+  key -->|not recorded| off["DEMO_ONLY / MODE_UNAVAILABLE error envelope"]
+  req -->|"/geocode"| empty["[] (curated places still work)"]
+  req -->|"/reports*"| hide["REPORTS_UNAVAILABLE (feature hidden)"]
+  req -->|"/safety/*"| saf["recorded safety fixtures or SAFETY_UNAVAILABLE"]
+  load --> meta["GET /meta fixture: static_base = /demo/static/{version}"]
+  meta --> st

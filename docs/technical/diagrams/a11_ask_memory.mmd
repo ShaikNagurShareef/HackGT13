@@ -1,0 +1,37 @@
+sequenceDiagram
+  autonumber
+  participant B as Browser
+  participant A as FastAPI /ask*
+  participant M as AskMemory
+  participant K as MemoryTokens (HMAC)
+  participant BB as Backboard
+  Note over B: memory is off by default
+  B->>A: POST /ask/memory {} ("Remember my preferences")
+  A->>M: enable(client)
+  M->>M: per-client 3 clones/day, global 100/day<br/>(429 ASK_MEMORY_LIMIT)
+  M->>BB: clone the shared docs assistant<br/>(documents + read-only facts, name pathpro-visitor-{12 hex})
+  BB-->>M: clone assistant id (must be a UUID, never the base id)
+  M->>K: sign clone id (purpose ask-memory)
+  A-->>B: {memory_token}
+  Note over B: token kept in localStorage (this browser),<br/>any change starts a new thread
+  B->>A: POST /ask {question, memory_token, context?}
+  A->>K: verify memory token
+  alt valid token, plain question (no street, route, or area context)
+    A->>BB: clone assistant, memory "Auto" + memory note
+    Note over BB: fact extraction prompt keeps only stated travel<br/>preferences: times, mode, well-lit or busier streets,<br/>accessibility. Never places, streets, routes, or context.
+  else valid token, question about a street, route, or area
+    A->>BB: clone assistant, memory "Readonly" (reads, never writes)
+  else missing or invalid token
+    A->>BB: shared assistant, memory "Readonly" (memory: off)
+  end
+  BB-->>A: answer (validated as in Figure A10)
+  A-->>B: answer, memory "on" or "off"
+  B->>A: POST /ask/memory/forget {memory_token} ("Forget me")
+  A->>M: forget(token)
+  alt token verifies
+    M->>BB: DELETE /assistants/{clone} (404 counts as done)
+  else token does not verify
+    M->>M: silent no-op (never reveals validity)
+  end
+  A-->>B: {forgotten: true} (502 ASK_MEMORY_FORGET_FAILED on upstream error)
+  Note over BB: prune_backboard deletes pathpro-visitor-* clones<br/>older than 30 days (the shared assistant is never touched)

@@ -1,0 +1,46 @@
+sequenceDiagram
+  autonumber
+  participant B as Browser
+  participant A as FastAPI /explain
+  participant R as explain/resolve.py
+  participant X as ExplainService
+  participant GK as Grok (xAI)
+  participant G1 as Groq gpt-oss-120b
+  participant GM as Gemini
+  participant G2 as Groq gpt-oss-20b
+  participant V as Validator
+  participant TP as Template
+  B->>A: {kind: segment, seg_id, t, cond, mode} or {kind: route, route_key}
+  A->>A: paid rate-limit bucket
+  A->>R: resolve evidence (ids only from the client)
+  alt kind = route
+    R->>R: routes_cache lookup (404 ROUTE_EXPIRED if missing), route_evidence()
+  else kind = segment
+    R->>R: segment_detail() then segment_evidence()
+  end
+  R-->>A: cache key + Evidence (strings cleaned: no control chars, max 80 chars)
+  A->>X: explain(cache key, Evidence)
+  alt cache hit
+    X-->>A: text, source "cache"
+  else miss (single-flight lock per key)
+    X->>X: daily budget check (default 3,000 generations/day)
+    X->>GK: system prompt + evidence JSON (first provider, max 1.6 s)
+    GK-->>X: text
+    X->>V: numbers, clock times, banned words, max 3 sentences, max 420 chars
+    alt valid
+      X-->>A: text, source "grok"
+    else rejected, timeout, or error
+      Note over X,G2: each next provider gets the remaining time of a 4 s total
+      X->>G1: same evidence
+      G1-->>X: text, then validate
+      X->>GM: same evidence (if still rejected)
+      GM-->>X: text, then validate
+      X->>G2: same evidence (if still rejected)
+      G2-->>X: text, then validate
+      alt every provider rejected or failed
+        X->>TP: render(evidence)
+        TP-->>X: deterministic text, source "template" (not cached)
+      end
+    end
+  end
+  A-->>B: {text, source}

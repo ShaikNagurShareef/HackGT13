@@ -1,0 +1,35 @@
+flowchart TB
+  subgraph fetch["1. Fetch (no accounts)"]
+    snap["fetch.snapshot<br/>24 ArcGIS layers + 5 StreetLight zones<br/>→ data/raw/*.parquet"]
+    wx["fetch.weather<br/>Open-Meteo archive 2013–2025"]
+    safetyf["safety.fetch<br/>APD crimes (24 mo), GT call boxes, OSM help points and lamps"]
+  end
+  subgraph net["2. Networks"]
+    netgraph["network.graph<br/>OSM walk graph, road centerlines,<br/>city drive graph, city boundary"]
+    bike["network.bike<br/>OSM bike graph + infra classes"]
+  end
+  subgraph ingest["3. Ingest"]
+    run["ingest.run<br/>normalize 8 crash layers → drop bad coords →<br/>dedupe timed crashes → snap to road segments"]
+  end
+  subgraph feats["4. Features"]
+    nf["network.features<br/>per-segment structure and exposure"]
+    rf["ride.run features<br/>bike facilities, BeltLine, Strava proxy"]
+  end
+  subgraph model["5. Models, evaluation, export"]
+    bundle["export.bundle<br/>evaluate 2024 + 2023 holdouts →<br/>fit final walk model → write bundle"]
+    city["citywide.export<br/>City Pulse hexes (same bundle)"]
+    saf["safety.export<br/>safety layer (same bundle, or a new version)"]
+    ride["ride.run export<br/>copy bundle → new version + ride_ files"]
+  end
+  tiger["db.load_tiger<br/>segments, crashes hypertable, risk_grid"]
+  demo["backend app.tools.record_demo<br/>offline demo fixtures"]
+  snap --> run
+  wx --> bundle
+  netgraph --> run
+  run --> nf --> bundle
+  bundle --> city --> saf
+  safetyf --> saf
+  bike --> rf --> ride
+  saf --> ride
+  ride --> tiger
+  ride --> demo

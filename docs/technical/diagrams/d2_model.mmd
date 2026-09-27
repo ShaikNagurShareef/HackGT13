@@ -1,0 +1,12 @@
+flowchart LR
+  x["Design matrix<br/>(segment features +<br/>training-window crash densities)"] --> glm["Poisson GLM<br/>(standardized, L2 alpha by CV)"]
+  x --> lgb["LightGBM Poisson<br/>monotone on exposure and speed terms"]
+  glm --> ens["log-space blend<br/>w_lgbm = 0.8 (CV)"]
+  lgb --> ens
+  ens --> eb["Empirical Bayes<br/>blend with own crash history (k by CV)"]
+  cells["Crash counts and exposure hours per<br/>(road group, day group, hour, light, wet)"] --> tglm["Multi-task Poisson GLM<br/>all-mode shape + pedestrian terms"]
+  tglm --> mult["normalized multiplier<br/>(mean 1 over exposure per road group)"]
+  eb --> dens["log density = base + Σ spatial factors + Σ temporal factors"]
+  mult --> dens
+  dens --> q["1,001-point citywide quantile table"]
+  q --> score["score 0–100 → uint8 frames<br/>and live API scores"]

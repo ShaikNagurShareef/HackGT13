@@ -1,0 +1,41 @@
+sequenceDiagram
+  autonumber
+  participant B as Browser (street sheet)
+  participant A as FastAPI /imagine
+  participant S as ImagineService
+  participant D as Disk cache<br/>/var/cache/pathpulse-imagine
+  participant X as xAI Grok Imagine
+  participant G as Gemini check<br/>(gemini-3.1-flash-lite)
+  B->>A: POST /imagine/segment {seg_id} (only an id)
+  A->>A: paid rate-limit bucket, extra fields forbidden
+  A->>S: plan_for_segment(seg_id) at a fixed weekday 9 PM, dry
+  Note over S: prompt from the street's risk factors and road class,<br/>never street names or user text
+  S->>D: seg-{id}-{model}.img exists?
+  alt cached
+    D-->>S: image + check sidecar
+    S-->>A: cached = true (no xAI call, no budget used)
+  else not cached
+    S->>S: no xAI key: 503 IMAGINE_UNAVAILABLE
+    S->>S: single-flight lock per segment
+    S->>S: per-client cap (10/day, 429 IMAGINE_CLIENT_LIMIT),<br/>then daily budget (40/day, 429 IMAGINE_BUDGET)
+    S->>X: prompt, 16:9, 1k, b64_json (60 s)
+    X-->>S: PNG or JPEG (signature checked, max 8 MB) or 502 IMAGINE_FAILED
+    S->>G: image + planned fixes, JSON schema, temperature 0 (25 s)
+    alt passes (no readable text or logos, no identifiable faces)
+      G-->>S: fixes_shown (exact planned phrases only)
+      S->>D: sidecar, then image (atomic writes)
+    else flagged
+      G-->>S: has_text_or_logos or has_identifiable_faces
+      S->>X: one retry (takes another budget unit)
+      Note over S: flagged twice, or no budget: 502 IMAGINE_REJECTED, nothing cached
+    else Gemini unreachable, no key, or malformed answer
+      G-->>S: unchecked
+      S->>D: image + sidecar {"by": null}
+    end
+    S-->>A: cached = false
+  end
+  A-->>B: {image_url, prompt_summary, fixes, label, cached, check}
+  B->>A: GET /imagine/segment/{id}.png
+  A->>D: read (never calls xAI)
+  A-->>B: image, Cache-Control max-age=86400, nosniff
+  Note over B: shown with "AI illustration of evidence-based street fixes<br/>by Grok Imagine — not a real photo" and<br/>"Checked by Gemini: shows N of M planned fixes"

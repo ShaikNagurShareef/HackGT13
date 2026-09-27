@@ -1,0 +1,16 @@
+flowchart LR
+  apd["APD crimes against persons<br/>(4 offenses, public places only)"] --> hexc["per H3 res-9 hex x day part<br/>12-month counts + EB posterior band"]
+  osm["OSM lit tags, street lamps,<br/>City downtown lights"] --> lit["per walk edge: lit / unlit / unknown"]
+  sl["StreetLight pedestrian activity (2021)"] --> act["per edge and hex: quiet / moderate / busy<br/>by day part"]
+  help["GT call boxes, police, fire,<br/>hospitals, MARTA"] --> hp["help points + per-hex counts"]
+  hexc --> hexfile["safety_hexes.json"]
+  lit --> edgefile["edge_safety.npy<br/>(lit + 4 activity codes, no crime)"]
+  act --> edgefile
+  act --> hexfile
+  hp --> hpfile["help_points.json"]
+  edgefile --> sig["EdgeSignals"]
+  sig --> router["Router: lit_and_busy penalty<br/>(after dark, opt-in)"]
+  hexfile --> disp["GET /safety/hexes (map layer)"]
+  hexfile --> summ["RouteOut.safety.crimes_persons_nearby<br/>(display only)"]
+  hpfile --> disp2["GET /safety/help-points,<br/>help points within 100 m"]
+  hexfile -. "no path" .-x router

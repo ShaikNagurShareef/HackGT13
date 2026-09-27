@@ -1,0 +1,29 @@
+sequenceDiagram
+  autonumber
+  participant W as Walker's browser
+  participant A as FastAPI /walks
+  participant G as In-memory update gate
+  participant M as MongoDB Atlas (shared_walks)
+  participant F as Friend's browser
+  W->>A: POST /walks {destination, eta_s, route?}
+  A->>A: paid bucket, metro-Atlanta box check
+  A->>A: walk_id = 128 random bits, owner_token = 256 random bits
+  A->>M: insert {walk_id, sha256(token), status walking, expires_at = now + 6 h}
+  A-->>W: 201 {walk_id, owner_token (returned once), follow_path, expires_at}
+  W->>W: keep session in sessionStorage (this tab only)
+  W-->>F: share /follow/{walk_id} (Web Share or copy)
+  loop every 5 s while walking
+    W->>A: PUT /walks/{id}/position {owner_token, lat, lon, accuracy_m, eta_s, status}
+    A->>G: accepted in the last 3 s? (status changes skip this)
+    G-->>A: throttle (429 WALK_THROTTLED) or continue
+    A->>M: find walk (expires_at > now)
+    A->>A: compare_digest(sha256(token), stored hash) else 403
+    A->>M: find_one_and_update where updated_at = previous, set position, expires_at = now + 6 h
+    M-->>A: updated walk (or none on a race: 429)
+    A->>G: mark accepted
+    A-->>W: WalkSummary (no token, no hash)
+  end
+  F->>A: GET /walks/{id}
+  A->>M: find walk (expires_at > now)
+  A-->>F: position, destination, ETA, status, route (no token, no hash)
+  Note over M: TTL index on expires_at deletes the document<br/>6 h after the last accepted update

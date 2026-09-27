@@ -1,0 +1,33 @@
+flowchart LR
+  subgraph laptop["Developer laptop"]
+    wt["clean git worktree<br/>(committed code only)"]
+    env["backend/.env<br/>(secrets, never committed)"]
+    bundles["artifacts/{version}/<br/>(real directories)"]
+  end
+  subgraph vm["Vultr VM 155.138.233.35 (atl, vc2-1c-2gb, Ubuntu 24.04)"]
+    ufw["ufw: 22, 80, 443 only"]
+    caddy["caddy.service<br/>/etc/caddy/Caddyfile<br/>DOMAIN from /etc/default/caddy"]
+    svc["pathpulse.service<br/>uvicorn 127.0.0.1:8000, 1 worker<br/>User=pathpulse, hardened"]
+    app["/srv/pathpulse/app<br/>code + .venv + backend/.env (0600)"]
+    arts["/srv/pathpulse/artifacts/<br/>{every shipped version}/ + current → version"]
+    web["/srv/pathpulse/web<br/>SPA build + demo files"]
+    imgc["/var/cache/pathpulse-imagine<br/>systemd CacheDirectory, owned by pathpulse<br/>(the API's only writable path)"]
+  end
+  dns["get.tech DNS<br/>A @ and www → 155.138.233.35"]
+  le["Let's Encrypt (ACME)"]
+  atlas[("MongoDB Atlas<br/>IP access list incl. 155.138.233.35")]
+  tiger[("Tiger Data")]
+  wt -->|"rsync code (excludes .env, artifacts, frontend)"| app
+  bundles -->|"rsync artifacts/{version}"| arts
+  wt -->|"npm ci && npm run build → rsync dist/"| web
+  env -->|"ssh 'umask 077; cat > backend/.env'"| app
+  dns --> caddy
+  caddy <-->|"HTTP-01 / TLS-ALPN"| le
+  caddy --> svc
+  caddy --> arts
+  caddy --> web
+  svc --> app
+  svc --> arts
+  svc --> atlas
+  svc --> tiger
+  svc --> imgc

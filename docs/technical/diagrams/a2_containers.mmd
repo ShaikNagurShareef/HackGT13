@@ -1,0 +1,45 @@
+flowchart LR
+  subgraph browser["Browser"]
+    spa["React 19 SPA (Vite)<br/>MapLibre GL + deck.gl<br/>zod-validated API client"]
+    local[("localStorage<br/>learned routines,<br/>Ask memory token")]
+    session[("sessionStorage<br/>share-walk owner token,<br/>Ask thread token")]
+  end
+  subgraph vm["Vultr VM (Ubuntu 24.04, 1 vCPU, 2 GB)"]
+    caddy["Caddy 2<br/>auto-HTTPS, security headers,<br/>zstd/gzip, filtered JSON access log"]
+    web["/srv/pathpulse/web<br/>SPA build + demo fixtures"]
+    art["/srv/pathpulse/artifacts/{version}<br/>model bundle files"]
+    api["uvicorn + FastAPI 'PathPro API'<br/>1 worker on 127.0.0.1:8000<br/>systemd unit pathpulse.service"]
+    mem[("In-process state<br/>walk + ride bundles, routers,<br/>LRU caches, rate limiter, daily budgets,<br/>per-client caps, walk gate")]
+    imgcache[("/var/cache/pathpulse-imagine<br/>Grok Imagine images + check sidecars<br/>(systemd CacheDirectory)")]
+    docs["/srv/pathpulse/app/docs<br/>Ask corpus: allowed numbers"]
+  end
+  subgraph saas["Managed services"]
+    tiger[("Tiger Data")]
+    mongo[("MongoDB Atlas")]
+    xai["xAI: Grok chat,<br/>Grok Voice, Grok Imagine"]
+    llm["Groq, Gemini"]
+    tts["ElevenLabs"]
+    bb["Backboard"]
+    geo["Geoapify"]
+    wx["Open-Meteo"]
+  end
+  spa -->|"GET / and /demo/*"| caddy
+  spa -->|"GET /static/{version}/*"| caddy
+  spa -->|"/api/* JSON, MP3, images"| caddy
+  caddy --> web
+  caddy --> art
+  caddy -->|"reverse_proxy, /api stripped"| api
+  api --- mem
+  api -->|reads bundle at startup| art
+  api -->|"reads corpus at startup"| docs
+  api -->|"read / atomic write"| imgcache
+  api -->|"psycopg, 800 ms statement timeout"| tiger
+  api -->|"pymongo async, 1.5 s op timeout"| mongo
+  api -->|httpx| xai
+  api -->|httpx| llm
+  api -->|httpx| tts
+  api -->|"httpx, 12 s"| bb
+  api -->|httpx| geo
+  api -->|httpx| wx
+  spa --- local
+  spa --- session

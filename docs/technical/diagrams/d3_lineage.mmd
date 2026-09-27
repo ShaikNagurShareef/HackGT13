@@ -1,0 +1,5 @@
+flowchart LR
+  b0["pp-20260926-0348-5540dda<br/>walk model + City Pulse<br/>(export.bundle + citywide.export)"] -->|"safety.export --link<br/>(copytree + 5 safety files)"| b1["pp-20260926-1723-a5f81ca<br/>+ personal-safety layer"]
+  b1 -->|"ride.run export<br/>(copytree + ride_ files)"| b2["pp-20260926-1849-8763c13<br/>first ride build"]
+  b1 -->|"ride.run export<br/>(pooled label)"| b3["pp-20260926-1902-f49c0d2<br/>+ ride model (served)"]
+  cur(["artifacts/current"]) -.-> b3

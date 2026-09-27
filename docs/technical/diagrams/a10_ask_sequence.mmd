@@ -1,0 +1,36 @@
+sequenceDiagram
+  autonumber
+  participant B as Browser (Ask panel)
+  participant A as FastAPI POST /ask
+  participant C as ask_context + explain/resolve
+  participant S as AskService
+  participant T as ThreadTokens (HMAC)
+  participant BB as Backboard assistant<br/>(RAG over 6 docs)
+  participant V as Ask validator
+  B->>A: {question, thread_id?, memory_token?, context?: segment | route | area ids}
+  A->>A: paid rate-limit bucket, question 3 to 300 chars,<br/>one line (else 422 BAD_QUESTION)
+  A->>A: no Backboard key or assistant id: 503 ASK_UNAVAILABLE
+  A->>C: resolve context on the server
+  alt street, route, or area resolves
+    C-->>A: Evidence from the model (no coordinates, no cell id)
+  else no context, or it cannot be resolved
+    C-->>A: live-conditions Evidence (day, hour, light, dry/wet),<br/>context_dropped = true when a named context failed
+  end
+  A->>S: ask(question, thread token, client, evidence, memory token)
+  S->>S: per-client cap 20/day (429 ASK_CLIENT_LIMIT)
+  S->>T: verify thread token bound to this assistant
+  T-->>S: thread UUID, or none (a new thread)
+  S->>S: shared daily budget 300/day (spent: fallback answer)
+  S->>BB: context block + question, memory "Readonly"<br/>(or the visitor's clone, see Figure A11), 12 s
+  BB-->>S: answer with retrieval citations
+  S->>S: strip citation and bold markers
+  S->>V: links, on-topic, length, banned words,<br/>crime framing, every number sourced
+  alt passes
+    V-->>S: ok
+    S->>T: sign the thread UUID for this assistant
+    S-->>A: answer, source "backboard", sources (allow-listed docs)
+  else rejected, timeout, upstream error, or budget spent
+    S-->>A: fixed fallback that points to the model card, source "fallback"
+  end
+  A-->>B: {answer, thread_id (signed), source, note, sources, memory, context_used, context_dropped}
+  Note over B: thread token kept in this tab's sessionStorage only
