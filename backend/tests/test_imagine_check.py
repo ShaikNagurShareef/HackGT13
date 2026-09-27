@@ -195,7 +195,8 @@ def _harness(bundle_dir: Path, cache_dir: Path, **overrides: object) -> Iterator
         paid_rate_limit_per_minute=1000,
         imagine_cache_dir=cache_dir,
         xai_api_key="xai-test",
-        gemini_model=GEMINI_MODEL,
+        gemini_model="gemini-explain-only",
+        gemini_check_model=GEMINI_MODEL,
         _env_file=None,
         **overrides,  # type: ignore[arg-type]
     )
@@ -402,3 +403,13 @@ def test_corrupt_sidecar_reads_as_unchecked(checked: Harness) -> None:
 
     assert again.status_code == 200
     assert again.json()["data"]["check"] is None
+
+
+@pytest.mark.integration
+def test_app_checks_images_with_the_check_model_not_the_explain_model(checked: Harness) -> None:
+    resp = checked.client.post("/imagine/segment", json={"seg_id": HOT_SEG})
+
+    assert resp.status_code == 200
+    sent = checked.gemini.calls.last.request
+    assert f"/models/{GEMINI_MODEL}:generateContent" in str(sent.url)
+    assert "gemini-explain-only" not in str(sent.url)
