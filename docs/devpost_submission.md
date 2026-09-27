@@ -8,7 +8,7 @@ Each section below is one field of the Devpost form, in the order Devpost asks f
 - [ ] Grok and the Gemini image check are deployed and verified live on pathpro.tech. If not, delete the "Grok" and "Gemini" lines marked ⚑ first.
 - [x] Ask PathPro (Backboard) tested against the real API locally: `setup_backboard`, `check_keys`, real questions, and opt-in memory keeping a stated travel preference.
 - [ ] Ask PathPro deployed and one real question answered on pathpro.tech. If not, delete the "Backboard" lines marked ◇ first, and don't tick the Backboard prize.
-- [ ] Demo video uploaded to YouTube (unlisted is fine) with `media/pathpro_demo_v3.srt` attached.
+- [x] Demo video on YouTube (unlisted): https://youtu.be/APiQCad23VU, entered in Devpost's video field. Captions are burned in; the `.srt` can still be added in YouTube Studio → Subtitles.
 - Solo build (team name Coding Claws), so there's no one to invite.
 
 ---
@@ -167,7 +167,7 @@ Wheelchair and stroller routing, better lighting data through the City or Georgi
 
 ## 7. Video demo link
 
-The YouTube URL of `media/pathpro_demo_v3.mp4` (3:02, Grok Voice narration). A compact copy also plays in the GitHub README.
+https://youtu.be/APiQCad23VU (unlisted; `media/pathpro_demo_v3.mp4`, 3:02, Grok Voice narration). A compact copy also plays in the GitHub README.
 
 ## 8. Image gallery (upload in this order; the caption is the first line)
 

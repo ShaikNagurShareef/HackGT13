@@ -8,7 +8,7 @@
 
 https://github.com/user-attachments/assets/163059e1-e646-46fa-bf56-3240464d03b6
 
-The story, the app with the Ask PathPro agent, Grok Voice alerts, Grok Imagine with Gemini's check, and the 2024 holdout result, built solo by Nagur Shareef Shaik. The player above is a compact 720p copy; the full 1080p file is [media/pathpro_demo_v3.mp4](media/pathpro_demo_v3.mp4) (Git LFS), with captions as [SRT](media/pathpro_demo_v3.srt) and [VTT](media/pathpro_demo_v3.vtt). Narration is Grok Voice (AI), and the video says so on screen. The script, production notes and the source of every number are in [media/pathpro_v3_script.md](media/pathpro_v3_script.md).
+The story, the app with the Ask PathPro agent, Grok Voice alerts, Grok Imagine with Gemini's check, and the 2024 holdout result, built solo by Nagur Shareef Shaik. Watch it in full HD on YouTube: **https://youtu.be/APiQCad23VU**. The player above is a compact 720p copy; the full 1080p file is [media/pathpro_demo_v3.mp4](media/pathpro_demo_v3.mp4) (Git LFS), with captions as [SRT](media/pathpro_demo_v3.srt) and [VTT](media/pathpro_demo_v3.vtt). Narration is Grok Voice (AI), and the video says so on screen. The script, production notes and the source of every number are in [media/pathpro_v3_script.md](media/pathpro_v3_script.md).
 
 ## Documentation
 
