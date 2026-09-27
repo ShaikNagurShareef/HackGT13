@@ -11,13 +11,12 @@ from app.api.deps import get_bundle, get_weather, mode_context
 from app.api.envelope import AppError, Envelope, ok
 from app.api.schemas import Condition, ConditionUsed, RoutesData
 from app.domain.modes import ModeKey
-from app.domain.timeutil import cell_at, now_atlanta, parse_departure
+from app.domain.timeutil import now_atlanta
 from app.repositories.artifacts import Bundle
 from app.repositories.history import HistoryRepository
-from app.services.explain.evidence import route_evidence, segment_evidence
+from app.services.explain.resolve import resolve_route_evidence, resolve_segment_evidence
 from app.services.explain.service import ExplainService
 from app.services.geocode import GeocodeService
-from app.services.segments import segment_detail
 from app.services.tts import VoiceChain
 from app.services.weather import WeatherService
 
@@ -63,26 +62,22 @@ async def _explanation(
 ) -> ExplainData:
     service = _explainer(request)
     if req.kind == "route":
-        routes = _routes_cache(request).get(req.route_key or "")
-        if routes is None:
-            raise AppError("ROUTE_EXPIRED", "Route details expired. Request the route again.", 404)
-        key = f"route:{req.route_key}:{bundle.model_version}"
-        result = await service.explain(key, route_evidence(routes))
-        return ExplainData(text=result.text, source=result.source)
-    if req.seg_id is None:
+        resolved = resolve_route_evidence(
+            _routes_cache(request), req.route_key, bundle.model_version
+        )
+    elif req.seg_id is None:
         raise AppError("BAD_REQUEST", "seg_id is required for segment explanations.", 422)
-    try:
-        at = parse_departure(req.t)
-    except ValueError as exc:
-        raise AppError("BAD_TIME", "Pick a valid time.", 422) from exc
-    model = mode_context(request, req.mode).bundle
-    resolved = await weather.resolve(req.cond, at)
-    detail = segment_detail(model, req.seg_id, at, resolved, req.mode)
-    cell = cell_at(at, resolved.wet)
-    key = f"seg:{req.seg_id}:{'|'.join(map(str, cell.key))}:{bundle.model_version}"
-    if req.mode != "walk":
-        key += f":{req.mode}"  # walk cache keys are unchanged
-    result = await service.explain(key, segment_evidence(detail))
+    else:
+        resolved = await resolve_segment_evidence(
+            mode_context(request, req.mode).bundle,
+            weather,
+            seg_id=req.seg_id,
+            t=req.t,
+            cond=req.cond,
+            mode=req.mode,
+            model_version=bundle.model_version,
+        )
+    result = await service.explain(resolved.cache_key, resolved.evidence)
     return ExplainData(text=result.text, source=result.source)
 
 
