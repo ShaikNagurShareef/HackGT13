@@ -61,17 +61,18 @@ That's it. PathPro starts from **Your location** and shows the lower-risk route 
 **On a phone**, the map fills the screen:
 
 - **Where to?** at the top opens search.
-- The **layers button** (stacked squares, right edge) opens **Map options**: conditions, departure time, route preference, map mode, Risk Tides, the legend, privacy, **About PathPro**, and **Ask PathPro**.
-- The **locate button** (bottom right) centers the map on you. It shows a crossed-out icon when location is off.
+- The **Ask PathPro agent button** (the round teal-to-violet button with a robot face, bottom right) opens [Ask PathPro](#ask-pathpro), a chat about how PathPro works.
+- The **layers button** (stacked squares, just under the agent button) opens **Map options**: conditions, departure time, route preference, map mode, Risk Tides, the legend, privacy, **About PathPro**, and an **Ask PathPro** entry.
+- The **locate button** (under the layers button) centers the map on you. It shows a crossed-out icon when location is off.
 - The **legend chip** at the bottom reads *Lower → High traffic risk*. Tap it for the full 0–100 scale.
 - A **status chip** under the search pill (for example *☂ Wet · 10:30 PM*) appears when you've changed an option.
 - Once you pick a destination, the **route sheet** slides up from the bottom. Drag its handle up or tap **Why?** to see more. Drag it down to see more map.
 
 Colors run from teal (lower) through amber to pink (high). Thicker lines mean higher risk.
 
-**On a desktop or laptop** (1024 px wide and up), a sidebar on the left holds everything: search, saved places, the map options, the legend, and, at the bottom, **About PathPro** and **Ask PathPro**. **Risk Tides** sits on the map at the bottom. When you plan a trip, the sidebar shows the full route comparison and explanation at once.
+**On a desktop or laptop** (1024 px wide and up), a sidebar on the left holds everything: search, saved places, the map options, the legend, and, at the bottom, **About PathPro** and **Ask PathPro**. **Risk Tides** sits on the map at the bottom. The **Ask PathPro agent button** sits on the map at the bottom right, just above the zoom buttons. When you plan a trip, the sidebar shows the full route comparison and explanation at once.
 
-![Desktop: the sidebar with search and map options on the left, and Risk Tides docked on the map. Here: Friday, 10 PM, wet streets.](img/03-desktop-home-risk-tides.png)
+![Desktop: the sidebar with search and map options on the left, Risk Tides docked on the map, and the Ask PathPro agent button above the zoom buttons. Here: Friday, 10 PM, wet streets.](img/03-desktop-home-risk-tides.png)
 
 ## Planning a trip
 
@@ -109,11 +110,11 @@ The small icons under the search box choose how you travel (walk, bike, e-bike, 
 
 ## Choosing how you travel
 
-Under the trip header are four tabs: **Walk · Bike · E-bike · Scooter**. Each tab shows its travel time. A **~** means an estimate until that route loads.
+Under the trip header is a row of four large mode buttons: **Walk · Bike · E-bike · Scooter**. Each shows a big icon, its name, and its travel time underneath. The one you've picked is outlined in teal. A **~** means an estimate until that route loads.
 
 - **Walk** routes use sidewalks and footpaths with the pedestrian traffic-risk model.
 - **Bike, E-bike, and Scooter** routes use OpenStreetMap's bike network with a separate model trained on cyclist crashes. The first time you pick a ride mode, PathPro downloads the ride risk map (about 11 MB). This takes 15–20 seconds on a typical connection, and the map re-colors when it's ready.
-- A mode that isn't available where you are stays visible but grayed out, and says *Coming soon in this area*.
+- A mode that isn't available where you are stays visible but grayed out, reads **Soon** instead of a time, and says *Coming soon in this area* when you tap it.
 
 **Long walks get faster options.** When the walk is longer than about 25 minutes, the route card adds:
 
@@ -155,7 +156,7 @@ Every route shows the reminder *Traffic risk estimate from historical crashes. A
 
 Tap **Why?** (or drag the sheet up) to see:
 
-- **Why this route**: a short, plain-English explanation. It is written from the model's evidence, and any sentence with a number that isn't in the evidence is thrown out. Below it, **Ask about this route** opens [Ask PathPro](#ask-pathpro) for follow-up questions.
+- **Why this route**: a short, plain-English explanation. It is written from the model's evidence, and any sentence with a number that isn't in the evidence is thrown out. Below it, the **Ask about this route** pill (with the agent's robot mark) opens [Ask PathPro](#ask-pathpro) for follow-up questions.
 - **Leaving … · conditions**: the departure time and weather the scores use.
 - **Avoids 2 high-risk stretches**: chips for the streets the PathPro route skips, with their scores. Tap one to zoom the map to it.
 - A **Personal safety** summary, when that data is available: reported crimes against persons near each route, side by side, with **How to read this**. It never ranks the routes.
@@ -168,17 +169,16 @@ Tap **Why?** (or drag the sheet up) to see:
 Tap any street on the map, or any street chip, to open its sheet:
 
 - a **score dial** (0–100) with a band (Lower, Moderate, Elevated, High) and a confidence badge (*High confidence*, *Medium confidence*, or *Limited data*)
-- an explanation of the main reasons
+- an explanation of the main reasons, with **Listen** and the **Ask about this street** pill right under it. The pill opens [Ask PathPro](#ask-pathpro) with the street already filled in.
 - **factor bars** that add up exactly to the score, starting from *Typical street at a typical hour*. For example: *Vehicle crashes on this street +34*, *Time of day +2*.
 - the street's crash history: crashes here, how many involved pedestrians, and the share after dark and on wet pavement
 - **When crashes happened here**: an hour-by-hour chart, with the current hour highlighted
 - **Street redesign ideas** on walking streets, with **Imagine this street redesigned** (see [Imagine this street redesigned](#imagine-this-street-redesigned))
 - **How is this calculated?**, which opens **How PathPro works**, including the model's accuracy and limits
-- **Ask about this street**, which opens [Ask PathPro](#ask-pathpro) with the street already filled in
 
 ![Why this route: the explanation, the stretches the PathPro route avoids, and the personal-safety summary.](img/09-phone-why-this-route.png)
 
-![A street sheet: the score dial, the explanation, Listen, and factor bars that add up to the score.](img/10-phone-street-why.png)
+![A street sheet on the Klaus Building to Midtown MARTA trip: the score dial, the explanation, Listen and the "Ask about this street" pill, and factor bars that add up to the score.](img/10-phone-street-why.png)
 
 ### Listen
 
@@ -188,55 +188,71 @@ Street sheets for ride routes, and the spoken alerts during navigation and previ
 
 ## Ask PathPro
 
-**Ask PathPro** answers questions about how PathPro works, and about the street, route, or City Pulse area on your screen. Answers come from PathPro's model card and docs.
+**Ask PathPro** is a chat that answers questions about how PathPro works, and about the street, route, or City Pulse area on your screen. Answers come from PathPro's model card and docs.
 
 ### Where to find it
 
-- **General questions:** on a phone, open **Map options** and tap **Ask PathPro** at the bottom. On a desktop, tap **Ask PathPro** at the bottom of the sidebar.
-- **About this street:** on a street's sheet, tap **Ask about this street** at the bottom.
-- **About this route:** under **Why this route**, tap **Ask about this route**.
-- **About this area:** on a **City Pulse · this area** card, tap **Ask about this area**.
+- **The agent button:** the round teal-to-violet button with a robot face on the map. On a phone it sits at the bottom right, above the layers and locate buttons. On a desktop it sits at the bottom right, above the zoom buttons. Tap it for general questions.
+- **About this street:** on a street's sheet, tap the **Ask about this street** pill next to **Listen**, under the explanation.
+- **About this route:** under **Why this route**, tap the **Ask about this route** pill.
+- **About this area:** on a **City Pulse · this area** card, tap the **Ask about this area** pill.
+- **Also:** **Ask PathPro** at the bottom of **Map options** on a phone, or at the bottom of the sidebar on a desktop.
+
+The pills carry the same robot mark as the agent button, so you can spot them at a glance.
+
+![The Ask PathPro agent button on the phone map, above the layers and locate buttons.](img/27-phone-agent-button.png)
+
+### The chat panel
+
+On a phone, Ask PathPro opens as a tall sheet from the bottom of the screen. On a desktop, it opens as a chat card docked at the bottom right of the map, above the agent button, so the route or street stays in view.
+
+- The **header** shows the agent's avatar, **Ask PathPro**, and *Powered by Backboard*. The **×** closes it.
+- When you open Ask from a street, route, or area, a **context pill** under the header shows what you're asking about, for example **About: Fifth Street Northwest · 9 PM** or **About: this route**. Tap its **×** to ask in general instead.
+- Your questions appear as **teal bubbles** on the right. PathPro's answers appear as **dark bubbles** on the left, next to its avatar. While it looks, you'll see **typing dots**.
+- **Suggestion chips** sit above the message box. Scroll them sideways for more.
+- Type your own question (up to 300 characters) in **Ask about PathPro…** and tap the round **Send** button (↑), or press **Enter**.
+- The **Remember my preferences** switch sits at the very bottom (see below).
 
 ### Asking a question
 
-1. When you open Ask from a street, route, or area, a **context chip** at the top shows what you're asking about, for example **About: Fifth Street Northwest · 9 PM** or **About: this route**. Tap its **×** to ask in general instead.
-2. Tap a **suggested question**, or type your own (up to 300 characters) in **Ask about PathPro…** and tap **Ask**. Suggestions change with the context:
-   - In general: *Why isn't crime used for routing?*, *How was the model tested?*, *What does '54% less traffic risk' mean?*
-   - For a street: *Why is this street high-risk at this hour?*, *What would lower the risk here?*
-   - For a route: *Why is this route longer?*, *Which stretches did it avoid?*
-   - For an area: *What drives traffic risk in this area?*
-3. While PathPro looks, you'll see *Looking through PathPro's docs…*. The answer appears under your question. Ask follow-ups in the same box. The conversation lasts until you close the tab.
+1. Tap a **suggestion chip**, or type your own question. Suggestions change with the context:
+    - In general: *Why isn't crime used for routing?*, *How was the model tested?*, *What does '54% less traffic risk' mean?*
+    - For a street: *Why is this street high-risk at this hour?*, *What would lower the risk here?*
+    - For a route: *Why is this route longer?*, *Which stretches did it avoid?*
+    - For an area: *What drives traffic risk in this area?*
+2. The typing dots show while PathPro looks through its docs. The answer then appears in a bubble under your question.
+3. Ask follow-ups in the same box. The conversation lasts until you close the tab.
 
 ### How answers are checked
 
 PathPro doesn't show whatever the AI writes. Every answer is checked against PathPro's own evidence for that street, route, or area, and against the same wording rules as the rest of the app. PathPro never lets the AI make up a risk score.
 
-- A checked answer ends with *Answered from PathPro's model card and docs · powered by Backboard*.
+- A checked answer is followed by *Answered from PathPro's model card and docs · powered by Backboard*.
 - When an answer cites the docs, **Sources** links appear under it. They open in a new tab.
-- If an answer doesn't pass the check, or the service is slow, you get a fixed message instead: *I can't answer that one right now. The model card under About PathPro explains how traffic risk is scored, how the model was tested, and which data it uses.* Try rewording, or open **About PathPro**.
+- If an answer doesn't pass the check, or the service is slow, you get a fixed message instead, in a dimmer bubble: *I can't answer that one right now. The model card under About PathPro explains how traffic risk is scored, how the model was tested, and which data it uses.* Try rewording, or open **About PathPro**.
 - If the street, route, or area you asked about is no longer available, PathPro says so (for example *That street is no longer available, so I answered in general.*) and answers in general.
 
 Only ids, the hour, and the conditions for the thing on screen go with your question. Your GPS position, saved places, and routines are never sent.
 
-![Ask about this street: the context chip "About: Fifth Street Northwest · 9 PM", the two street suggestions, and a checked answer that walks through the same factors as the street's score.](img/23-phone-ask-street.png)
+![Ask about this street on a phone: the context pill "About: Fifth Street Northwest · 9 PM", your question in a teal bubble, and a checked answer that walks through the same factors as the street's score bars.](img/23-phone-ask-street.png)
 
-![Ask about this route on a desktop: "Which stretches did it avoid?" answered for the Klaus Building to Midtown MARTA walk, next to the route comparison.](img/26-desktop-route-ask.png)
+![Ask about this route on a desktop: "Which stretches did it avoid?" answered in the docked chat card for the Klaus Building to Midtown MARTA walk, next to the route comparison.](img/26-desktop-route-ask.png)
 
 ### Remember my preferences (optional)
 
-At the bottom of Ask PathPro is a **Remember my preferences** switch. It is **off** by default.
+At the bottom of the chat is a **Remember my preferences** switch. It is **off** by default.
 
 - **Off:** each conversation starts fresh. Nothing is kept after you close the tab.
 - **On:** Ask PathPro can remember preferences you tell it, such as when you usually walk, across visits in this browser. Answers that used memory show a **Memory on** tag. Turning the switch off again pauses memory without deleting it.
-- The note under the switch says exactly what happens: *When on, what you type here is kept by Backboard for this browser until you tap Forget me. Your location, routes and routines are never sent.*
+- Tap the **ⓘ** button next to the switch to read exactly what happens: *When on, what you type here is kept by Backboard for this browser until you tap Forget me. Your location, routes and routines are never sent.*
 - **Forget me** (next to the switch, once memory has been turned on) deletes everything Ask PathPro remembered. You'll see *Ask PathPro memory deleted.*
 - You can also delete it from **Map options → Privacy → Forget Ask PathPro memory**.
 
 Please don't type your home address or other personal details into Ask PathPro. It doesn't need them to answer.
 
-![General Ask PathPro from Map options: a checked answer to "How was the model tested?", and the "Remember my preferences" switch (off) with its privacy note.](img/24-phone-ask-memory.png)
+![Ask PathPro opened from the agent button: a checked answer to "How was the model tested?", the suggestion chips, the round Send button, and the "Remember my preferences" switch (off) with its privacy note open.](img/24-phone-ask-memory.png)
 
-Ask PathPro needs the live service, so it isn't shown in the offline demo. If you ask a lot in one day, it asks you to try again tomorrow.
+Ask PathPro needs the live service, so the agent button and the Ask pills aren't shown in the offline demo. If you ask a lot in one day, it asks you to try again tomorrow.
 
 ## Imagine this street redesigned
 
@@ -251,7 +267,7 @@ Wondering what would make a high-risk street better? On a walking street's sheet
 
 This section appears on walking streets only, and is hidden in the offline demo.
 
-![A walking street's sheet (Williams Street Northwest, 9 PM): the Grok Imagine illustration with a refuge island, continental crosswalks, and street lighting, its "not a real photo" label, and "Checked by Gemini: shows 3 of 3 planned fixes".](img/25-phone-imagine-street.png)
+![A walking street's sheet (10th Street Northwest, 9 PM): the Grok Imagine illustration with a refuge island, continental crosswalks, and street lighting, its "not a real photo" label, and "Checked by Gemini: shows 3 of 3 planned fixes".](img/25-phone-imagine-street.png)
 
 ## Walking and riding navigation
 
@@ -396,7 +412,7 @@ Open **Map options** with the layers button on a phone. On a desktop, the same c
 - **Map**: **Streets** (traffic risk by street), **City Pulse** (by area), or **Personal safety**.
 - **Risk Tides** (phone only), the **legend** (bands **0 Lower · 25 Moderate · 50 Elevated · 75 High**), and **Privacy**: **Clear history**, plus **Forget Ask PathPro memory** once you've turned Ask memory on.
 - **About PathPro**: how the score is made, how well it works, its limits, sources, and emergency numbers.
-- **Ask PathPro**: questions about how PathPro works (see [Ask PathPro](#ask-pathpro)).
+- **Ask PathPro**: the same chat as the agent button on the map (see [Ask PathPro](#ask-pathpro)).
 
 ![Map options: conditions, departure time, route preference, and map mode.](img/20-phone-map-options.png)
 
@@ -417,7 +433,7 @@ Open **Map options** with the layers button on a phone. On a desktop, the same c
 
 - **Keyboard.** Every control is a real button, link, or input and can be reached with **Tab**. In the route sheet, the handle opens and closes with **Enter** or **Space**, and **↑**, **↓**, and **Esc** also work. Sheets and dialogs close with **Esc** and return focus to where you were. The check-in dialog keeps focus inside it until you choose. In search, **Enter** picks the first result.
 - **Screen readers.** Controls have plain labels, for example *Swap start and destination*, *Show my location*, *Travel mode*, and *Hour of day* (which reads the hour, the weather, and the citywide median). The score dial reads *Traffic risk 93 of 100, High*. Navigation banners and status messages are announced as they change, and help points are listed as buttons so you can reach them without the map.
-- **Ask PathPro and street illustrations.** Ask PathPro is a dialog that closes with **Esc**. New answers are read out as they arrive, and **Remember my preferences** is a real switch that announces whether it's on. When a street illustration finishes drawing, focus moves to the picture, and its description lists the fixes shown.
+- **Ask PathPro and street illustrations.** The agent button is labeled *Ask PathPro* and says whether the chat is open. Ask PathPro is a dialog that closes with **Esc**. New answers are read out as they arrive, the Send button is labeled *Send*, **Remember my preferences** is a real switch that announces whether it's on, and the **ⓘ** button (*What memory keeps*) opens the privacy note. When a street illustration finishes drawing, focus moves to the picture, and its description lists the fixes shown.
 - **Touch targets** are at least 44 px, with switches for the personal-safety layers.
 - **Reduced motion.** If your device asks for less motion, PathPro turns off animated map effects and shows explanations at once instead of typing them out.
 
@@ -427,7 +443,7 @@ Open **[pathpro.tech/?demo=1](https://pathpro.tech/?demo=1)** to replay a fixed 
 
 - Everything on the route card, **Why?**, street sheets, **Preview walk**, and the ride modes works.
 - **Share my walk** is simulated on the device, and nothing is sent.
-- Community reports, search results for new addresses, **Ask PathPro**, and **Imagine this street redesigned** are hidden, because they need the live service.
+- Community reports, search results for new addresses, **Ask PathPro** (the agent button and the Ask pills), and **Imagine this street redesigned** are hidden, because they need the live service.
 - **Listen** uses your device's voice.
 - Keyboard shortcuts: **T** jumps to 10 PM, **R** toggles rain, and **D** resets to the demo trip.
 
@@ -459,7 +475,7 @@ When the AI service is slow or down, PathPro builds a short explanation from the
 **Ask PathPro says "I can't answer that one right now."**
 Either the answer didn't pass PathPro's check against its evidence, or the service is busy. Try a suggested question or reword yours. **About PathPro** has the full model card.
 
-**I don't see Ask PathPro or "Imagine this street redesigned".**
+**I don't see the Ask PathPro agent button or "Imagine this street redesigned".**
 Both need the live service, so they're hidden in the offline demo. The street illustration appears on walking streets only.
 
 **"You've reached today's limit for new street illustrations."**
