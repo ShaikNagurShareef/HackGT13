@@ -200,7 +200,7 @@ async def test_repair_stays_inside_the_ask_timeout() -> None:
         return await slow_rewrite(request)
 
     with respx.mock() as mock:
-        messages = mock.post(MESSAGES_URL).mock(side_effect=respond)
+        mock.post(MESSAGES_URL).mock(side_effect=respond)
         async with httpx.AsyncClient() as client:
             started = time.monotonic()
             answer = await _service(client, timeout_s=1.5).ask(
@@ -208,7 +208,7 @@ async def test_repair_stays_inside_the_ask_timeout() -> None:
             )
             elapsed = time.monotonic() - started
 
-    assert messages.call_count == 2
+    assert len(seen) == 2  # a cancelled call is not counted by respx
     assert answer.source == "fallback"
     assert answer.thread_id == TOKENS.issue(THREAD, ASSISTANT)
     assert elapsed < 2.5  # the whole ask, repair included, keeps the original timeout

@@ -192,8 +192,10 @@ CORPUS_FILE_NAMES = (
     "decisions.md",
     "data_and_models.md",
     "judge_qa.md",
+    "user_guide.md",
+    "README.md",
 )
-_CORPUS_FILE_RE = re.compile(
+CORPUS_FILE_RE = re.compile(
     r"(?<![\w.@-])(?:[\w-]+/)*(?:"
     + "|".join(re.escape(n) for n in CORPUS_FILE_NAMES)
     + r")(?![\w@-]|\.\w)",
@@ -201,8 +203,21 @@ _CORPUS_FILE_RE = re.compile(
 )
 
 
+def ask_banned_words(text: str) -> tuple[str, ...]:
+    """The banned words an Ask answer used (lower case, first-seen order), for a rewrite request."""
+    found = [m.group(0).lower() for m in _ASK_BANNED_RE.finditer(text)]
+    if _unnegated_demographics(text):
+        found += [m.group(0).lower() for m in _ASK_NEGATABLE_RE.finditer(text)]
+    return tuple(dict.fromkeys(found))
+
+
+def internal_terms(text: str) -> tuple[str, ...]:
+    """Code identifiers left in an Ask answer (corpus file names are not identifiers)."""
+    return tuple(dict.fromkeys(_INTERNAL_TERM_RE.findall(CORPUS_FILE_RE.sub(" ", text))))
+
+
 def _has_link(text: str) -> bool:
-    cleaned = _CORPUS_FILE_RE.sub(" ", _ALLOWED_DOMAIN_RE.sub(" ", text))
+    cleaned = CORPUS_FILE_RE.sub(" ", _ALLOWED_DOMAIN_RE.sub(" ", text))
     return _LINK_RE.search(cleaned) is not None
 
 
@@ -252,6 +267,6 @@ def ask_validation_errors(
         errors.append("banned_phrase")
     if _crime_framing(stripped):
         errors.append("crime_framing")
-    if _INTERNAL_TERM_RE.search(_CORPUS_FILE_RE.sub(" ", stripped)):
+    if _INTERNAL_TERM_RE.search(CORPUS_FILE_RE.sub(" ", stripped)):
         errors.append("internal_term")
     return errors + _ask_number_errors(stripped, allowed, evidence, question)

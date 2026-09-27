@@ -10,10 +10,13 @@ Privacy and trust rules:
 - The question may carry server-built context (a street, route, area, or live conditions);
   it never includes coordinates, and it is validated against as evidence.
 - Each client address gets a small daily cap, checked before the shared daily budget is spent.
+- Code identifiers in an answer (lit_and_busy) become the app's labels before validation.
 - The answer is shown only if it passes the explanation validator's Ask rules (on topic, no links,
-  banned words, crime framing, every number found in the docs corpus). Anything else, and any
-  upstream error, timeout, or spent daily budget, returns a fixed fallback that points to the
-  model card; the raw LLM text is never shown or logged. Logs carry exception type names only.
+  banned words, crime framing, every number found in the docs corpus). A withheld answer gets ONE
+  rewrite request in the same thread (memory "Readonly", no extra budget, inside the same
+  timeout); if the rewrite also fails, and on any upstream error, timeout, or spent daily budget,
+  a fixed fallback points to the model card. The raw LLM text is never shown or logged. Logs
+  carry exception type names and validator error categories only.
 """
 
 from __future__ import annotations
@@ -22,6 +25,7 @@ import asyncio
 import json
 import logging
 import re
+import time
 import uuid
 from dataclasses import dataclass
 from typing import Literal
@@ -31,6 +35,7 @@ import httpx
 from app.api.envelope import AppError
 from app.services.ask_corpus import CorpusSource, corpus_sources
 from app.services.ask_memory import verified_clone
+from app.services.ask_rewrite import error_kinds, humanize_identifiers, repair_request
 from app.services.ask_threads import MemoryTokens, ThreadTokens
 from app.services.backboard import Backboard, BackboardError, MemoryMode
 from app.services.explain.evidence import Evidence
@@ -41,6 +46,8 @@ from app.services.limits import ClientDailyLimit
 log = logging.getLogger(__name__)
 
 TIMEOUT_S = 12.0
+# A rewrite is requested only if at least this much of the ask's timeout is left.
+MIN_REPAIR_S = 1.0
 MIN_QUESTION_CHARS = 3
 MAX_QUESTION_CHARS = 300
 COMPLETED = "COMPLETED"
@@ -107,7 +114,8 @@ def compose_content(question: str, evidence: Evidence | None, *, memory_on: bool
 
 
 def clean_answer(text: str) -> str:
-    return _BOLD_RE.sub("", _CITATION_RE.sub("", text)).strip()
+    """Citation markers and bold removed, code identifiers turned into app labels."""
+    return humanize_identifiers(_BOLD_RE.sub("", _CITATION_RE.sub("", text))).strip()
 
 
 class AskService:
@@ -180,22 +188,59 @@ class AskService:
             log.warning("ask daily budget spent; answering with the fallback")
             return self._fallback(thread_id, assistant, state)
         content = compose_content(question, evidence, memory_on=writes)
+        deadline = time.monotonic() + self._timeout  # the repair shares this timeout
         try:
             raw, thread = await asyncio.wait_for(
-                self._converse(self._backboard, assistant, content, thread_id, mode),
+                self._converse(self._backboard, assistant, content, thread_id, mode, self._timeout),
                 timeout=self._timeout,
             )
         except ASK_ERRORS as exc:
             log.warning("ask backboard unavailable: %s", type(exc).__name__)
             return self._fallback(None, assistant, state)  # a fresh thread next time
-        text = clean_answer(raw)
-        errors = ask_validation_errors(text, self._allowed, evidence=evidence, question=question)
+        text, errors = self._check(raw, evidence, question)
+        sources = corpus_sources(raw)
         if errors:
-            kinds = sorted({e.split(":", 1)[0] for e in errors})
-            log.warning("ask answer withheld by validator: %s", kinds)
-            return self._fallback(thread, assistant, state)
+            log.warning("ask answer withheld by validator: %s", list(error_kinds(errors)))
+            request = repair_request(text, errors)
+            fixed = await self._repair(self._backboard, assistant, thread, request, deadline)
+            if fixed is None:
+                return self._fallback(thread, assistant, state)
+            fixed_raw, thread = fixed
+            text, errors = self._check(fixed_raw, evidence, question)
+            if errors:
+                log.warning("ask rewrite withheld by validator: %s", list(error_kinds(errors)))
+                return self._fallback(thread, assistant, state)
+            log.info("ask answer shown after one rewrite")
+            sources = corpus_sources(fixed_raw) or sources  # the rewrite keeps the same facts
         token = self._tokens.issue(thread, assistant)
-        return AskAnswer(text, token, "backboard", ASK_NOTE, corpus_sources(raw), state)
+        return AskAnswer(text, token, "backboard", ASK_NOTE, sources, state)
+
+    def _check(self, raw: str, evidence: Evidence | None, question: str) -> tuple[str, list[str]]:
+        """The cleaned answer text and why it may not be shown (empty when it may)."""
+        text = clean_answer(raw)
+        return text, ask_validation_errors(
+            text, self._allowed, evidence=evidence, question=question
+        )
+
+    async def _repair(
+        self, backboard: Backboard, assistant_id: str, thread: str, request: str, deadline: float
+    ) -> tuple[str, str] | None:
+        """One rewrite in the same thread, memory read-only, within what is left of the timeout.
+
+        Spends no per-client or daily budget: it finishes the question already paid for.
+        """
+        remaining = deadline - time.monotonic()
+        if remaining < MIN_REPAIR_S:
+            log.warning("ask rewrite skipped: not enough time left")
+            return None
+        try:
+            return await asyncio.wait_for(
+                self._converse(backboard, assistant_id, request, thread, "Readonly", remaining),
+                timeout=remaining,
+            )
+        except ASK_ERRORS as exc:
+            log.warning("ask rewrite unavailable: %s", type(exc).__name__)
+            return None
 
     async def _converse(
         self,
@@ -204,9 +249,10 @@ class AskService:
         content: str,
         thread_id: str | None,
         memory: MemoryMode,
+        timeout: float,
     ) -> tuple[str, str]:
         """The raw reply (citation markers kept, for sources) and the canonical thread id."""
-        thread = thread_id or _canonical(await backboard.create_thread(assistant_id, self._timeout))
+        thread = thread_id or _canonical(await backboard.create_thread(assistant_id, timeout))
         reply = await backboard.send_message(
             thread_id=thread,
             assistant_id=assistant_id,
@@ -214,7 +260,7 @@ class AskService:
             memory=memory,  # "Readonly" on the shared assistant; "Auto" only on a clone
             llm_provider=self._provider,
             model_name=self._model,
-            timeout=self._timeout,
+            timeout=timeout,
         )
         if reply.status != COMPLETED:
             raise BackboardError("run not completed")

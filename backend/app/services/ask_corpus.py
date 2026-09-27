@@ -22,6 +22,8 @@ CORPUS_FILES: tuple[str, ...] = (
     "docs/decisions.md",
     "docs/technical/data_and_models.md",
     "docs/judge_qa.md",
+    "docs/guide/user_guide.md",
+    "README.md",
 )
 # Where each corpus file can be read; answers link only to these, never to a model-chosen URL.
 REPO_BLOB_URL = "https://github.com/ShaikNagurShareef/PathPro/blob/main"
@@ -32,6 +34,8 @@ CORPUS_LABELS: dict[str, str] = {
     "docs/decisions.md": "Decision log",
     "docs/technical/data_and_models.md": "Data and models",
     "docs/judge_qa.md": "Judge Q&A",
+    "docs/guide/user_guide.md": "User guide",
+    "README.md": "README",
 }
 _BY_FILENAME = {Path(name).name: name for name in CORPUS_FILES}
 # Backboard retrieval citations look like 【4:0†model_card.md】; the file name follows the dagger.
