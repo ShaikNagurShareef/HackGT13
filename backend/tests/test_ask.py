@@ -656,6 +656,10 @@ def test_post_ask_returns_the_envelope(ask_api: tuple[TestClient, respx.MockRout
         "answer": GOOD,
         "source": "backboard",
         "note": "Answered from PathPro's model card and docs · powered by Backboard",
+        "sources": [],
+        "memory": "off",
+        "context_used": "conditions",
+        "context_dropped": False,
     }
     assert TOKEN_RE.match(token) and token.startswith(THREAD + ".")
     assert _body(messages)["memory"] == "Readonly"
