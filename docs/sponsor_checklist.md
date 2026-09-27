@@ -65,7 +65,7 @@ Job: answer questions about how PathPro works, and about the street, route, or a
 Pitch: *mission control for every walk home*. PathPro aligns with SpaceX's engineering culture (first principles, test like you fly, engine-out redundancy, reusability, public-health mission), not its branding. No logos, and no suggestion of a partnership.
 - [x] xAI account (shaiknagurshareef6@gmail.com) and `XAI_API_KEY` in `backend/.env`; Grok verified against the real API locally
 - [ ] Confirm the $25 credits from the SpaceXAI promo code are applied (Grok Voice + Imagine; code kept out of git)
-- [x] Cursor used during development (named in the Devpost AI-tools line)
+- [ ] Actually do some PathPro work in Cursor (it is named in the Devpost AI-tools line and the SpaceXAI track asks for it). Until then, remove Cursor from that line
 - [x] Built and tested: Grok explanations first in the chain (Grok → Groq → Gemini → template), Grok Voice alerts (ElevenLabs, then the device voice, as backups), and "Imagine this street redesigned" (Grok Imagine, server-built prompt, "not a real photo" label, checked by Gemini, per-visitor daily cap)
 - [ ] Deploy to pathpro.tech and verify live: explanation source "grok", Grok Voice audio, one Imagine image with the "Checked by Gemini" line
 - [x] Track selected on Devpost (sponsor track 2)
