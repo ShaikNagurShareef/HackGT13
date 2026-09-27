@@ -964,3 +964,24 @@ def test_compose_tells_the_assistant_when_memory_is_on() -> None:
     assert MEMORY_NOTE in on and "Forget me" in on
     assert MEMORY_NOTE not in off
     assert on.endswith("Tips for my walk home?")
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "sentence",
+    [
+        "PathPro keeps crime data separate from routing to avoid labeling neighborhoods.",
+        "Routes are computed independently of crime reports.",
+        "Crime reports are excluded from the traffic risk model and from routing.",
+        "PathPro shows crime reports for context rather than using them in routing.",
+    ],
+)
+def test_crime_framing_accepts_other_ways_of_saying_crime_is_not_used(sentence: str) -> None:
+    assert "crime_framing" not in ask_validation_errors(sentence, frozenset())
+
+
+@pytest.mark.unit
+def test_crime_framing_still_rejects_crime_driving_routes() -> None:
+    text = "PathPro raises the routing cost on streets with more crime reports at night."
+
+    assert "crime_framing" in ask_validation_errors(text, frozenset())

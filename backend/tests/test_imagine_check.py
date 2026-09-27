@@ -413,3 +413,11 @@ def test_app_checks_images_with_the_check_model_not_the_explain_model(checked: H
     sent = checked.gemini.calls.last.request
     assert f"/models/{GEMINI_MODEL}:generateContent" in str(sent.url)
     assert "gemini-explain-only" not in str(sent.url)
+
+
+@pytest.mark.unit
+def test_image_check_waits_long_enough_for_gemini_vision() -> None:
+    # Live runs at 8 s timed out twice and cached the pictures unchecked for good.
+    from app.services.imagine_check import TIMEOUT_S
+
+    assert TIMEOUT_S >= 20
