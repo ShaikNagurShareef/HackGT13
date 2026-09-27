@@ -1,38 +1,80 @@
-# PathPro — Architecture & Build Plan
+# PathPro — Architecture and build plan
 
-## Context
-Build **PathPro** (domain **pathpulse.tech**, verified available) from `Requirements (PRD).md`. It is an Atlanta pedestrian traffic-risk forecaster with:
+PathPro ([pathpro.tech](https://pathpro.tech)) forecasts pedestrian and cyclist traffic risk for every street in the City of Atlanta by hour and weather, and plans lower-risk walking and riding routes. It is a solo build by Nagur Shareef Shaik (team name Coding Claws, Georgia State University) for HackGT 13. Scope comes from `Requirements (PRD).md`.
+
+This page has two parts: a one-page summary of the architecture as it runs today, and the original Friday-night build plan, kept for the record. The detailed, code-checked description is in [docs/technical/](technical/README.md).
+
+## Architecture today
+
+![System context: users, PathPro, and the optional external services](technical/img/a1_context.png)
+
+*System context. Details and the container view: [technical/architecture.md](technical/architecture.md).*
+
+| Part | What it is | Where |
+| --- | --- | --- |
+| Offline pipeline | Fetches public crash, network, exposure, and weather data; cleans, deduplicates, and snaps crashes to 49,915 road segments; fits the walk model (Poisson GLM + monotone LightGBM + Empirical Bayes, with an hour-and-conditions model), the ride model, City Pulse hexes, and the personal-safety layer; exports a versioned bundle | `data/` (uv package `pathpulse_data`) |
+| Model bundle | Immutable files per model version (factors, Risk Tides frames, walk and ride graphs, geometry, metrics), hashed in `manifest.json`; the API loads it at startup and fails fast on a mismatch | `artifacts/<version>/` |
+| API | FastAPI on one uvicorn worker behind Caddy on a Vultr VM: routes, segment and area detail, explanations, voice, street redesign illustrations, Ask PathPro, geocoding, live conditions, community reports, Share my walk, safety layers | `backend/app/` |
+| SPA | React, MapLibre, deck.gl, zod-validated API client; the `?demo=1` mode answers from recorded fixtures and works offline | `frontend/src/` |
+| Systems of record | Tiger Data (crash hypertable, hourly aggregate, score grid; one read on the request path, for the hourly chart), MongoDB Atlas (reports, shared walks) | `data/sql/`, `backend/app/repositories/` |
+
+**Generative AI, always behind server-built evidence and validation**
+
+- **Explanations:** xAI Grok (`grok-4.20-0309-non-reasoning`) → Groq `gpt-oss-120b` → Gemini → Groq `gpt-oss-20b` → deterministic template. Every provider gets the same evidence-only prompt and the same validator (numbers and clock times must come from the evidence; banned framings rejected). Street names are flattened to one short line before any LLM sees them.
+- **Voice (`/tts`):** Grok Voice → ElevenLabs → the device's own voice. Only server-written explanation text is ever spoken.
+- **"Imagine this street redesigned":** Grok Imagine draws the street with evidence-based fixes from a server-built prompt (the street's risk factors, no street names); Gemini checks each picture before it is cached or shown (which planned fixes appear; no text, logos, or identifiable faces; one retry). Pictures are cached on disk, capped at 40 a day (10 per client), and labeled as an AI illustration, never a photo.
+- **Ask PathPro (Backboard):** retrieval over six project documents, with server-built context for the street, route, or City Pulse area on screen (or live conditions). Answers are validated (sourced numbers only, no links, no crime framing, on topic) or replaced by a fixed fallback. Opt-in private memory is a per-browser assistant clone that keeps only stated travel preferences; "Forget me" deletes it. Thread and memory tokens are HMAC-signed.
+
+**Rules that shape everything:** the model bundle, not a database, is the hot path; every external service is optional; no model-generated number reaches the user; no demographic or income features anywhere; crime data is informational only and never used in the traffic model or routing; API keys live only in `backend/.env` on the server.
+
+| Flow | Diagram |
+| --- | --- |
+| Plan a route | [a3_route_sequence.png](technical/img/a3_route_sequence.png) |
+| "Why?" explanations | [a4_explain_sequence.png](technical/img/a4_explain_sequence.png) |
+| Street redesign illustration | [a9_imagine_sequence.png](technical/img/a9_imagine_sequence.png) |
+| Ask PathPro | [a10_ask_sequence.png](technical/img/a10_ask_sequence.png) |
+| Ask PathPro memory | [a11_ask_memory.png](technical/img/a11_ask_memory.png) |
+| Deployment | [o1_deploy.png](technical/img/o1_deploy.png) |
+
+---
+
+## Original build plan (Friday 21:00, kept for the record)
+
+What follows is the plan written at the start of the hackathon. Several choices changed while building (see [decisions.md](decisions.md)): the domain became pathpro.tech, the router uses a density-scaled cost ladder, the spatial model became a GLM plus monotone LightGBM, walk and ride models share one bundle, a personal-safety layer was added (crime shown for information only), and Grok, Grok Imagine, Gemini image review, and Ask PathPro on Backboard were added on Saturday evening.
+
+### Context at the start
+The plan was to build **PathPro** (planned domain **pathpulse.tech**) from `Requirements (PRD).md`: an Atlanta pedestrian traffic-risk forecaster with:
 - hourly **Risk Tides**
 - a fastest vs lower-risk walking router
 - factor-by-factor explanations
 - grounded LLM explanations
 - **City Pulse**, citywide area scores
 
-The goal is to win: Oracle of the Deep, Best Overall, the social-good track, and MLH prizes.
+Targets: Oracle of the Deep, Best Overall, the social-good track, and MLH prizes.
 
 **Environment.** 8 GB M1, Python 3.12, uv, Node 22 and npm, **no Docker**. `gh` is logged in; the remote is `ShaikNagurShareef/PathPro`.
 
-**Decisions confirmed with the user**
-- Team: CodingClaws (Nagur Shareef Shaik, Sahith Reddy Thummala, Pranav Nagothu, Geethanjali Nagaboina).
-- LLM: **Groq** first (`openai/gpt-oss-120b`, then `gpt-oss-20b`), then **Gemini** (`gemini-3.8-flash`), then a deterministic template.
-- Voice: **ElevenLabs**, with the browser's built-in speech as fallback.
+**Decisions at the start**
+- Builder: Nagur Shareef Shaik, solo (team name Coding Claws).
+- LLM: **Groq** first (`openai/gpt-oss-120b`, then `gpt-oss-20b`), then **Gemini** (`gemini-3.8-flash`), then a deterministic template. (Later: xAI Grok placed first.)
+- Voice: **ElevenLabs**, with the browser's built-in speech as fallback. (Later: Grok Voice placed first.)
 - Database: **Tiger Data**, as system of record. The demo never depends on it.
 - Hosting: a **Vultr** VM plus the .tech domain.
-- **City Pulse** is P1 and covers **traffic risk only**. No crime data anywhere.
+- **City Pulse** is P1 and covers **traffic risk only**; crime data stays out of every model. (Later: the personal-safety layer shows reported crimes against persons for information only.)
 
-**How we differ from past work**
+**How PathPro differs from past work**
 - lumos.ai (AGPL, ideas only): crime-based, city-level scores, the model imitates a formula, no route comparison, no per-factor explanation, nothing on the map changes over time.
-- **SafeWay (HackGT 11)**: an Atlanta safety router with fixed hand-set weights.
+- **SafeWay (HackGT 11)**: an Atlanta router with fixed hand-set weights.
 - PathPro instead has:
   - a *forecasting* model trained on real crash outcomes, with pedestrian exposure
   - an honest held-out test that beats the City's own High Injury Network
   - risk that changes by hour and weather
   - explanations built from the model's own evidence
 
-## Winning checklist (from the HackGT 13 research)
+### Hackathon checklist (from the HackGT 13 research)
 **Timeline**
 - Hacking ends **Sun 08:00**. Devpost closes at 12:00, but submit by 08:00.
-- Expo runs **09:30–11:00 in the Klaus Atrium**. Our demo route starts at Klaus, so we can demo "from this building".
+- Expo runs **09:30–11:00 in the Klaus Atrium**. The demo route starts at Klaus, so the demo can start "from this building".
 - Closing ceremony: 12:30, Ferst Theatre.
 - You must be present at the expo. After Devpost, submit the link at expo.hexlabs.org.
 
@@ -48,12 +90,12 @@ The goal is to win: Oracle of the Deep, Best Overall, the social-good track, and
   - **Gemini API**: confirm at the MLH table; it's on the MLH page but not on Devpost
 - Notability "Trust the Process": planning notes and screenshots.
 - Create-X interest box.
-- Drop SpaceXAI and DigitalOcean.
+- Drop SpaceXAI and DigitalOcean. (Later: SpaceXAI entered with Grok, Grok Voice, and Grok Imagine.)
 
-**Judging focus** is creativity, complexity and completeness (unverified; check live.hexlabs.org while logged in). Past winners had a concrete harm, a working live demo, rich visuals and a multi-stage ML pipeline. We deliver each of these.
+**Judging focus** is creativity, complexity and completeness (unverified; check live.hexlabs.org while logged in). Past winners had a concrete harm, a working live demo, rich visuals and a multi-stage ML pipeline. The plan covers each of these.
 
 **Rules compliance**
-- The Devpost write-up discloses the AI tools used and what we built, and credits every framework and dataset.
+- The Devpost write-up discloses the AI tools used and what was built, and credits every framework and dataset.
 - Only data and code created this weekend.
 
 **Expo table kit (M9)**
@@ -64,10 +106,10 @@ The goal is to win: Oracle of the Deep, Best Overall, the social-good track, and
 - a judge Q&A cheat sheet covering exposure bias, why not crime, and data limitations
 
 **Headline claims for judges**
-- "Our top 10% of predicted streets captured X% of the *following year's* pedestrian crashes, versus Y% for the City's High Injury Network and 10% by chance."
+- "PathPro's top 10% of predicted streets captured X% of the *following year's* pedestrian crashes, versus Y% for the City's High Injury Network and 10% by chance."
 - "A +3 min walk cuts high-risk exposure by Z%."
 
-## Data (all public ArcGIS REST, no account; page 2,000 at a time with `resultOffset`, `outSR=4326`)
+### Data (all public ArcGIS REST, no account; page 2,000 at a time with `resultOffset`, `outSR=4326`)
 Bases:
 - ARC = `services1.arcgis.com/Ug5xGQbHsD8zuZzM/arcgis/rest/services`
 - COA = `services2.arcgis.com/zLeajbicrDRLQcny/arcgis/rest/services`
@@ -75,7 +117,7 @@ Bases:
 | Purpose | Layer | Notes |
 |---|---|---|
 | Spatial ped counts | ARC `Crashes2020_2024`, `Crashes2019to2023` | Year only; 817 ped crashes in the bbox 2020–24; citywide pulls for City Pulse |
-| **Timed ped crashes (about 4× what we had)** | ARC `MARTACountyCrashes_2023`, ARC `2022_COA_Pedestrian_and_bicycle_crashes`, CAP `services3.arcgis.com/FWC2S7IFSuSHD4PZ/.../Downtown_Transportation/FeatureServer/9` (2017–21, 470 ped), COA `Fiveyear_Crashdata_Midtown_WFL1` (2019–23, 153 ped), COA `KACrashesSince2013` (249 ped fatal/serious), gtmaps `services2.arcgis.com/I9cUOJUZvdGAJncI/.../Atlanta_Collisions_Involving_Ped_or_Cyclist/FeatureServer/3` (2021–25) | De-duplicate on Collision_ID, else date/time plus 20 m |
+| **Timed ped crashes (about 4× the first pull)** | ARC `MARTACountyCrashes_2023`, ARC `2022_COA_Pedestrian_and_bicycle_crashes`, CAP `services3.arcgis.com/FWC2S7IFSuSHD4PZ/.../Downtown_Transportation/FeatureServer/9` (2017–21, 470 ped), COA `Fiveyear_Crashdata_Midtown_WFL1` (2019–23, 153 ped), COA `KACrashesSince2013` (249 ped fatal/serious), gtmaps `services2.arcgis.com/I9cUOJUZvdGAJncI/.../Atlanta_Collisions_Involving_Ped_or_Cyclist/FeatureServer/3` (2021–25) | De-duplicate on Collision_ID, else date/time plus 20 m |
 | Timed all-mode crashes | ARC `COA_2022AllCrashes`, `MARTACountyCrashes_2023` | ~21k in the bbox; shared temporal signal |
 | **Pedestrian exposure by time of day** | COA `Citywide-Pedestrian-Activity--250ftHex--ZA{21,31,41,51}…` (StreetLight 2021) | Daily volume by day part and weekday/weekend; used as a feature and as the exposure offset |
 | **Vehicle exposure and design** | COA `SummaryStats_Routes_AADT/17` (2023 AADT), `Centerline_ATLDOT/0` (speed limit, lanes, class), `Speedlimit_COA`, GDOT `RoadSegments_Fulton` (divided, one-way) | Joined to OSM edges within 15 m and 30° heading |
@@ -87,9 +129,9 @@ Other sources:
 - Walk network: OSMnx 2.1.1.
 - Weather: Open-Meteo forecast and archive.
 - Basemap: OpenFreeMap tiles.
-- Geocoding: Geoapify plus our own gazetteer of local places.
+- Geocoding: Geoapify plus a curated gazetteer of local places.
 
-## Model: tuned for accuracy and still honest
+### Model: tuned for accuracy and still honest
 **Unit of analysis:** OSM road edges.
 - A crash within 15 m of a node is split 1/degree across that node's edges; otherwise it snaps to the nearest edge within 30 m.
 - Sidewalks and crossings inherit risk from the nearest road edge.
@@ -130,7 +172,7 @@ Other sources:
 
 **Router:** scipy `csgraph.dijkstra` on a CSR matrix. Cost = t·(1+λ·(s/100)²) over the ladder λ ∈ {0.5…16}, keeping the lowest-risk route within the detour budget. Each edge is re-scored at its traversal hour.
 
-## Repo layout (monorepo)
+### Repo layout (monorepo)
 - `data/pathpulse_data/` (uv package):
   - `fetch/{arcgis,weather}.py`
   - `network/{graph,features,conflate,inherit}.py`
@@ -163,7 +205,7 @@ Other sources:
 - `POST /explain`: the server builds the evidence; Groq gets 1.6 s, then Gemini, then the template; output is validated and cached.
 - `GET /conditions/live`, `GET /geocode`, `POST /tts {key}`
 
-## Engineering workflow
+### Engineering workflow
 - **Setup:** coding rules for Python, TypeScript, React and web, with a map from file globs to review checklists.
 - **Plan and build:** a plan for each milestone, then test-first development with a commit at RED and at GREEN.
 - **Skills by area:**
@@ -179,13 +221,13 @@ Other sources:
   - frozen dataclasses and pydantic at every boundary
   - a repository pattern
   - rate limit of 60/min/IP and CORS locked to the app's origin
-- **Pushing:** commits stay local. I'll ask before the first `git push`; Devpost needs the repo link.
+- **Pushing:** commits stay local until the first `git push` is approved; Devpost needs the repo link.
 - **M0 also amends the PRD:**
   - §8: sponsors and categories above
   - §4: City Pulse requirements (CITY-01…04, P1)
   - §9.3: resolve Q2–Q4
 
-## Milestones (Fri 21:00 → Sun 08:00)
+### Milestones (Fri 21:00 → Sun 08:00)
 | # | Window | Exit criteria |
 |---|---|---|
 | M0 | Fri 21–22 | Scaffolding, rule packs, pre-commit, `.env.example`, PRD amended. PostGIS confirmed on Tiger. Keys smoke-tested. |
@@ -208,7 +250,7 @@ Other sources:
 - gitleaks is clean
 - the model targets are met, or honestly reported with confidence intervals
 
-## Verification (end to end)
+### Verification (end to end)
 - `uv run pytest --cov` in `data/` and `backend/` shows ≥80%. This includes property tests that:
   - the factor bars sum to the score
   - the detour budget is never violated

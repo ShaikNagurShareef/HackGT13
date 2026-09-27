@@ -1,6 +1,6 @@
 # PathPro API reference
 
-Derived from `backend/app/api/*.py`, `backend/app/api/schemas.py`, `backend/app/api/walk_schemas.py`, and the services they call. Sample responses are trimmed copies of real responses (recorded demo fixtures in `frontend/public/demo/fixtures.json`, or read-only calls to the live site).
+Derived from `backend/app/api/*.py`, `backend/app/api/schemas.py`, `backend/app/api/walk_schemas.py`, and the services they call (checked against `main` on 2026-09-26). Sample responses are trimmed copies of real responses (recorded demo fixtures in `frontend/public/demo/fixtures.json`, or read-only calls to the live site).
 
 ## Base URLs
 
@@ -31,7 +31,7 @@ Every JSON endpoint returns the same envelope (`api/envelope.py`):
 - `error.code` is stable and machine-readable; `error.message` is user-facing copy.
 - Request-validation failures (bad JSON, wrong types, values outside limits, unknown fields where forbidden) return **422** with code `BAD_REQUEST` and the message "That request was not valid." Validator details are never echoed.
 - Unhandled exceptions return **500** `INTERNAL` "Something went wrong. Please retry." with no stack trace.
-- Exceptions: `POST /tts` returns raw `audio/mpeg` on success; unknown paths and wrong methods get FastAPI's default `{"detail": "Not Found"}` (404) and `{"detail": "Method Not Allowed"}` (405).
+- Exceptions: `POST /tts` and `POST /tts/alert` return raw `audio/mpeg` and `GET /imagine/segment/{seg_id}.png` returns a raw PNG or JPEG on success (errors from both are still envelopes); unknown paths and wrong methods get FastAPI's default `{"detail": "Not Found"}` (404) and `{"detail": "Method Not Allowed"}` (405).
 - Responses are typed with pydantic response models; the SPA validates every body with zod (`frontend/src/api/schemas.ts`).
 
 ### Time and condition parameters
@@ -52,13 +52,27 @@ Implemented in `app/middleware.py` as a per-client sliding 60-second window. The
 | --- | --- | --- | --- |
 | Exempt | none | n/a | Paths starting `/healthz`, `/static` |
 | General | 300 requests / min / client | `RATE_LIMIT_PER_MINUTE` | Every other request, including all reads, `POST /routes`, and `PUT /walks/{id}/position` |
-| Paid / write | 30 requests / min / client, **in addition to** the general limit | `PAID_RATE_LIMIT_PER_MINUTE` | Any method on `/explain`, `/geocode`, `/tts`; `POST /reports`; `POST /walks` |
+| Paid / write | 30 requests / min / client, **in addition to** the general limit | `PAID_RATE_LIMIT_PER_MINUTE` | Any method on paths starting `/explain`, `/geocode`, `/tts` (so `/tts/alert` too); `POST` on paths starting `/ask` (so `/ask`, `/ask/memory`, `/ask/memory/forget`) and `/imagine` (`/imagine/segment`); `POST /reports`; `POST /walks`. `GET /imagine/segment/{id}.png` stays on the general limit because it only reads the cache. |
 
 Over either limit → **429** `RATE_LIMITED` "Too many requests. Try again in a minute." (envelope with `model_version: null`).
 
 Why `PUT /walks/{id}/position` is on the general limit: at the expo every visitor shares the venue's NAT address, and each walker posts about 12 updates per minute. On the paid limit, three walkers would exhaust it for the whole hall. Instead an in-memory per-walk gate rejects updates that arrive within 3 seconds of the last accepted one (429 `WALK_THROTTLED`) before any database read.
 
-Daily budgets (per process, reset at local midnight) cap spend independently of the per-client limits: LLM generations `LLM_DAILY_BUDGET` (3,000), Geoapify calls `GEOCODE_DAILY_BUDGET` (2,500), ElevenLabs calls `TTS_DAILY_BUDGET` (500). Past a budget the endpoint degrades (template text, empty results, device voice) instead of failing.
+Daily budgets (per process, reset at local midnight) cap spend independently of the per-minute limits:
+
+| Budget | Default | Env var | Past the budget |
+| --- | --- | --- | --- |
+| Explanation generations | 3,000 | `LLM_DAILY_BUDGET` | Template text |
+| Geoapify calls | 2,500 | `GEOCODE_DAILY_BUDGET` | Empty results (curated places still work) |
+| Voice calls, per voice (Grok Voice and ElevenLabs each; explanations and alerts together) | 500 | `TTS_DAILY_BUDGET` | Next voice, then the device voice |
+| Grok Imagine generations (a check retry takes another) | 40 | `IMAGINE_DAILY_BUDGET` | 429 `IMAGINE_BUDGET` for uncached streets |
+| Grok Imagine generations per client address | 10 | `IMAGINE_PER_CLIENT_DAILY` | 429 `IMAGINE_CLIENT_LIMIT` |
+| Ask PathPro questions | 300 | `ASK_DAILY_BUDGET` | Fallback answer (200) |
+| Ask PathPro questions per client address | 20 | `ASK_PER_CLIENT_DAILY` | 429 `ASK_CLIENT_LIMIT` |
+| Ask memory clones | 100 | `ASK_MEMORY_DAILY` | 429 `ASK_MEMORY_LIMIT` |
+| Ask memory clones per client address | 3 | fixed (`ASK_MEMORY_PER_CLIENT_DAILY`) | 429 `ASK_MEMORY_LIMIT` |
+
+Per-client caps are keyed like the rate limiter (client address, IPv6 by /64) and are checked before the shared budget is spent. Cached explanations, audio, and illustrations never count against a budget.
 
 ### CORS
 
@@ -76,6 +90,12 @@ Daily budgets (per process, reset at local midnight) cap spend independently of 
 | GET | `/segments/{seg_id}/reports` | general | Community reports on a street |
 | POST | `/explain` | paid | One-to-three-sentence grounded explanation |
 | POST | `/tts` | paid | MP3 of the server's explanation |
+| POST | `/tts/alert` | paid | MP3 of one navigation alert on a cached route |
+| POST | `/imagine/segment` | paid | Grok Imagine street redesign illustration (generate or reuse) |
+| GET | `/imagine/segment/{seg_id}.png` | general | The cached illustration |
+| POST | `/ask` | paid | Ask PathPro question (Backboard, validated) |
+| POST | `/ask/memory` | paid | Turn on opt-in private memory |
+| POST | `/ask/memory/forget` | paid | Delete the private memory |
 | GET | `/geocode` | paid | Address autocomplete |
 | GET | `/conditions/live` | general | Current dry/wet condition |
 | GET | `/areas/lookup` | general | City Pulse score at a point |
@@ -271,21 +291,136 @@ Body (`ExplainRequest`):
 | `cond` | Condition | segment only, default `live` |
 | `mode` | ModeKey | segment only, default `walk` |
 
-Response: `{text, source}` where `source` ∈ `groq`, `groq-20b`, `gemini`, `template`, `cache`.
+Response: `{text, source}` where `source` ∈ `grok`, `groq`, `gemini`, `groq-20b`, `template`, `cache`. Providers are tried in that order (xAI Grok, Groq `gpt-oss-120b`, Gemini, Groq `gpt-oss-20b`); a provider without a key is skipped.
 
 ```json
 {"success":true,"data":{"text":"The PathPro route adds 4.2 min and cuts traffic-risk exposure 54% by avoiding Peachtree Place Northwest and Williams Street Northwest. Both routes use Fifth Street Northwest, so stay alert there.","source":"template"},
  "error":null,"model_version":"pp-20260926-1902-f49c0d2"}
 ```
 
-Guarantees: the text comes only from server-built evidence and passes the validator (≤ 3 sentences, ≤ 420 chars, every number and clock time present in the evidence, no banned framing); otherwise it is the deterministic template. Total LLM time budget 4 s (`EXPLAIN_BUDGET_S`), first provider 1.6 s (`GROQ_BUDGET_S`). Errors: 404 `ROUTE_EXPIRED`, `NOT_FOUND`; 422 `BAD_REQUEST`, `BAD_TIME`; 503 `MODE_UNAVAILABLE`; 429.
+Rules: the text comes only from server-built evidence (street names flattened to one line of at most 80 characters) and passes the validator (≤ 3 sentences, ≤ 420 chars, every number and clock time present in the evidence, no banned framing); otherwise it is the deterministic template. Total LLM time budget 4 s (`EXPLAIN_BUDGET_S`); the first provider (Grok when configured) gets at most 1.6 s (`GROQ_BUDGET_S`, named for the original first provider). Errors: 404 `ROUTE_EXPIRED`, `NOT_FOUND`; 422 `BAD_REQUEST`, `BAD_TIME`; 503 `MODE_UNAVAILABLE`; 429.
 
 ### `POST /tts`
 
-Same body as `/explain`. The server produces (or reuses) its own explanation and sends that text to ElevenLabs (`eleven_flash_v2_5`, `mp3_44100_64`, 6 s timeout). Clients cannot supply text.
+Same body as `/explain`. The server produces (or reuses) its own explanation and sends that text to the voice chain: Grok Voice first (`POST https://api.x.ai/v1/tts`, voice `XAI_TTS_VOICE` default `eve`, MP3), then ElevenLabs (`eleven_flash_v2_5`, `mp3_44100_64`). Each voice has a 6 s timeout, a 420-character cap, an audio cache, and its own daily budget. Clients cannot supply text.
 
-- 200: `audio/mpeg` body, `Cache-Control: no-store`.
-- 503 `TTS_UNAVAILABLE` "Voice is unavailable; using the device voice." (no key or voice id, text over 420 chars, daily budget spent, or upstream error). The SPA then uses the browser's speech synthesis.
+- 200: `audio/mpeg` body, `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`.
+- 503 `TTS_UNAVAILABLE` "Voice is unavailable; using the device voice." (no voice configured, text over 420 chars, every voice's daily budget spent, or upstream errors). The SPA then uses the browser's speech synthesis.
+- Also the `/explain` errors (404 `ROUTE_EXPIRED`, `NOT_FOUND`; 422; 503 `MODE_UNAVAILABLE`), since the text is produced first.
+
+### `POST /tts/alert`
+
+A spoken navigation alert for one high-risk stretch of a route the server planned (`services/alert_voice.py`, `api/extras.py`).
+
+Body (`AlertSpeechRequest`, extra fields forbidden, so any client-supplied text is a 422):
+
+| Field | Type | Limits |
+| --- | --- | --- |
+| `route_key` | string | `^[0-9a-f]{16}$`; must still be in the recent-routes cache |
+| `index` | int | 0–999; position in the followed route's `alerts` list |
+| `kind` | `pp` \| `fast` | default `pp`: the PathPro route when the plan has one, otherwise the fastest route |
+
+The server writes the line from the cached route's own alert stretch: "High traffic risk ahead." followed by up to three street names (each flattened to one line of at most 80 characters, joined with "and"), for example "High traffic risk ahead. Spring Street Northwest." The line has no distance, because distance changes as the person moves; the browser adds it only when it falls back to the device voice. The text goes through the same voice chain as `/tts` (Grok Voice, then ElevenLabs) and counts against each voice's `TTS_DAILY_BUDGET`. Audio is cached in memory (LRU, 512 entries) per route key, kind, index, and the voice that answers first; silence is never cached.
+
+- 200: `audio/mpeg`, `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`.
+- Errors: 404 `ROUTE_EXPIRED`, 404 `ALERT_NOT_FOUND` ("That alert is not on this route."); 422 `BAD_REQUEST`; 429 `RATE_LIMITED`; 503 `TTS_UNAVAILABLE` (the browser speaks the alert, with its distance, in the device voice).
+- Client behaviour (`lib/alertClips.ts`, `hooks/useAlertClips.ts`): at navigation start the SPA prefetches up to 12 clips, 2 at a time, and stops at the first failure so the device voice takes every alert; in `?demo=1` alerts always use the device voice.
+
+---
+
+## Street redesign illustrations (Grok Imagine)
+
+An AI illustration of a street redesigned with evidence-based fixes. It never changes a score. See [architecture §6.5](architecture.md#65-imagine-this-street-redesigned-grok-draws-gemini-checks).
+
+### `POST /imagine/segment`
+
+Body (`ImagineRequest`, extra fields forbidden): `{seg_id: int ≥ 0}`. Nothing else is accepted: the prompt is written by the server from the segment's traffic-risk factors (at a fixed weekday 9 PM, dry) and road class, and never includes a street name.
+
+Processing: plan → if an image for this segment and image model is cached, return it (no xAI call, no limit used) → otherwise, with an xAI key: per-segment single flight → per-client cap → daily budget → Grok Imagine (60 s) → Gemini check (25 s) → one redraw if Gemini flags text, logos, or an identifiable face → atomic write of the check sidecar and the image.
+
+Response `ImagineData`:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `seg_id` | int | The segment |
+| `image_url` | string | `/imagine/segment/{seg_id}.png` (relative to the API base) |
+| `prompt_summary` | string | Plain-language plan: road class, the top factors it was drawn from, the fixes |
+| `fixes` | string[] | Up to four planned street-design fixes |
+| `label` | string | Always "AI illustration of evidence-based street fixes by Grok Imagine — not a real photo" |
+| `cached` | bool | True when the image already existed |
+| `check` | `{by: "gemini", fixes_shown: string[], fixes_total: int}` \| null | Gemini's review: the planned fixes it confirmed in the picture (exact planned phrases only); `null` when the picture could not be checked |
+
+Sample (segment 13343, Fifth Street Northwest; `prompt_summary` and `fixes` are the real plan for this bundle, `check` values illustrative):
+
+```json
+{"success":true,"data":{"seg_id":13343,"image_url":"/imagine/segment/13343.png",
+ "prompt_summary":"Redesign ideas for this collector street, drawn from its top traffic-risk factors (Vehicle crashes on this street, Pedestrian crashes on nearby streets, Intersection complexity): a pedestrian refuge island in the median; high-visibility continental crosswalks with curb extensions at the corners; wider sidewalks with curb extensions where people cross.",
+ "fixes":["a pedestrian refuge island in the median","high-visibility continental crosswalks with curb extensions at the corners","wider sidewalks with curb extensions where people cross"],
+ "label":"AI illustration of evidence-based street fixes by Grok Imagine — not a real photo","cached":false,
+ "check":{"by":"gemini","fixes_shown":["a pedestrian refuge island in the median","high-visibility continental crosswalks with curb extensions at the corners"],"fixes_total":3}},
+ "error":null,"model_version":"pp-20260926-1902-f49c0d2"}
+```
+
+Errors: 404 `NOT_FOUND` (id outside the bundle); 422 `BAD_REQUEST`; 429 `IMAGINE_CLIENT_LIMIT` ("You've reached today's limit for new street illustrations."), `IMAGINE_BUDGET` ("Today's street illustrations are used up. Please try again tomorrow."), `RATE_LIMITED`; 502 `IMAGINE_FAILED` (xAI error, timeout, or not an image), `IMAGINE_REJECTED` (flagged by the check twice, or flagged once with no budget left for a redraw; nothing is cached); 503 `IMAGINE_UNAVAILABLE` (no xAI key and no cached image).
+
+### `GET /imagine/segment/{seg_id}.png`
+
+Serves an already-generated illustration from the disk cache; this route never calls xAI. 200: the image bytes with their detected type (`image/png` or `image/jpeg`), `Cache-Control: public, max-age=86400`, `X-Content-Type-Options: nosniff`. Errors (envelopes): 404 `NOT_FOUND` (id outside the bundle), 404 `IMAGINE_NOT_FOUND` ("No illustration for this street yet."); 422 for a non-integer id.
+
+---
+
+## Ask PathPro (Backboard)
+
+Questions about how PathPro works and about the street, route, or City Pulse area on screen, answered by a Backboard assistant from six project documents and validated before they are shown. See [architecture §6.6](architecture.md#66-ask-pathpro-backboard) and [§6.7](architecture.md#67-ask-pathpro-opt-in-memory).
+
+### `POST /ask`
+
+Body (`AskRequest`, extra fields forbidden):
+
+| Field | Type | Limits |
+| --- | --- | --- |
+| `question` | string | ≤ 1,000 chars on the wire; after trimming it must be 3–300 characters with no control characters (else 422 `BAD_QUESTION`) |
+| `thread_id` | string \| null | ≤ 128 chars; a server-signed thread token from an earlier answer. An unverifiable token is ignored and a new thread starts (never an error) |
+| `memory_token` | string \| null | ≤ 128 chars; from `POST /ask/memory`. Valid: the question goes to the visitor's private clone. Invalid: memory is off |
+| `context` | object \| null | One of `{kind: "segment", seg_id ≥ 0, t, cond, mode}`, `{kind: "route", route_key: ^[0-9a-f]{16}$}`, `{kind: "area", cell: ^[0-9a-f]{15}$, t, cond}` (`t` ≤ 40 chars, default `now`; `cond` default `live`; `mode` default `walk`) |
+
+The server rebuilds the context's evidence from the model (the same resolvers as `/explain`). Without context, or when it cannot be resolved (expired route, unknown segment or cell, unavailable ride model), the question carries live-conditions evidence (day, hour, light, dry or wet) instead and `context_dropped` is true. Coordinates and cell ids are never sent upstream.
+
+Response `AskData`:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `answer` | string | The validated answer, or the fixed fallback |
+| `thread_id` | string \| null | Signed thread token `<uuid>.<signature>`, opaque to the browser; null after an upstream failure (the next question starts a new thread) |
+| `source` | `backboard` \| `fallback` | Whether the answer came from the assistant |
+| `note` | string | "Answered from PathPro's model card and docs · powered by Backboard", or "From PathPro's model card" for the fallback |
+| `sources` | `{label, url}[]` | Allow-listed corpus files the answer cited (GitHub links); empty for the fallback |
+| `memory` | `on` \| `off` | Whether the private memory clone answered |
+| `context_used` | `segment` \| `route` \| `area` \| `conditions` | What the evidence described |
+| `context_dropped` | bool | A named context could not be resolved |
+
+Sample shape (answer text illustrative; the token is shortened):
+
+```json
+{"success":true,"data":{"answer":"Reported crimes against persons are informational only in PathPro. They are shown by time of day with a fairness note and are never used for routing or in the traffic-risk model.",
+ "thread_id":"1b0e6c1e-0c9f-4a7e-9d5e-2f3a4b5c6d7e.q3X…","source":"backboard",
+ "note":"Answered from PathPro's model card and docs · powered by Backboard",
+ "sources":[{"label":"Decision log","url":"https://github.com/ShaikNagurShareef/PathPro/blob/main/docs/decisions.md"}],
+ "memory":"off","context_used":"conditions","context_dropped":false},
+ "error":null,"model_version":"pp-20260926-1902-f49c0d2"}
+```
+
+The fallback answer is always: "I can't answer that one right now. The model card under About PathPro explains how traffic risk is scored, how the model was tested, and which data it uses." It is returned (200) when the answer fails validation, Backboard errors or exceeds 12 s, or the shared daily budget is spent.
+
+Errors: 422 `BAD_QUESTION`, `BAD_REQUEST`; 429 `ASK_CLIENT_LIMIT` (20 per client address per day), `RATE_LIMITED`; 503 `ASK_UNAVAILABLE` (no `BACKBOARD_API_KEY` or `BACKBOARD_ASSISTANT_ID`).
+
+### `POST /ask/memory`
+
+Body `{}` (no options; extra fields forbidden). Clones the shared assistant for this visitor and returns `{memory_token}`, an HMAC-signed token for the clone (a different purpose from thread tokens, so the two cannot be swapped). Errors: 429 `ASK_MEMORY_LIMIT` (3 per client address per day, or 100 in total); 502 `ASK_MEMORY_FAILED` (upstream error, or a clone id that is not a UUID or equals the shared assistant); 503 `ASK_UNAVAILABLE`.
+
+### `POST /ask/memory/forget`
+
+Body `{memory_token}` (≤ 128 chars, extra fields forbidden). Deletes the clone and everything it remembered. Always `{forgotten: true}` unless the upstream delete fails: an unverifiable token is a silent no-op and an upstream 404 counts as already deleted, so the response never reveals whether a token was valid. Errors: 502 `ASK_MEMORY_FORGET_FAILED`; 503 `ASK_UNAVAILABLE`.
 
 ---
 
@@ -301,7 +436,7 @@ Geoapify autocomplete filtered to the city rectangle and biased toward Georgia T
 
 ### `GET /conditions/live`
 
-Response `ConditionUsed` for the current hour: `{"cond":"dry","source":"live","label":"Dry · live forecast"}`. Forecast cached 10 min; stale forecast used up to 1 h; otherwise `{"cond":"dry","source":"assumed","label":"Live weather unavailable — using dry conditions."}`. Freezing-precipitation and snow weather codes count as wet with the label "Icy conditions are rarer in our data — use extra caution."
+Response `ConditionUsed` for the current hour: `{"cond":"dry","source":"live","label":"Dry · live forecast"}`. Forecast cached 10 min; stale forecast used up to 1 h; otherwise `{"cond":"dry","source":"assumed","label":"Live weather unavailable — using dry conditions."}`. Freezing-precipitation and snow weather codes count as wet, with a label noting that icy conditions are rare in the crash data and advising extra caution.
 
 ---
 
@@ -444,7 +579,8 @@ MARTA heavy-rail stations inside the coverage bounding box (28 of the 38 in `bac
 | `WALK_FORBIDDEN` | 403 | Wrong owner token |
 | `NOT_FOUND` | 404 | Unknown segment |
 | `OUTSIDE_CITY` | 404 | `/areas*` |
-| `ROUTE_EXPIRED` | 404 | `/explain`, `/tts` for a route not in cache |
+| `ROUTE_EXPIRED` | 404 | `/explain`, `/tts`, `/tts/alert`, for a route not in cache |
+| `ALERT_NOT_FOUND` | 404 | `/tts/alert` index outside the followed route's alerts |
 | `WALK_NOT_FOUND` | 404 | Unknown or expired walk |
 | `RATE_LIMITED` | 429 | Middleware |
 | `WALK_THROTTLED` | 429 | Share-my-walk update gate or race |
@@ -455,6 +591,15 @@ MARTA heavy-rail stations inside the coverage bounding box (28 of the 38 in `bac
 | `WALKS_UNAVAILABLE` | 503 | MongoDB Atlas (walks) |
 | `SAFETY_UNAVAILABLE` | 503 | No safety layer |
 | `CITY_PULSE_UNAVAILABLE` | 503 | No City Pulse files |
-| `TTS_UNAVAILABLE` | 503 | ElevenLabs |
+| `TTS_UNAVAILABLE` | 503 | Voice chain (Grok Voice, ElevenLabs) for `/tts` and `/tts/alert` |
+| `BAD_QUESTION` | 422 | `/ask` question length or control characters |
+| `IMAGINE_NOT_FOUND` | 404 | `GET /imagine/segment/{id}.png` before one was generated |
+| `IMAGINE_CLIENT_LIMIT` / `IMAGINE_BUDGET` | 429 | Grok Imagine per-client or daily cap |
+| `ASK_CLIENT_LIMIT` | 429 | Ask PathPro per-client daily cap |
+| `ASK_MEMORY_LIMIT` | 429 | Memory clone per-client or daily cap |
+| `IMAGINE_FAILED` / `IMAGINE_REJECTED` | 502 | xAI error; illustration flagged by the Gemini check |
+| `ASK_MEMORY_FAILED` / `ASK_MEMORY_FORGET_FAILED` | 502 | Backboard clone or delete failed |
+| `IMAGINE_UNAVAILABLE` | 503 | No xAI key (and no cached image) |
+| `ASK_UNAVAILABLE` | 503 | No Backboard key or assistant id |
 
 Demo-only codes returned by the browser's offline transport (never by the server): `DEMO_ONLY`, and the 503-style codes above for features the demo hides.

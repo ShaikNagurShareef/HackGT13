@@ -25,6 +25,7 @@ flowchart LR
     app["/srv/pathpulse/app<br/>code + .venv + backend/.env (0600)"]
     arts["/srv/pathpulse/artifacts/<br/>{every shipped version}/ + current → version"]
     web["/srv/pathpulse/web<br/>SPA build + demo files"]
+    imgc["/var/cache/pathpulse-imagine<br/>systemd CacheDirectory, owned by pathpulse<br/>(the API's only writable path)"]
   end
   dns["get.tech DNS<br/>A @ and www → 155.138.233.35"]
   le["Let's Encrypt (ACME)"]
@@ -43,6 +44,7 @@ flowchart LR
   svc --> arts
   svc --> atlas
   svc --> tiger
+  svc --> imgc
 ```
 
 *Figure O1. Production deployment topology.* PNG: [img/o1_deploy.png](img/o1_deploy.png)
@@ -62,23 +64,38 @@ Read by pydantic-settings from the process environment or `backend/.env` (`app/c
 | `PAID_RATE_LIMIT_PER_MINUTE` | 30 | Paid/write per-client limit |
 | `LLM_DAILY_BUDGET` | 3000 | LLM generations per day (process) |
 | `GEOCODE_DAILY_BUDGET` | 2500 | Geoapify calls per day |
-| `TTS_DAILY_BUDGET` | 500 | ElevenLabs calls per day |
+| `TTS_DAILY_BUDGET` | 500 | Calls per day, per voice (Grok Voice and ElevenLabs each) |
 | `EXPLAIN_BUDGET_S` | 4.0 | Total explanation time budget |
 | `GROQ_BUDGET_S` | 1.6 | First provider's share of that budget |
+| `XAI_API_KEY` | none | xAI (secret): Grok explanations, Grok Voice, Grok Imagine. Without it all three are off |
+| `XAI_MODEL` | `grok-4.20-0309-non-reasoning` | Grok explanation model (first in the chain) |
+| `XAI_TTS_VOICE` | `eve` | Grok Voice voice id (first voice) |
+| `XAI_IMAGE_MODEL` | `grok-imagine-image-2.0` | Grok Imagine model; also part of each cached image's file name |
+| `IMAGINE_DAILY_BUDGET` | 40 | New illustrations per day (a redraw after a failed check counts) |
+| `IMAGINE_PER_CLIENT_DAILY` | 10 | New illustrations per client address per day |
+| `IMAGINE_CACHE_DIR` | `backend/cache/imagine` | Image cache; `deploy.sh` sets `/var/cache/pathpulse-imagine` in production |
 | `GROQ_API_KEY` | none | Groq (secret) |
 | `GROQ_MODEL` / `GROQ_FALLBACK_MODEL` | `openai/gpt-oss-120b` / `openai/gpt-oss-20b` | Groq models |
 | `GEMINI_API_KEY` | none | Gemini (secret) |
-| `GEMINI_MODEL` | `gemini-3.8-flash` | Gemini model |
+| `GEMINI_MODEL` | `gemini-3.8-flash` | Gemini explanation model |
+| `GEMINI_CHECK_MODEL` | `gemini-3.1-flash-lite` | Gemini model that reviews each Grok Imagine picture (separate so per-model free-tier quotas do not collide) |
 | `ELEVENLABS_API_KEY` | none | ElevenLabs (secret) |
 | `ELEVENLABS_VOICE_ID` | none | Voice to use |
 | `ELEVENLABS_MODEL` | `eleven_flash_v2_5` | TTS model |
 | `GEOAPIFY_API_KEY` | none | Geoapify (secret) |
+| `BACKBOARD_API_KEY` | none | Backboard (secret): Ask PathPro |
+| `BACKBOARD_ASSISTANT_ID` | none | The shared docs assistant, printed by `setup_backboard` (not a secret). Ask needs both this and the key |
+| `BACKBOARD_LLM_PROVIDER` / `BACKBOARD_MODEL` | `google` / `gemini-3.1-flash-lite` | Model Backboard answers with; an empty model uses Backboard's default |
+| `ASK_DAILY_BUDGET` | 300 | Ask PathPro questions per day (then the fallback answer) |
+| `ASK_PER_CLIENT_DAILY` | 20 | Questions per client address per day |
+| `ASK_MEMORY_DAILY` | 100 | Opt-in memory clones per day across all visitors (3 per client address, fixed in code) |
+| `ASK_THREAD_SECRET` | none | Secret that signs Ask thread and memory tokens (for example `openssl rand -base64 32`). Unset: random per process, so conversations and memory tokens reset on restart |
 | `DATABASE_URL` | none | Tiger Data Postgres URL (secret) |
 | `MONGODB_URI` | none | Atlas connection string (secret) |
 | `MONGODB_DB` | `pathpulse` | Atlas database name |
 | `VULTR_API_KEY` | none | Read only by `deploy/provision_vultr.sh` on the laptop; not used by the app |
 
-Every secret is optional: without it the matching feature degrades (see [architecture §9](architecture.md#9-graceful-degradation)).
+Every secret is optional: without it the matching feature degrades (see [architecture §9](architecture.md#9-graceful-degradation)). `.env.example` lists every name with an empty value (it sets `RATE_LIMIT_PER_MINUTE=60` for local work; the code default is 300).
 
 ### 2.2 Frontend build variables
 
@@ -97,7 +114,7 @@ The production build uses none of these: the SPA and API share one origin.
 
 | Step | Script | What it does |
 | --- | --- | --- |
-| 1 | `app.tools.check_keys` | One minimal live call per configured key (Groq models list, Gemini model, Geoapify search, ElevenLabs voice, Tiger extensions, Atlas ping and indexes). Prints `OK`/`MISSING`/`FAIL` and never the key. Any `FAIL` stops the deploy. |
+| 1 | `app.tools.check_keys` | One minimal free call per configured key (xAI models list, Groq models list, Gemini model, Geoapify search, ElevenLabs voice, Backboard assistant lookup, Tiger extensions, Atlas ping and indexes). Prints `OK`/`MISSING`/`FAIL` and never the key. Any `FAIL` stops the deploy; `MISSING` only turns a feature off. |
 | 2 | `deploy/provision_vultr.sh` | Skipped if `deploy/.host` exists. Otherwise, with `VULTR_API_KEY`: reuse a VM labelled `pathpulse` or create one (`region atl`, `plan vc2-1c-2gb`, Ubuntu 24.04 x64, backups disabled) with a new ed25519 key `~/.ssh/pathpulse_ed25519`; wait for `ok` and write the IP to `deploy/.host` (gitignored). |
 | 3 | `deploy/bootstrap.sh` (over SSH as root) | Installs Caddy from the Cloudsmith apt repo, rsync, ufw, python3.12; creates the `pathpulse` system user and `/srv/pathpulse/{app,artifacts,web}`; installs uv for that user; writes `DOMAIN=<site list>` to `/etc/default/caddy` with a drop-in so Caddy reads it; ufw allows OpenSSH, 80, 443 and is enabled. |
 | 4 | `deploy/deploy.sh` | Build and ship (section 4). |
@@ -121,7 +138,7 @@ What it does, in order:
 4. `rsync -az` `artifacts/$VERSION` to `/srv/pathpulse/artifacts/` (**no** `--delete`, so earlier versions stay on the server).
 5. `rsync -az --delete` `frontend/dist/` to `/srv/pathpulse/web/`.
 6. Stream `backend/.env` over SSH with `umask 077` (macOS rsync has no `--chmod`).
-7. On the VM: point `/srv/pathpulse/artifacts/current` at the new version; remove and re-append `ALLOWED_ORIGINS`, `ARTIFACTS_DIR`, `APP_ENV` so production values always win; `chmod 600 backend/.env`; `chown -R pathpulse`; `uv sync --package pathpulse-backend --frozen --no-dev --python /usr/bin/python3.12 --python-preference only-system`; install the unit and Caddyfile; `systemctl enable --now`, `restart pathpulse`, `reload caddy`; poll `http://127.0.0.1:8000/healthz` for up to 30 s.
+7. On the VM: point `/srv/pathpulse/artifacts/current` at the new version; remove and re-append `ALLOWED_ORIGINS`, `ARTIFACTS_DIR`, `APP_ENV`, and `IMAGINE_CACHE_DIR=/var/cache/pathpulse-imagine` so production values always win; `chmod 600 backend/.env`; `chown -R pathpulse`; `uv sync --package pathpulse-backend --frozen --no-dev --python /usr/bin/python3.12 --python-preference only-system`; install the unit and Caddyfile; `systemctl enable --now`, `restart pathpulse`, `reload caddy`; poll `http://127.0.0.1:8000/healthz` for up to 30 s.
 8. From the laptop, `curl https://<each origin>/api/healthz`.
 
 ### 4.1 Clean-worktree procedure (used since the ride release)
@@ -162,7 +179,8 @@ Headers on every response: `Strict-Transport-Security: max-age=31536000; include
 | `ExecStart=.venv/bin/uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --workers 1 --proxy-headers --forwarded-allow-ips 127.0.0.1` | Loopback only; trust forwarded headers only from local Caddy; one worker because caches, limits, and the walk gate are in memory |
 | `EnvironmentFile=/srv/pathpulse/app/backend/.env`, `Environment=APP_ENV=production`, `ARTIFACTS_DIR=/srv/pathpulse/artifacts/current` | Config |
 | `Environment=HOME=/srv/pathpulse` | libpq probes `~/.postgresql` for client certificates. With `ProtectHome=true`, `/home` is unreadable and that probe fails the Tiger Data connection. A HOME outside `/home` keeps the hardening and lets Tiger connect. |
-| `NoNewPrivileges`, `PrivateTmp`, `ProtectSystem=strict`, `ProtectHome=true`, `ReadOnlyPaths=/srv/pathpulse`, empty `CapabilityBoundingSet`, `LockPersonality`, `RestrictSUIDSGID` | The API only reads its code and artifacts |
+| `NoNewPrivileges`, `PrivateTmp`, `ProtectSystem=strict`, `ProtectHome=true`, `ReadOnlyPaths=/srv/pathpulse`, empty `CapabilityBoundingSet`, `LockPersonality`, `RestrictSUIDSGID` | The API only reads its code and artifacts (plus the one cache directory below) |
+| `CacheDirectory=pathpulse-imagine` | systemd creates `/var/cache/pathpulse-imagine`, owned by the service user, and makes it writable despite `ProtectSystem=strict`. It is the API's only writable path (Grok Imagine images and their check sidecars) and survives restarts and deploys |
 | `Restart=always`, `RestartSec=2` | Self-healing |
 
 Because of `ProtectHome=true`, the venv must use the system Python (`/usr/bin/python3.12`), not a uv-managed interpreter under `/home` (fix `47fc47e`).
@@ -177,7 +195,25 @@ Because of `ProtectHome=true`, the venv must use the system Python (`/usr/bin/py
 | MongoDB Atlas | Free M0 cluster (AWS us-east-1). **Network Access list must include 155.138.233.35**, or `/healthz` shows `reports: unavailable` and reports and sharing turn off. TLS verified with certifi's CA bundle. Indexes are created at API startup. |
 | Tiger Data | Free shared service (AWS us-east-1). Connection string in `DATABASE_URL`. Needs the `timescaledb` and `postgis` extensions (checked by `check_keys`). |
 | Secrets | Only in `backend/.env` (laptop and VM, mode 0600 on the VM). `.gitignore` excludes `.env` and `.env.*` except `.env.example`, which holds names only. Keys never reach the browser: the SPA calls the API, which calls the providers. |
-| Key capture helpers | `deploy/capture_keys.py` (clipboard watcher) and `deploy/chrome_keys.py` (browser helper) write keys straight into `backend/.env`, recognize them by format, and mask any key-like string in their own output. |
+| xAI | One API key for Grok chat (`/v1/chat/completions`), Grok Voice (`/v1/tts`), and Grok Imagine (`/v1/images/generations`), paid from promotional credits. `check_keys` lists models only, so it spends nothing. |
+| Gemini | One key for explanations (`GEMINI_MODEL`) and the Grok Imagine review (`GEMINI_CHECK_MODEL`). |
+| Backboard | One API key and one shared assistant created by `setup_backboard` (section 6.1). Visitor memory clones are extra assistants in the same account. |
+| Key capture helpers | `deploy/capture_keys.py` (clipboard watcher) and `deploy/chrome_keys.py` (browser helper) write keys straight into `backend/.env`, recognize them by format, and mask any key-like string in their own output. `capture_keys.py` treats `XAI_API_KEY` (recognized by its `xai-` prefix) and `BACKBOARD_API_KEY` (recognized only when copied as `BACKBOARD_API_KEY=...`) as optional. |
+
+### 6.1 Ask PathPro setup and housekeeping (Backboard)
+
+Run on the laptop, from `backend/`:
+
+```bash
+uv run python -m app.tools.setup_backboard          # once; --new to create another assistant
+# then set BACKBOARD_ASSISTANT_ID=<printed id> in backend/.env and redeploy
+uv run python -m app.tools.prune_backboard --older-than 30d --dry-run   # count stale clones
+uv run python -m app.tools.prune_backboard --older-than 30d             # delete them
+```
+
+- `setup_backboard` creates the assistant with its system prompt, the structured fact-extraction prompt that visitor clones inherit, and retrieval depth 8; uploads the six corpus documents (`docs/model_card.md`, `docs/metrics.json`, `docs/safety_sources.md`, `docs/decisions.md`, `docs/technical/data_and_models.md`, `docs/judge_qa.md`); polls until each is indexed (up to 60 polls, 3 s apart); and adds five read-only facts. It prints the assistant id, each document's status, and the next step, never the key. It refuses to run when `BACKBOARD_ASSISTANT_ID` is already set unless `--new` is passed. Exit codes: 0 all indexed, 1 failure or not indexed, 2 no key.
+- **Re-run it after editing a corpus document.** The API reads the same files from `/srv/pathpulse/app/docs` at startup to decide which numbers an answer may quote; if the uploaded copy and the deployed copy drift, correct answers can fail validation and fall back.
+- `prune_backboard` pages through the account's assistants and deletes only those named `pathpro-visitor-*` created before the cutoff (`30d` or `12h` style); the shared assistant is never touched and a clone without a readable creation time is kept. It prints counts only. Run it periodically, and after rotating `ASK_THREAD_SECRET` (old memory tokens stop verifying, so their clones are orphaned).
 
 ## 7. Health checks and logs
 
@@ -185,13 +221,14 @@ Because of `ProtectHome=true`, the venv must use the system Python (`/usr/bin/py
 | --- | --- | --- |
 | Public health | `curl -s https://pathpro.tech/api/healthz` | `status: ok`, `database: ok`, `reports: ok`, `safety: ok`, `modes.ride: ok`, expected `model_version` |
 | Local health on the VM | `curl -s http://127.0.0.1:8000/healthz` | same |
-| Keys | `cd backend && uv run python -m app.tools.check_keys` | all `OK` |
+| Keys | `cd backend && uv run python -m app.tools.check_keys` | one line per service: `xAI Grok` ("models reachable, using grok-4.20-0309-non-reasoning"), `Groq`, `Gemini`, `Geoapify`, `ElevenLabs`, `Backboard` ("assistant found"), `Tiger Data`, `MongoDB` ("ping ok, indexes OK"), each `OK`; `MISSING` means that feature is off |
+| Image cache on the VM | `ls -la /var/cache/pathpulse-imagine` | owned by `pathpulse`; one `.img` and one `.check.json` per illustrated street |
 | Model served | `curl -s https://pathpro.tech/api/meta` | `model_version`, `n_segments: 49915`, four modes available |
 | Headers | `curl -sI https://pathpro.tech/` | HSTS, CSP, `X-Frame-Options: DENY` |
 
 Logs:
 
-- API: `journalctl -u pathpulse -f`. Startup logs `PathPro API ready: model <version>, <n> walk segments, ride <n|unavailable>`. Provider, database, and Atlas failures log the exception **type** only, because exception text can echo a connection string. `httpx` is set to WARNING so the Geoapify key (a query parameter) never lands in logs.
+- API: `journalctl -u pathpulse -f`. Startup logs `PathPro API ready: model <version>, <n> walk segments, ride <n|unavailable>`. Provider, database, and Atlas failures log the exception **type** only, because exception text can echo a connection string. `httpx` is set to WARNING so the Geoapify key (a query parameter) never lands in logs. Feature warnings to grep for: `explain provider <name> failed` / `output rejected`, `tts <voice> failed`, `imagine failed`, `imagine illustration flagged by check`, `imagine check unavailable`, `ask backboard unavailable`, `ask answer withheld by validator`, `ask daily budget spent`, `ask memory clone failed`, `ask memory forget failed`. None of them include question text, prompts, tokens, or ids. uvicorn's access lines in the same journal include query strings (see [security_privacy.md §10](security_privacy.md#10-residual-risks-and-follow-ups)).
 - Caddy: JSON access log at `/var/log/caddy/pathpulse.log`, written through a `format filter` that deletes the `lat`, `lon`, `bbox`, `q`, and `t` query parameters and the `Cookie` header; service log in `journalctl -u caddy`.
 
 ## 8. Rollback
@@ -206,6 +243,8 @@ ssh -i ~/.ssh/pathpulse_ed25519 root@155.138.233.35 \
 curl -s https://pathpro.tech/api/healthz   # model_version should now be <older-version>
 ```
 
+The Grok Imagine cache is keyed by segment id and image model, not by bundle version, so pictures survive a rollback. When a new bundle changes a street's factors, the plan shown next to an old picture can differ from what it depicts; clear the cache (`rm /var/cache/pathpulse-imagine/*`) after shipping a bundle with new factors.
+
 A bundle without ride or safety files is still valid: ride modes and the safety layer switch off; walking keeps working. Code rollback: create a worktree at the previous commit and run the procedure in section 4.1 (the API and a bundle must be compatible; the loader treats ride, City Pulse, and safety files as optional).
 
 ## 9. Cost
@@ -215,7 +254,9 @@ A bundle without ride or safety files is still valid: ride modes and the safety 
 | Vultr `vc2-1c-2gb` in Atlanta | about $10 per month, paid from a $100 MLH Vultr credit (expires 2026-10-27) |
 | pathpro.tech | Free for the first year with the MLH .tech code |
 | MongoDB Atlas M0, Tiger Data free shared service | Free tiers |
+| xAI (Grok, Grok Voice, Grok Imagine) | Promotional credits; bounded by the explanation, voice, and Imagine budgets in section 2.1 (Imagine: at most 40 new pictures a day, cached pictures are free) |
 | Groq, Gemini, ElevenLabs, Geoapify | Free tiers, bounded by the daily budgets in section 2.1 |
+| Backboard | Account plan; bounded by `ASK_DAILY_BUDGET` (300 questions) and `ASK_MEMORY_DAILY` (100 clones) a day |
 | OpenFreeMap tiles, Open-Meteo | Free, no key |
 
 ## 10. Runbook
@@ -226,7 +267,14 @@ A bundle without ride or safety files is still valid: ride modes and the safety 
 | `/healthz` `reports: unavailable` | Atlas unreachable or VM IP not in the access list | Check Atlas Network Access; the API retries after a 30 s cooldown |
 | `/healthz` `database: unavailable` | Tiger Data down or slow; `HOME` missing from the unit | Confirm `Environment=HOME=/srv/pathpulse`; run `check_keys` |
 | Explanations always `source: "template"` | No LLM keys, provider errors, or daily budget spent | `check_keys`; look for `explain provider ... failed` or `output rejected` in the journal |
-| "Listen" uses the device voice | ElevenLabs key, voice id, or budget | `check_keys`; 503 `TTS_UNAVAILABLE` is expected fallback behaviour |
+| "Listen" uses the device voice | No xAI key and no ElevenLabs key or voice id, or every voice's budget spent | `check_keys`; 503 `TTS_UNAVAILABLE` is expected fallback behaviour |
+| Explanations say `source: "groq"` instead of `grok` | xAI key missing, slow (over the 1.6 s first-provider budget), or output rejected | `check_keys`; `explain provider grok failed` in the journal |
+| "Imagine this street redesigned" fails for new streets | No xAI key (503), xAI error (502 `IMAGINE_FAILED`), caps reached (429), or the check flagged it twice (502 `IMAGINE_REJECTED`) | `check_keys`; journal `imagine` lines; caps reset at midnight |
+| Illustrations have no "Checked by Gemini" line | Gemini key missing or `GEMINI_CHECK_MODEL` unavailable (the picture is cached unchecked) | `check_keys`; `imagine check unavailable` in the journal; delete that segment's `.img` and `.check.json` to re-check |
+| Imagine fails with a permission error | Cache directory not writable | Confirm `CacheDirectory=pathpulse-imagine` in the installed unit and `IMAGINE_CACHE_DIR=/var/cache/pathpulse-imagine` in `backend/.env` |
+| Ask PathPro always gives the fallback answer | Backboard error or timeout, validator rejections, budget spent, or corpus drift | `ask backboard unavailable` / `ask answer withheld by validator: [...]` in the journal; re-run `setup_backboard` if docs changed |
+| Ask returns 503 `ASK_UNAVAILABLE` | `BACKBOARD_API_KEY` or `BACKBOARD_ASSISTANT_ID` unset | `check_keys`; run `setup_backboard` and set the id |
+| Ask conversations and memory reset after each restart | `ASK_THREAD_SECRET` unset | Set it in `backend/.env` and redeploy; prune orphaned clones |
 | Many 429s from one venue | Shared NAT address | Raise `RATE_LIMIT_PER_MINUTE` in `backend/.env` and restart (paid limits stay tight) |
 | Certificate errors on the domain | DNS not pointing at the VM yet | Use `https://155-138-233-35.sslip.io`; check `dig +short pathpro.tech` |
 | VM unreachable | Provider outage | Fallback: `deploy/run_live.sh` on a laptop serves the same build through a Cloudflare quick tunnel (URL printed and saved to `deploy/.tunnel_url`); `deploy/tunnel_watchdog.sh` keeps it alive. For the expo table, `?demo=1` needs no backend at all. |
