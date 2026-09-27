@@ -21,7 +21,7 @@ from app.services.explain.providers import GEMINI_URL
 
 log = logging.getLogger(__name__)
 
-TIMEOUT_S = 8.0
+TIMEOUT_S = 25.0  # vision review of a 1k image regularly took >8 s live
 MAX_OUTPUT_TOKENS = 1024
 MAX_ANSWER_CHARS = 8_000
 MAX_SHOWN_ENTRIES = 16

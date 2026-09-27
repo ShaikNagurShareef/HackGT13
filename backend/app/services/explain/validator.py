@@ -115,7 +115,9 @@ _CRIME_RE = re.compile(r"\bcrim(?:e|es|inal)\b", re.IGNORECASE)
 # Crime may be mentioned next to routing or scoring only to say it is NOT used there.
 _ROUTING_OR_SCORE_RE = re.compile(r"\b(?:rout\w*|scor\w*|cost\w*|model\w*)\b", re.IGNORECASE)
 _NEGATION_RE = re.compile(
-    r"\b(?:never|not|no|without|excluded?|informational)\b|n't\b", re.IGNORECASE
+    r"\b(?:never|not|no|without|exclude[sd]?|informational|separate(?:d|ly)?|independent(?:ly)?"
+    r"|rather\s+than|instead\s+of)\b|n't\b",
+    re.IGNORECASE,
 )
 _SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+|\n+")
 
