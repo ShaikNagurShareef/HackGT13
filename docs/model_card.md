@@ -14,7 +14,7 @@
 
 - **Definition:** the score is the percentile, on a citywide 0–100 scale, of expected pedestrian traffic crashes per 100 m of street for a given hour, day group, and weather.
 - **Bands:** Lower 0–24, Moderate 25–49, Elevated 50–74, High 75–100. "High" always means the top quarter of the city's street-hours.
-- **Framing:** the score describes **where and when crashes concentrate**. It is not a per-person probability. Busy streets score higher partly because more people walk there. This is exposure bias, and we disclose it rather than hide it.
+- **Framing:** the score describes **where and when crashes concentrate**. It is not a per-person probability. Busy streets score higher partly because more people walk there. This is exposure bias, and this card discloses it rather than hiding it.
 
 ## Data
 
@@ -34,7 +34,7 @@
 **Cleaning:**
 - Records with missing, (0,0), or out-of-state coordinates are dropped and counted.
 - Personal fields that some sources contain (names, ages, narratives) are never read into the pipeline output.
-- One source stored local wall-clock time as UTC. We detected this because only 60% of its crashes agreed with the reported light condition, and fixed it (94% after the fix).
+- One source stored local wall-clock time as UTC. I detected this because only 60% of its crashes agreed with the reported light condition, and fixed it (94% after the fix).
 - The same crash in several sources is merged by collision id, or when within 20 m and 30 min (4,754 merges).
 
 **Snapping:**
@@ -94,14 +94,14 @@
 
 - **Citywide ranking is easier than ranking a dense core.** Citywide includes many quiet residential streets. Within Downtown/Midtown alone (the earlier core-only model), the top 10% of length held 45.8% of 2024 crashes vs 41.4% for past-crash ranking.
 - **2024 was looked at during development.** Treat the 2023 check as the cleaner second opinion.
-- **The HIN comparison is conservative against us.** The HIN targets killed and serious crashes of all modes and was likely built with 2023–2024 data.
-- **Counts are under-predicted** (411 predicted vs 543 observed in 2024). Pedestrian share rose while total crashes stayed flat, which suggests a coding change. We claim **ranking**, not calibrated counts.
+- **The HIN comparison is conservative against PathPro.** The HIN targets killed and serious crashes of all modes and was likely built with 2023–2024 data.
+- **Counts are under-predicted** (411 predicted vs 543 observed in 2024). Pedestrian share rose while total crashes stayed flat, which suggests a coding change. PathPro claims **ranking**, not calibrated counts.
 - **Post-period infrastructure.** Street features (OSM signals and crossings, 2023 AADT, current speed limits) are snapshots taken after or during the test period.
 
 ## Explanations and responsible AI
 
 - **Attribution:** every displayed score is decomposed exactly. Factors are added from largest to smallest effect, and each gets the score change it causes, so the bars always sum to the score. This is property-tested on 200 random cases.
-- **LLM input:** the LLM (Groq, then Gemini) receives only server-built JSON evidence, and no user text ever reaches the prompt.
+- **LLM input:** the LLM (Grok, then Groq, then Gemini) receives only server-built JSON evidence, and no user text ever reaches the prompt.
 - **LLM output validation.** Output is rejected, and a deterministic template shown instead, if it:
   - contains a number or time not in the evidence
   - uses "safe", "crime", "dangerous area", or similar framing
@@ -139,10 +139,10 @@ Added 2026-09-26. It ranks streets by traffic risk to people on bikes and scoote
   - Road features (speed, lanes, AADT, class) are conflated as for walking.
   - Bike infrastructure comes from the City's `Bike_Facilities_Public_View` (existing facilities: protected, painted, shared) and OSM cycleway tags, plus Atlanta BeltLine adjacency (ABI layer and OSM).
 - **Labels:** cyclist-involved crashes (ARC `Bicycle_Related` flag, 2020–2024: 29, 95, 123, 132, 175 by year). 551 of 554 snapped to a road segment. Rider ages are dropped.
-- **Exposure is a proxy.** The City publishes no StreetLight bicycle layer. We use ARC's Strava 2024 ride and e-bike origins and destinations per H3 res-8 hex, plus facility presence and pedestrian activity. Dropping Strava gives 69.5% [63.9, 75.8] on 2024, so it does not drive the result.
+- **Exposure is a proxy.** The City publishes no StreetLight bicycle layer. The model uses ARC's Strava 2024 ride and e-bike origins and destinations per H3 res-8 hex, plus facility presence and pedestrian activity. Dropping Strava gives 69.5% [63.9, 75.8] on 2024, so it does not drive the result.
 - **Training label: pooled pedestrian + cyclist crashes, always scored on cyclist crashes only.** It was chosen on the 2023 validation year: 69.0% pooled vs 59.7% cyclist-only.
   - The cyclist-only candidate scored 57.4% [48.1, 65.6] on 2024 and lost to simply reusing the walk model.
-  - We looked at 2024 during development, so 2023 is the cleaner check.
+  - I looked at 2024 during development, so 2023 is the cleaner check.
 - **2024 holdout (174 cyclist crashes), top 10% of street length:**
 
   | Method | Capture |
@@ -156,6 +156,6 @@ Added 2026-09-26. It ranks streets by traffic risk to people on bikes and scoote
   ROC-AUC is 0.866. On the 2023 validation year the model captures 69.0%, against 22.1% for past crashes.
 - **Temporal model:** a cyclist Poisson GLM on 48 cyclist crashes plus the all-mode hourly shape. It beats the walk structure on held-out 2022–23 crashes (deviance 0.516 vs 0.580). Light and rain add little; the wet effect is ×0.86 because exposure is counted in clock hours, not riders. The shipped model is a 2017–2023 refit of the evaluated 2017–2021 model.
 - **Limits:**
-  - Pooled training means the counts are **not calibrated for cyclists**; we claim ranking only.
+  - Pooled training means the counts are **not calibrated for cyclists**; PathPro claims ranking only.
   - E-bike and scooter reuse this model with different speeds (22 and 18 km/h). Scooter crashes are identified only in the K/A layer (75 serious or fatal) and are not counted as cyclists.
   - Today's bike facilities are applied to past years.
