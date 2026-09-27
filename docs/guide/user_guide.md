@@ -4,7 +4,7 @@
 
 PathPro is live at **[pathpro.tech](https://pathpro.tech)**. An offline demo is at **[pathpro.tech/?demo=1](https://pathpro.tech/?demo=1)**.
 
-Built at HackGT 13 by team **CodingClaws**: Nagur Shareef Shaik, Sahith Reddy Thummala, Pranav Nagothu, and Geethanjali Nagaboina.
+I built PathPro solo at HackGT 13. I'm **Nagur Shareef Shaik** (team name **Coding Claws**, Georgia State University).
 
 > **In an emergency, call 911.** Georgia Tech Police: **404-894-2500**. PathPro is not an emergency service.
 
@@ -17,19 +17,21 @@ Built at HackGT 13 by team **CodingClaws**: Nagur Shareef Shaik, Sahith Reddy Th
 5. [Choosing how you travel](#choosing-how-you-travel)
 6. [Reading the route card](#reading-the-route-card)
 7. [Why? explanations and Listen](#why-explanations-and-listen)
-8. [Walking and riding navigation](#walking-and-riding-navigation)
-9. [Learned routines](#learned-routines)
-10. [Share my walk and the late check-in](#share-my-walk-and-the-late-check-in)
-11. [Personal safety mode](#personal-safety-mode)
-12. [Risk Tides and City Pulse](#risk-tides-and-city-pulse)
-13. [Community street reports](#community-street-reports)
-14. [Map options](#map-options)
-15. [Privacy](#privacy)
-16. [Accessibility](#accessibility)
-17. [Offline demo mode](#offline-demo-mode)
-18. [Troubleshooting and FAQ](#troubleshooting-and-faq)
-19. [Limits](#limits)
-20. [Emergency note](#emergency-note)
+8. [Ask PathPro](#ask-pathpro)
+9. [Imagine this street redesigned](#imagine-this-street-redesigned)
+10. [Walking and riding navigation](#walking-and-riding-navigation)
+11. [Learned routines](#learned-routines)
+12. [Share my walk and the late check-in](#share-my-walk-and-the-late-check-in)
+13. [Personal safety mode](#personal-safety-mode)
+14. [Risk Tides and City Pulse](#risk-tides-and-city-pulse)
+15. [Community street reports](#community-street-reports)
+16. [Map options](#map-options)
+17. [Privacy](#privacy)
+18. [Accessibility](#accessibility)
+19. [Offline demo mode](#offline-demo-mode)
+20. [Troubleshooting and FAQ](#troubleshooting-and-faq)
+21. [Limits](#limits)
+22. [Emergency note](#emergency-note)
 
 ## What PathPro is
 
@@ -59,7 +61,7 @@ That's it. PathPro starts from **Your location** and shows the lower-risk route 
 **On a phone**, the map fills the screen:
 
 - **Where to?** at the top opens search.
-- The **layers button** (stacked squares, right edge) opens **Map options**: conditions, departure time, route preference, map mode, Risk Tides, the legend, and privacy.
+- The **layers button** (stacked squares, right edge) opens **Map options**: conditions, departure time, route preference, map mode, Risk Tides, the legend, privacy, **About PathPro**, and **Ask PathPro**.
 - The **locate button** (bottom right) centers the map on you. It shows a crossed-out icon when location is off.
 - The **legend chip** at the bottom reads *Lower → High traffic risk*. Tap it for the full 0–100 scale.
 - A **status chip** under the search pill (for example *☂ Wet · 10:30 PM*) appears when you've changed an option.
@@ -67,7 +69,7 @@ That's it. PathPro starts from **Your location** and shows the lower-risk route 
 
 Colors run from teal (lower) through amber to pink (high). Thicker lines mean higher risk.
 
-**On a desktop or laptop** (1024 px wide and up), a sidebar on the left holds everything: search, saved places, the map options, the legend, and **About PathPro**. **Risk Tides** sits on the map at the bottom. When you plan a trip, the sidebar shows the full route comparison and explanation at once.
+**On a desktop or laptop** (1024 px wide and up), a sidebar on the left holds everything: search, saved places, the map options, the legend, and, at the bottom, **About PathPro** and **Ask PathPro**. **Risk Tides** sits on the map at the bottom. When you plan a trip, the sidebar shows the full route comparison and explanation at once.
 
 ![Desktop: the sidebar with search and map options on the left, and Risk Tides docked on the map. Here: Friday, 10 PM, wet streets.](img/03-desktop-home-risk-tides.png)
 
@@ -153,7 +155,7 @@ Every route shows the reminder *Traffic risk estimate from historical crashes. A
 
 Tap **Why?** (or drag the sheet up) to see:
 
-- **Why this route**: a short, plain-English explanation. It is written from the model's evidence, and any sentence with a number that isn't in the evidence is thrown out.
+- **Why this route**: a short, plain-English explanation. It is written from the model's evidence, and any sentence with a number that isn't in the evidence is thrown out. Below it, **Ask about this route** opens [Ask PathPro](#ask-pathpro) for follow-up questions.
 - **Leaving … · conditions**: the departure time and weather the scores use.
 - **Avoids 2 high-risk stretches**: chips for the streets the PathPro route skips, with their scores. Tap one to zoom the map to it.
 - A **Personal safety** summary, when that data is available: reported crimes against persons near each route, side by side, with **How to read this**. It never ranks the routes.
@@ -170,7 +172,9 @@ Tap any street on the map, or any street chip, to open its sheet:
 - **factor bars** that add up exactly to the score, starting from *Typical street at a typical hour*. For example: *Vehicle crashes on this street +34*, *Time of day +2*.
 - the street's crash history: crashes here, how many involved pedestrians, and the share after dark and on wet pavement
 - **When crashes happened here**: an hour-by-hour chart, with the current hour highlighted
+- **Street redesign ideas** on walking streets, with **Imagine this street redesigned** (see [Imagine this street redesigned](#imagine-this-street-redesigned))
 - **How is this calculated?**, which opens **How PathPro works**, including the model's accuracy and limits
+- **Ask about this street**, which opens [Ask PathPro](#ask-pathpro) with the street already filled in
 
 ![Why this route: the explanation, the stretches the PathPro route avoids, and the personal-safety summary.](img/09-phone-why-this-route.png)
 
@@ -178,7 +182,76 @@ Tap any street on the map, or any street chip, to open its sheet:
 
 ### Listen
 
-**Listen** on the route card or a street sheet reads the explanation aloud in a calm voice, or in your device's own voice if the voice service is unavailable.
+**Listen** on the route card or a walking street's sheet reads the explanation aloud in a calm **Grok Voice**. If Grok Voice doesn't answer, PathPro tries **ElevenLabs**, and if neither is available it uses your device's own voice. You always hear the same checked text, whichever voice reads it. Listen only plays when you tap it. Nothing starts talking on its own.
+
+Street sheets for ride routes, and the spoken alerts during navigation and previews, use your device's voice so they play right away.
+
+## Ask PathPro
+
+**Ask PathPro** answers questions about how PathPro works, and about the street, route, or City Pulse area on your screen. Answers come from PathPro's model card and docs.
+
+### Where to find it
+
+- **General questions:** on a phone, open **Map options** and tap **Ask PathPro** at the bottom. On a desktop, tap **Ask PathPro** at the bottom of the sidebar.
+- **About this street:** on a street's sheet, tap **Ask about this street** at the bottom.
+- **About this route:** under **Why this route**, tap **Ask about this route**.
+- **About this area:** on a **City Pulse · this area** card, tap **Ask about this area**.
+
+### Asking a question
+
+1. When you open Ask from a street, route, or area, a **context chip** at the top shows what you're asking about, for example **About: Fifth Street Northwest · 9 PM** or **About: this route**. Tap its **×** to ask in general instead.
+2. Tap a **suggested question**, or type your own (up to 300 characters) in **Ask about PathPro…** and tap **Ask**. Suggestions change with the context:
+   - In general: *Why isn't crime used for routing?*, *How was the model tested?*, *What does '54% less traffic risk' mean?*
+   - For a street: *Why is this street high-risk at this hour?*, *What would lower the risk here?*
+   - For a route: *Why is this route longer?*, *Which stretches did it avoid?*
+   - For an area: *What drives traffic risk in this area?*
+3. While PathPro looks, you'll see *Looking through PathPro's docs…*. The answer appears under your question. Ask follow-ups in the same box. The conversation lasts until you close the tab.
+
+### How answers are checked
+
+PathPro doesn't show whatever the AI writes. Every answer is checked against PathPro's own evidence for that street, route, or area, and against the same wording rules as the rest of the app. PathPro never lets the AI make up a risk score.
+
+- A checked answer ends with *Answered from PathPro's model card and docs · powered by Backboard*.
+- When an answer cites the docs, **Sources** links appear under it. They open in a new tab.
+- If an answer doesn't pass the check, or the service is slow, you get a fixed message instead: *I can't answer that one right now. The model card under About PathPro explains how traffic risk is scored, how the model was tested, and which data it uses.* Try rewording, or open **About PathPro**.
+- If the street, route, or area you asked about is no longer available, PathPro says so (for example *That street is no longer available, so I answered in general.*) and answers in general.
+
+Only ids, the hour, and the conditions for the thing on screen go with your question. Your GPS position, saved places, and routines are never sent.
+
+![Ask about this street: the context chip "About: Fifth Street Northwest · 9 PM", the two street suggestions, and a checked answer that walks through the same factors as the street's score.](img/23-phone-ask-street.png)
+
+![Ask about this route on a desktop: "Which stretches did it avoid?" answered for the Klaus Building to Midtown MARTA walk, next to the route comparison.](img/26-desktop-route-ask.png)
+
+### Remember my preferences (optional)
+
+At the bottom of Ask PathPro is a **Remember my preferences** switch. It is **off** by default.
+
+- **Off:** each conversation starts fresh. Nothing is kept after you close the tab.
+- **On:** Ask PathPro can remember preferences you tell it, such as when you usually walk, across visits in this browser. Answers that used memory show a **Memory on** tag. Turning the switch off again pauses memory without deleting it.
+- The note under the switch says exactly what happens: *When on, what you type here is kept by Backboard for this browser until you tap Forget me. Your location, routes and routines are never sent.*
+- **Forget me** (next to the switch, once memory has been turned on) deletes everything Ask PathPro remembered. You'll see *Ask PathPro memory deleted.*
+- You can also delete it from **Map options → Privacy → Forget Ask PathPro memory**.
+
+Please don't type your home address or other personal details into Ask PathPro. It doesn't need them to answer.
+
+![General Ask PathPro from Map options: a checked answer to "How was the model tested?", and the "Remember my preferences" switch (off) with its privacy note.](img/24-phone-ask-memory.png)
+
+Ask PathPro needs the live service, so it isn't shown in the offline demo. If you ask a lot in one day, it asks you to try again tomorrow.
+
+## Imagine this street redesigned
+
+Wondering what would make a high-risk street better? On a walking street's sheet, scroll to **Street redesign ideas** and tap **Imagine this street redesigned**.
+
+- The button changes to *Imagining this street…* while the picture is drawn. This can take up to a minute.
+- **Grok Imagine** draws the street with evidence-based (Vision Zero) street-design fixes, chosen from that street's own top traffic-risk factors. For example, a street with many vehicle crashes gets a pedestrian refuge island in the median, a street with complex intersections gets high-visibility crosswalks with curb extensions, and a street where many crashes happened after dark gets pedestrian-scale street lighting.
+- The picture is always labeled **AI illustration of evidence-based street fixes by Grok Imagine — not a real photo**. Under the label, a line lists the street's top factors and the planned fixes.
+- **Gemini then checks the picture.** The line *Checked by Gemini: shows 3 of 3 planned fixes* tells you how many of the planned fixes Gemini could actually see. Gemini also checks that the picture has no readable text, logos, or recognizable faces. A picture that fails is never shown. If the check can't run, the picture shows without that line.
+- The picture is an idea for planners and neighbors. It **never changes a score or a route**.
+- Once a street has been drawn, the picture is saved, so it loads quickly for everyone after that. New pictures are limited each day. If you hit the limit, PathPro says so.
+
+This section appears on walking streets only, and is hidden in the offline demo.
+
+![A walking street's sheet (Williams Street Northwest, 9 PM): the Grok Imagine illustration with a refuge island, continental crosswalks, and street lighting, its "not a real photo" label, and "Checked by Gemini: shows 3 of 3 planned fixes".](img/25-phone-imagine-street.png)
 
 ## Walking and riding navigation
 
@@ -321,8 +394,9 @@ Open **Map options** with the layers button on a phone. On a desktop, the same c
 - **Leaving**: **Now**, **+15 min**, **+1 h**, or a custom date and time (Atlanta time). Routes and scores use the hour you'll actually be walking.
 - **Route preference**: **Lower traffic risk** or **Well-lit & busier** (*after dark*).
 - **Map**: **Streets** (traffic risk by street), **City Pulse** (by area), or **Personal safety**.
-- **Risk Tides** (phone only), the **legend** (bands **0 Lower · 25 Moderate · 50 Elevated · 75 High**), and **Privacy → Clear history**.
+- **Risk Tides** (phone only), the **legend** (bands **0 Lower · 25 Moderate · 50 Elevated · 75 High**), and **Privacy**: **Clear history**, plus **Forget Ask PathPro memory** once you've turned Ask memory on.
 - **About PathPro**: how the score is made, how well it works, its limits, sources, and emergency numbers.
+- **Ask PathPro**: questions about how PathPro works (see [Ask PathPro](#ask-pathpro)).
 
 ![Map options: conditions, departure time, route preference, and map mode.](img/20-phone-map-options.png)
 
@@ -335,11 +409,15 @@ Open **Map options** with the layers button on a phone. On a desktop, the same c
 - **Your location** is used to plan and navigate trips. Your start point goes to PathPro's server only to plan the route. Your moving position is sent only while you choose to **Share my walk**.
 - **Shared walks expire.** A live link is deleted 6 hours after its last update. It holds the destination, the route, your latest position, and the arrival time, and nothing else.
 - **No addresses in the reported-crimes layer.** It holds only counts per area and time of day. No addresses, report numbers, or victim details are fetched or stored.
+- **Ask PathPro sends only your question and what's on screen.** With a question about a street, route, or area, only its id, hour, and conditions go along. Your GPS position, saved places, and routines are never sent.
+- **Ask PathPro memory is opt-in.** **Remember my preferences** is off by default. When you turn it on, what you type into Ask PathPro is kept by Backboard for this browser until you tap **Forget me** (or **Map options → Privacy → Forget Ask PathPro memory**), which deletes it.
+- **Street illustrations use no personal data.** The picture is drawn from the street's risk factors only, never from anything you type.
 
 ## Accessibility
 
 - **Keyboard.** Every control is a real button, link, or input and can be reached with **Tab**. In the route sheet, the handle opens and closes with **Enter** or **Space**, and **↑**, **↓**, and **Esc** also work. Sheets and dialogs close with **Esc** and return focus to where you were. The check-in dialog keeps focus inside it until you choose. In search, **Enter** picks the first result.
 - **Screen readers.** Controls have plain labels, for example *Swap start and destination*, *Show my location*, *Travel mode*, and *Hour of day* (which reads the hour, the weather, and the citywide median). The score dial reads *Traffic risk 93 of 100, High*. Navigation banners and status messages are announced as they change, and help points are listed as buttons so you can reach them without the map.
+- **Ask PathPro and street illustrations.** Ask PathPro is a dialog that closes with **Esc**. New answers are read out as they arrive, and **Remember my preferences** is a real switch that announces whether it's on. When a street illustration finishes drawing, focus moves to the picture, and its description lists the fixes shown.
 - **Touch targets** are at least 44 px, with switches for the personal-safety layers.
 - **Reduced motion.** If your device asks for less motion, PathPro turns off animated map effects and shows explanations at once instead of typing them out.
 
@@ -349,7 +427,8 @@ Open **[pathpro.tech/?demo=1](https://pathpro.tech/?demo=1)** to replay a fixed 
 
 - Everything on the route card, **Why?**, street sheets, **Preview walk**, and the ride modes works.
 - **Share my walk** is simulated on the device, and nothing is sent.
-- Community reports and search results for new addresses are hidden.
+- Community reports, search results for new addresses, **Ask PathPro**, and **Imagine this street redesigned** are hidden, because they need the live service.
+- **Listen** uses your device's voice.
 - Keyboard shortcuts: **T** jumps to 10 PM, **R** toggles rain, and **D** resets to the demo trip.
 
 ## Troubleshooting and FAQ
@@ -377,6 +456,15 @@ Shared walks end 6 hours after their last update, or when you stop sharing. Star
 **The explanation reads like a template.**
 When the AI service is slow or down, PathPro builds a short explanation from the numbers instead. The scores are the same.
 
+**Ask PathPro says "I can't answer that one right now."**
+Either the answer didn't pass PathPro's check against its evidence, or the service is busy. Try a suggested question or reword yours. **About PathPro** has the full model card.
+
+**I don't see Ask PathPro or "Imagine this street redesigned".**
+Both need the live service, so they're hidden in the offline demo. The street illustration appears on walking streets only.
+
+**"You've reached today's limit for new street illustrations."**
+New pictures are limited each day. Streets that someone has already drawn still load.
+
 **Does "lower-risk" mean nothing will happen?**
 No. It means less exposure to streets where pedestrian crashes have concentrated at that hour. Always stay alert, especially when crossing.
 
@@ -401,4 +489,4 @@ PathPro is a planning aid, not an emergency service. No map can promise how a wa
 - **Georgia Tech Police: 404-894-2500.**
 - On the Georgia Tech campus, **blue-light emergency phones** connect you to campus police. Press the button on the pole.
 
-*PathPro by team CodingClaws, HackGT 13 · [pathpro.tech](https://pathpro.tech) · See the risks on your way, before you go.*
+*PathPro by Nagur Shareef Shaik (Coding Claws, Georgia State University), HackGT 13 · [pathpro.tech](https://pathpro.tech) · See the risks on your way, before you go.*
