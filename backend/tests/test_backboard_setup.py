@@ -245,3 +245,12 @@ def test_fact_extraction_keeps_only_stated_preferences() -> None:
     assert "never" in prompt and "only" in prompt
     assert "context from pathpro's model" in prompt
     assert not BANNED_OUTSIDE_RULES.search(prompt)
+
+
+@pytest.mark.unit
+def test_fact_prompt_uses_the_structured_json_format_with_examples() -> None:
+    # Backboard ignored a prose-only prompt live (nothing was ever extracted); the
+    # {"facts": [...]} format with examples was verified to keep preferences and drop addresses.
+    assert '{"facts": [' in FACT_EXTRACTION_PROMPT
+    assert "Input:" in FACT_EXTRACTION_PROMPT and "Output:" in FACT_EXTRACTION_PROMPT
+    assert '{"facts": []}' in FACT_EXTRACTION_PROMPT  # addresses and context blocks give nothing
