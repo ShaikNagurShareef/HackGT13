@@ -167,8 +167,26 @@ _TOPIC_RE = re.compile(
 )
 
 
+# Answers may cite the corpus files they were drawn from ("metrics.json" is not a domain).
+CORPUS_FILE_NAMES = (
+    "model_card.md",
+    "metrics.json",
+    "safety_sources.md",
+    "decisions.md",
+    "data_and_models.md",
+    "judge_qa.md",
+)
+_CORPUS_FILE_RE = re.compile(
+    r"(?<![\w.@-])(?:[\w-]+/)*(?:"
+    + "|".join(re.escape(n) for n in CORPUS_FILE_NAMES)
+    + r")(?![\w@-]|\.\w)",
+    re.IGNORECASE,
+)
+
+
 def _has_link(text: str) -> bool:
-    return _LINK_RE.search(_ALLOWED_DOMAIN_RE.sub(" ", text)) is not None
+    cleaned = _CORPUS_FILE_RE.sub(" ", _ALLOWED_DOMAIN_RE.sub(" ", text))
+    return _LINK_RE.search(cleaned) is not None
 
 
 def _on_topic(text: str) -> bool:
