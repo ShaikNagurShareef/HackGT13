@@ -25,7 +25,7 @@ import { useSegmentDetail } from '../hooks/useSegmentDetail'
 import { useTripPlanner } from '../hooks/useTripPlanner'
 import { useViewState } from '../hooks/useViewState'
 import { useViewportReports } from '../hooks/useViewportReports'
-import { routeAskTarget, type AskTarget } from '../lib/askContext'
+import { routeAskTarget, screenAskTarget, type AskTarget } from '../lib/askContext'
 import { hotspotsFor } from '../lib/hotspots'
 import { isRideMode, networkLegendTitle, tabDurations } from '../lib/modes'
 import { startMode } from '../lib/navigation'
@@ -151,8 +151,13 @@ export function PathPro({ data, loadError }: PathProProps) {
   const actions = useTripActions({ onNotice: setError, view, update, geo, planner, routines, nav, routes, selectedRoute })
   const openAskTarget = (target: AskTarget) => actions.openAsk(target.context, target.label)
   const askOpen = actions.panel?.kind === 'ask'
-  // The map's agent button toggles: on desktop the Ask card docks right above it.
-  const toggleAsk = () => (askOpen ? actions.closePanel() : actions.openAsk())
+  // The map's agent button toggles: on desktop the Ask card docks right above it. It opens
+  // with whatever is on screen (area card, street sheet, or route) as the question's context.
+  const toggleAsk = () => {
+    if (askOpen) return actions.closePanel()
+    const target = screenAskTarget({ detail, area, routeKey, cond: view.cond, mode: networkMode })
+    return target ? openAskTarget(target) : actions.openAsk()
+  }
   const shareResume = useShareResume({ demo, destination: view.to, route: selectedRoute, nav, onNotice: setError })
   const resumeSharing = () => {
     if (geo.status === 'prompt') geo.request() // a tap, so the browser may ask for location here

@@ -65,7 +65,7 @@ A few more things I built because people asked for them:
 
 ### Ask PathPro: an agent on the map
 
-A round agent button sits on the map. Tap it and a chat opens: on a phone it slides up from the bottom, and on a desktop it docks beside the map. Ask anything, like "How was the model tested?" or "Why isn't crime used for routing?". Or open a street, route or City Pulse area and tap "Ask about this street", and the agent answers about exactly that, using the same evidence behind the score.
+A round agent button sits on the map. Tap it and a chat opens: on a phone it slides up from the bottom, and on a desktop it docks beside the map. Ask anything, like "How was the model tested?" or "What does the risk score mean?". Or open a street, route or City Pulse area and tap "Ask about this street", and the agent answers about exactly that, using the same evidence behind the score.
 
 It runs on Backboard. The answers come from my model's own documents (the model card, metrics, data sources and decision log) plus the street, route or area on screen, and every answer goes through the same checks as the explanations: no number that isn't in the evidence, no crime framing, no links, and it has to be about PathPro. If an answer fails, you get a plain pointer to the model card instead.
 

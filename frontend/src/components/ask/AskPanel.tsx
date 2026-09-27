@@ -18,11 +18,7 @@ export { ASK_THREAD_KEY } from '../../lib/askMemory'
  *
  * Layout: a chat card docked bottom-right on wide screens, a tall bottom sheet on phones.
  */
-export const ASK_SUGGESTIONS = [
-  "Why isn't crime used for routing?",
-  'How was the model tested?',
-  "What does '54% less traffic risk' mean?",
-] as const
+export const ASK_SUGGESTIONS = ['What does the risk score mean?', 'How do I use PathPro?', 'How was the model tested?'] as const
 export const ASK_CONTEXT_SUGGESTIONS: Record<AskContext['kind'], readonly string[]> = {
   segment: ['Why is this street high-risk at this hour?', 'What would lower the risk here?'],
   route: ['Why is this route longer?', 'Which stretches did it avoid?'],

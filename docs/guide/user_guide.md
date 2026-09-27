@@ -188,11 +188,11 @@ Street sheets for ride routes, and the spoken alerts during navigation and previ
 
 ## Ask PathPro
 
-**Ask PathPro** is a chat that answers questions about how PathPro works, and about the street, route, or City Pulse area on your screen. Answers come from PathPro's model card and docs.
+**Ask PathPro** is a chat that answers questions about how PathPro works, and about the street, route, or City Pulse area on your screen. Answers come from PathPro's model card, docs, README and this user guide.
 
 ### Where to find it
 
-- **The agent button:** the round teal-to-violet button with a robot face on the map. On a phone it sits at the bottom right, above the layers and locate buttons. On a desktop it sits at the bottom right, above the zoom buttons. Tap it for general questions.
+- **The agent button:** the round teal-to-violet button with a robot face on the map. On a phone it sits at the bottom right, above the layers and locate buttons. On a desktop it sits at the bottom right, above the zoom buttons. Tap it to ask about whatever is on screen: an open City Pulse area card, an open street sheet, or the route you planned. With none of those open, it asks in general.
 - **About this street:** on a street's sheet, tap the **Ask about this street** pill next to **Listen**, under the explanation.
 - **About this route:** under **Why this route**, tap the **Ask about this route** pill.
 - **About this area:** on a **City Pulse · this area** card, tap the **Ask about this area** pill.
@@ -216,7 +216,7 @@ On a phone, Ask PathPro opens as a tall sheet from the bottom of the screen. On 
 ### Asking a question
 
 1. Tap a **suggestion chip**, or type your own question. Suggestions change with the context:
-    - In general: *Why isn't crime used for routing?*, *How was the model tested?*, *What does '54% less traffic risk' mean?*
+    - In general: *What does the risk score mean?*, *How do I use PathPro?*, *How was the model tested?*
     - For a street: *Why is this street high-risk at this hour?*, *What would lower the risk here?*
     - For a route: *Why is this route longer?*, *Which stretches did it avoid?*
     - For an area: *What drives traffic risk in this area?*
@@ -229,7 +229,7 @@ PathPro doesn't show whatever the AI writes. Every answer is checked against Pat
 
 - A checked answer is followed by *Answered from PathPro's model card and docs · powered by Backboard*.
 - When an answer cites the docs, **Sources** links appear under it. They open in a new tab.
-- If an answer doesn't pass the check, or the service is slow, you get a fixed message instead, in a dimmer bubble: *I can't answer that one right now. The model card under About PathPro explains how traffic risk is scored, how the model was tested, and which data it uses.* Try rewording, or open **About PathPro**.
+- If an answer doesn't pass the check, PathPro asks the AI to rewrite it once, following the same rules. If the rewrite doesn't pass either, or the service is slow, you get a fixed message instead, in a dimmer bubble: *I can't answer that one right now. The model card under About PathPro explains how traffic risk is scored, how the model was tested, and which data it uses.* Try rewording, or open **About PathPro**.
 - If the street, route, or area you asked about is no longer available, PathPro says so (for example *That street is no longer available, so I answered in general.*) and answers in general.
 
 Only ids, the hour, and the conditions for the thing on screen go with your question. Your GPS position, saved places, and routines are never sent.
