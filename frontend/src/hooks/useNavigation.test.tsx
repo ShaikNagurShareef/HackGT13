@@ -160,10 +160,12 @@ describe('useNavigation', () => {
 
   describe('Grok Voice alerts', () => {
     const KEY = 'aaaaaaaaaaaaaaaa'
-    const withVoice = () =>
-      renderHook(() =>
-        useNavigation({ route: route(), gps: null, streets: STREETS, destination: DEST, departAt: DEPART, routeKey: KEY, routeKind: 'fast' }),
+    const withVoice = () => {
+      const r = route() // one route object, as PathPro memoises it
+      return renderHook(() =>
+        useNavigation({ route: r, gps: null, streets: STREETS, destination: DEST, departAt: DEPART, routeKey: KEY, routeKind: 'fast' }),
       )
+    }
     const walkToTheEnd = () => {
       for (let i = 0; i < 120; i++) act(() => void vi.advanceTimersByTime(500))
     }

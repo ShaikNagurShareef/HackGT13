@@ -29,6 +29,9 @@ class Voice(Protocol):
     @property
     def enabled(self) -> bool: ...
 
+    @property
+    def label(self) -> str: ...
+
     async def speak(self, text: str) -> bytes | None: ...
 
 
@@ -44,6 +47,15 @@ class _CachedVoice:
 
     @property
     def enabled(self) -> bool:
+        raise NotImplementedError
+
+    @property
+    def label(self) -> str:
+        """Provider and voice, e.g. "grok:eve": audio caches keyed by it follow voice changes."""
+        return f"{self.name}:{self._voice_id}"
+
+    @property
+    def _voice_id(self) -> str | None:
         raise NotImplementedError
 
     async def _request(self, text: str) -> httpx.Response:
@@ -94,6 +106,10 @@ class TtsService(_CachedVoice):
     def enabled(self) -> bool:
         return bool(self._key and self._voice)
 
+    @property
+    def _voice_id(self) -> str | None:
+        return self._voice
+
     async def _request(self, text: str) -> httpx.Response:
         return await self._client.post(
             TTS_URL.format(voice=self._voice),
@@ -119,6 +135,10 @@ class GrokTtsService(_CachedVoice):
     def enabled(self) -> bool:
         return bool(self._key and self._voice)
 
+    @property
+    def _voice_id(self) -> str | None:
+        return self._voice
+
     async def _request(self, text: str) -> httpx.Response:
         return await self._client.post(
             XAI_TTS_URL,
@@ -142,6 +162,11 @@ class VoiceChain:
     @property
     def enabled(self) -> bool:
         return any(v.enabled for v in self._voices)
+
+    @property
+    def voice_key(self) -> str:
+        """The voice that answers first right now ("device" when none is configured)."""
+        return next((v.label for v in self._voices if v.enabled), "device")
 
     async def speak(self, text: str) -> bytes | None:
         for voice in self._voices:

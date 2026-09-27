@@ -134,6 +134,8 @@ export function PathPro({ data, loadError }: PathProProps) {
     departAt: routes?.depart_at ?? null,
     mode: routeMode,
     speedMps: travel.speedMps,
+    routeKey,
+    routeKind: routes && selectedRoute === routes.pathpro ? 'pp' : 'fast',
   })
   const reports = useViewportReports(!demo && mapMode === 'streets')
   const safety = useSafetyMode(mapMode, hour)

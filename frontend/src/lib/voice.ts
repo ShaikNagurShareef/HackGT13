@@ -1,4 +1,4 @@
-/** Voice output: ElevenLabs via the server, falling back to the device voice (VOX-01/03/04). */
+/** Voice output: the server voice (Grok, then ElevenLabs), falling back to the device voice (VOX-01/03/04). */
 
 import { apiBase } from '../api/client'
 import { isDemoMode } from '../api/demo'
@@ -47,6 +47,25 @@ export async function speak(request: SpeakRequest, fallbackText: string): Promis
       }
     } catch {
       // fall through to the device voice
+    }
+  }
+  return deviceSpeak(fallbackText) ? 'device' : 'none'
+}
+
+/**
+ * A navigation alert: the prefetched server-voice clip when there is one, else the device voice
+ * speaking `fallbackText` (which also carries the live distance). The clip URL stays owned by
+ * its prefetch cache, so it is not revoked here.
+ */
+export async function playAlert(clipUrl: string | null, fallbackText: string): Promise<'server' | 'device' | 'none'> {
+  stopSpeaking()
+  if (clipUrl) {
+    try {
+      current = new Audio(clipUrl)
+      await current.play()
+      return 'server'
+    } catch {
+      // autoplay blocked or the clip failed: the device voice still speaks the alert
     }
   }
   return deviceSpeak(fallbackText) ? 'device' : 'none'

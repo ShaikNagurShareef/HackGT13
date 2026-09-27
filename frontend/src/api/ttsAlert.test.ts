@@ -15,7 +15,7 @@ describe('api.ttsAlert (Grok Voice navigation alerts)', () => {
 
     const clip = await api.ttsAlert(KEY, 3, 'fast')
 
-    expect(clip).toBeInstanceOf(Blob)
+    expect(clip.size).toBe(3)
     const [url, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit]
     expect(url).toBe('/api/tts/alert')
     expect(init.method).toBe('POST')

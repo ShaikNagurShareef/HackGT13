@@ -46,6 +46,8 @@ const TIMEOUT_MS = 8000
 const IMAGINE_TIMEOUT_MS = 75_000
 /** The server gives Backboard 12 s, then answers with its fallback. */
 const ASK_TIMEOUT_MS = 15_000
+/** Each voice gets 6 s on the server; Grok then ElevenLabs. */
+const TTS_TIMEOUT_MS = 14_000
 
 export class ApiError extends Error {
   readonly code: string
@@ -101,6 +103,40 @@ export function bboxParam(bbox: Bbox): string {
   return bbox.map((v) => v.toFixed(BBOX_DECIMALS)).join(',')
 }
 export type Condition = 'live' | 'dry' | 'wet'
+/** Which of the two routes a navigation alert belongs to. */
+export type AlertKind = 'pp' | 'fast'
+
+const VOICE_UNAVAILABLE = 'Voice is unavailable; using the device voice.'
+
+/**
+ * One navigation alert in the server voice. Only the route key, alert index, and route kind are
+ * sent: the server writes the words. Demo mode never calls the network (device voice only).
+ */
+async function ttsAlert(routeKey: string, index: number, kind: AlertKind, signal?: AbortSignal): Promise<Blob> {
+  if (isDemoMode()) throw new ApiError('DEMO', 'The offline demo uses the device voice.')
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), TTS_TIMEOUT_MS)
+  const abort = () => controller.abort()
+  signal?.addEventListener('abort', abort, { once: true })
+  try {
+    const resp = await fetch(`${apiBase()}/tts/alert`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ route_key: routeKey, index, kind }),
+      signal: controller.signal,
+    })
+    const type = resp.headers.get('content-type') ?? ''
+    if (resp.ok && type.includes('audio')) return await resp.blob()
+    const body = type.includes('json') ? ((await resp.json()) as { error?: { code?: string } }) : null
+    throw new ApiError(body?.error?.code ?? 'TTS_UNAVAILABLE', VOICE_UNAVAILABLE)
+  } catch (err) {
+    if (err instanceof ApiError) throw err
+    throw new ApiError('NETWORK', VOICE_UNAVAILABLE)
+  } finally {
+    clearTimeout(timer)
+    signal?.removeEventListener('abort', abort)
+  }
+}
 export interface AskOptions {
   context?: AskContext | null
   memoryToken?: string | null
@@ -153,6 +189,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ kind: 'segment', seg_id: id, t, cond }),
     }),
+  ttsAlert,
   segmentHourly: (id: number): Promise<Hourly> => request(`/segments/${id}/hourly`, hourlySchema),
   /** Grok Imagine: the server writes the prompt from the street's risk factors; only the id is sent. */
   imagineSegment: (id: number): Promise<Imagined> =>

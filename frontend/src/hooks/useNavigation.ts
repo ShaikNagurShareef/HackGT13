@@ -12,9 +12,11 @@ import {
 import { arrivalRadiusM } from '../lib/modes'
 import type { GeoFix } from '../lib/origin'
 import { arrivalAt as arrivalAtTime } from '../lib/routeSummary'
-import { deviceSpeak } from '../lib/voice'
+import type { AlertKind } from '../lib/alertClips'
+import { deviceSpeak, playAlert } from '../lib/voice'
 import { WALK_SPEED_MPS, alertText, cumulativeDistances, dueAlert } from '../lib/walk'
 import type { Place } from '../state/urlState'
+import { useAlertClips } from './useAlertClips'
 import { usePreviewWalk } from './usePreviewWalk'
 
 export type NavMode = 'gps' | 'preview'
@@ -30,6 +32,9 @@ export interface NavigationInput {
   mode?: TravelMode
   /** Travel speed for the preview and alert spacing (defaults to walking pace). */
   speedMps?: number
+  /** The cached route's key and which of its routes this is: alerts then speak in Grok Voice. */
+  routeKey?: string | null
+  routeKind?: AlertKind
 }
 
 export interface Navigation {
@@ -54,10 +59,12 @@ const CLOCK_TICK_MS = 15_000
 
 /**
  * Navigation mode: follows GPS (or the simulated preview walker) along the route, derives the
- * banner, and speaks each high-risk stretch once (VOX-02).
+ * banner, and speaks each high-risk stretch once (VOX-02): the prefetched server-voice clip
+ * when there is one, else the device voice with the live distance.
  */
 export function useNavigation(input: NavigationInput): Navigation {
   const { route, gps, streets, destination, departAt, mode: travel = 'walk', speedMps = WALK_SPEED_MPS } = input
+  const { routeKey = null, routeKind = 'pp' } = input
   const [active, setActive] = useState(false)
   const [mode, setMode] = useState<NavMode>('gps')
   const [gpsArrived, setGpsArrived] = useState(false)
@@ -74,6 +81,7 @@ export function useNavigation(input: NavigationInput): Navigation {
   const totalM = route && route.distance_m > 0 ? route.distance_m : geometryM
   const toRouteM = geometryM > 0 ? totalM / geometryM : 1
   const live = active && route != null
+  const clipFor = useAlertClips({ routeKey, kind: routeKind, count: route?.alerts.length ?? 0, active: live })
   const position: [number, number] | null = !live
     ? null
     : mode === 'preview'
@@ -107,9 +115,9 @@ export function useNavigation(input: NavigationInput): Navigation {
     if (idx == null) return
     spoken.current.add(idx)
     lastSpokenS.current = walkS
-    deviceSpeak(alertText(route.alerts[idx]))
+    void playAlert(clipFor(idx), alertText(route.alerts[idx]))
     navigator.vibrate?.(VIBRATE_MS)
-  }, [live, route, hasPosition, alongM, arrived, speedMps])
+  }, [live, route, hasPosition, alongM, arrived, speedMps, clipFor])
 
   useEffect(() => {
     if (!live) return

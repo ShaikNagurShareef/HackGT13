@@ -38,6 +38,7 @@ from app.repositories.history import HistoryRepository
 from app.repositories.reports import ReportsRepository
 from app.repositories.safety import load_safety
 from app.repositories.walks import WalksRepository
+from app.services.alert_voice import AlertAudio
 from app.services.ask import AskService
 from app.services.ask_corpus import load_allowed_numbers
 from app.services.ask_memory import AskMemory
@@ -151,6 +152,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             geo_key = cfg.geoapify_api_key.get_secret_value() if cfg.geoapify_api_key else None
             app.state.geocoder = GeocodeService(client, geo_key, cfg.geocode_daily_budget)
             app.state.tts = build_voices(cfg, client)
+            app.state.alert_audio = AlertAudio(app.state.tts)
             app.state.ask, app.state.ask_memory = build_ask(cfg, client)
             app.state.imagine = ImagineService(
                 client,

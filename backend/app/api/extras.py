@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query, Request, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.deps import get_bundle, get_weather, mode_context
 from app.api.envelope import AppError, Envelope, ok
@@ -14,6 +14,7 @@ from app.domain.modes import ModeKey
 from app.domain.timeutil import now_atlanta
 from app.repositories.artifacts import Bundle
 from app.repositories.history import HistoryRepository
+from app.services.alert_voice import AlertAudio, AlertKind, resolve_alert_text
 from app.services.explain.resolve import resolve_route_evidence, resolve_segment_evidence
 from app.services.explain.service import ExplainService
 from app.services.geocode import GeocodeService
@@ -88,14 +89,8 @@ async def explain(
     return ok(await _explanation(req, request, bundle, weather), bundle.model_version)
 
 
-@extras.post("/tts", response_class=Response)
-async def tts(
-    req: ExplainRequest, request: Request, bundle: BundleDep, weather: WeatherDep
-) -> Response:
-    """Speak an explanation the server itself produced; clients cannot supply text."""
-    text = (await _explanation(req, request, bundle, weather)).text
-    service: VoiceChain = request.app.state.tts
-    audio = await service.speak(text)
+def _audio(audio: bytes | None) -> Response:
+    """MP3 from the voice chain, or 503 so the browser speaks with its device voice."""
     if audio is None:
         raise AppError("TTS_UNAVAILABLE", "Voice is unavailable; using the device voice.", 503)
     return Response(
@@ -103,6 +98,37 @@ async def tts(
         media_type="audio/mpeg",
         headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
     )
+
+
+@extras.post("/tts", response_class=Response)
+async def tts(
+    req: ExplainRequest, request: Request, bundle: BundleDep, weather: WeatherDep
+) -> Response:
+    """Speak an explanation the server itself produced; clients cannot supply text."""
+    text = (await _explanation(req, request, bundle, weather)).text
+    service: VoiceChain = request.app.state.tts
+    return _audio(await service.speak(text))
+
+
+MAX_ALERT_INDEX = 999
+
+
+class AlertSpeechRequest(BaseModel):
+    """Which alert to speak; the words always come from the cached route, never the client."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    route_key: str = Field(pattern=r"^[0-9a-f]{16}$")
+    index: int = Field(ge=0, le=MAX_ALERT_INDEX)
+    kind: AlertKind = "pp"
+
+
+@extras.post("/tts/alert", response_class=Response)
+async def tts_alert(req: AlertSpeechRequest, request: Request) -> Response:
+    """A navigation alert ("High traffic risk ahead. <street>.") in the server voice."""
+    text = resolve_alert_text(_routes_cache(request), req.route_key, req.kind, req.index)
+    voices: AlertAudio = request.app.state.alert_audio
+    return _audio(await voices.speak(req.route_key, req.kind, req.index, text))
 
 
 @extras.get("/conditions/live", response_model=Envelope[ConditionUsed])

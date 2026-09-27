@@ -33,8 +33,10 @@ describe('prefetchClips', () => {
 
     await prefetchClips(10, fetchClip, new AbortController().signal, (i) => got.push(i))
 
+    // Clips already in flight may still land; nothing new starts after the failure.
     expect(fetchClip.mock.calls.length).toBeLessThanOrEqual(CLIP_CONCURRENCY + 1)
-    expect(got).toEqual([0])
+    expect(got).not.toContain(1)
+    expect(Math.max(...got)).toBeLessThanOrEqual(CLIP_CONCURRENCY)
   })
 
   it('delivers nothing once aborted', async () => {

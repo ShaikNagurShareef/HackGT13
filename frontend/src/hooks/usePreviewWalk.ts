@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Route } from '../api/schemas'
-import { deviceSpeak } from '../lib/voice'
+import { playAlert } from '../lib/voice'
 import { WALK_SPEED_MPS, alertText, cumulativeDistances, dueAlert, pointAlong } from '../lib/walk'
 
 export const PREVIEW_SPEEDUP = 15 // 5x in the PRD; 15x keeps the demo under two minutes
@@ -15,8 +15,19 @@ export interface PreviewWalk {
   stop: () => void
 }
 
-/** Deterministic simulated walk (or ride, at `speedMps`) along a route with spoken alerts (VOX-02/05, EC-44/45). */
-export function usePreviewWalk(route: Route | null, voiceOn: boolean, speedMps: number = WALK_SPEED_MPS): PreviewWalk {
+const NO_CLIP = (): string | null => null
+
+/**
+ * Deterministic simulated walk (or ride, at `speedMps`) along a route with spoken alerts
+ * (VOX-02/05, EC-44/45). With voice on, an alert plays its prefetched server-voice clip from
+ * `clipFor` when there is one, else the device voice speaks it.
+ */
+export function usePreviewWalk(
+  route: Route | null,
+  voiceOn: boolean,
+  speedMps: number = WALK_SPEED_MPS,
+  clipFor: (index: number) => string | null = NO_CLIP,
+): PreviewWalk {
   const [active, setActive] = useState(false)
   const [walked, setWalked] = useState(0)
   const [banner, setBanner] = useState<string | null>(null)
@@ -56,11 +67,11 @@ export function usePreviewWalk(route: Route | null, voiceOn: boolean, speedMps: 
       lastSpokenS.current = walkS
       const text = alertText(route.alerts[idx])
       setBanner(text)
-      if (voiceOn) deviceSpeak(text)
+      if (voiceOn) void playAlert(clipFor(idx), text)
       navigator.vibrate?.(200)
     }, TICK_MS)
     return () => window.clearInterval(id)
-  }, [active, route, total, voiceOn, speedMps])
+  }, [active, route, total, voiceOn, speedMps, clipFor])
 
   useEffect(() => {
     if (active && total > 0 && walked >= total) setActive(false)
