@@ -126,4 +126,16 @@ describe('OptionsSheet with the personal safety layer', () => {
     await user.click(screen.getByRole('button', { name: 'Blue-light emergency phone · Tech Green' }))
     expect(p.safety?.onPickHelp).toHaveBeenCalledWith({ kind: 'help', point: helpPoint() })
   })
+
+  it('offers Ask PathPro next to About when the server has it, and hides it otherwise', async () => {
+    const onAsk = vi.fn()
+    setup({ onAsk })
+    await userEvent.click(screen.getByRole('button', { name: 'Ask PathPro' }))
+    expect(onAsk).toHaveBeenCalled()
+  })
+
+  it('hides Ask PathPro without a handler (demo mode)', () => {
+    setup()
+    expect(screen.queryByRole('button', { name: 'Ask PathPro' })).toBeNull()
+  })
 })

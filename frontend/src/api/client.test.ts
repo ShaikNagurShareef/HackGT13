@@ -111,4 +111,24 @@ describe('community reports client', () => {
 
     await expect(api.segmentReports(11)).rejects.toMatchObject({ code: 'REPORTS_UNAVAILABLE' })
   })
+
+  it('asks PathPro, sending the thread id only when there is one', async () => {
+    const data = { answer: 'A.', thread_id: null, source: 'fallback', note: 'n' }
+    const fetcher = respond({ success: true, data })
+
+    expect(await api.ask('How was the model tested?', null)).toEqual(data)
+    expect(await api.ask('Follow up?', '22222222-2222-4222-8222-222222222222')).toEqual(data)
+
+    const bodies = fetcher.mock.calls.map((c) => JSON.parse(String((c as unknown as [string, RequestInit])[1].body)))
+    expect(bodies).toEqual([
+      { question: 'How was the model tested?' },
+      { question: 'Follow up?', thread_id: '22222222-2222-4222-8222-222222222222' },
+    ])
+  })
+
+  it('rejects an Ask answer from an unknown source', async () => {
+    respond({ success: true, data: { answer: 'A.', thread_id: null, source: 'llm', note: 'n' } })
+
+    await expect(api.ask('How was the model tested?', null)).rejects.toMatchObject({ code: 'BAD_RESPONSE' })
+  })
 })

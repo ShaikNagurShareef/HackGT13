@@ -86,4 +86,16 @@ describe('DesktopHome (persistent sidebar)', () => {
     setup({ safetyAvailable: true })
     expect(screen.getByRole('complementary', { name: 'PathPro' })).toHaveTextContent('Traffic risk, plus personal-safety signals')
   })
+
+  it('keeps Ask PathPro in the sidebar footer when available', async () => {
+    const onAsk = vi.fn()
+    setup({ onAsk })
+    await userEvent.click(screen.getByRole('button', { name: 'Ask PathPro' }))
+    expect(onAsk).toHaveBeenCalled()
+  })
+
+  it('hides Ask PathPro without a handler (demo mode)', () => {
+    setup()
+    expect(screen.queryByRole('button', { name: 'Ask PathPro' })).toBeNull()
+  })
 })
