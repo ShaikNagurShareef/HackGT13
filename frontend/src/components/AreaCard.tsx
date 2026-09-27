@@ -1,6 +1,8 @@
 import type { Area } from '../api/schemas'
 import { formatClock } from '../lib/time'
 import { FactorBars, ScoreDial } from './SegmentSheet'
+import { AskButton } from './ask/AskButton'
+import { Icon } from './ui/Icon'
 
 const CONFIDENCE_LABEL = { high: 'High confidence', medium: 'Medium confidence', limited: 'Limited data' }
 
@@ -24,7 +26,7 @@ export function AreaCard({ area, onClose, onAbout, onAsk }: AreaCardProps) {
           </div>
         </div>
         <button type="button" className="icon-btn" aria-label="Close area" onClick={onClose}>
-          ×
+          <Icon name="close" size={18} />
         </button>
       </header>
       <div className="sheet-score">
@@ -52,11 +54,7 @@ export function AreaCard({ area, onClose, onAbout, onAsk }: AreaCardProps) {
         <button type="button" className="link-btn" onClick={onAbout}>
           How is this calculated?
         </button>
-        {onAsk && (
-          <button type="button" className="link-btn" onClick={onAsk}>
-            Ask about this area
-          </button>
-        )}
+        {onAsk && <AskButton label="Ask about this area" onClick={onAsk} />}
       </div>
     </section>
   )

@@ -3,6 +3,7 @@ import { useDialog } from '../../hooks/useDialog'
 import type { TimelineProps } from '../Timeline'
 import { Icon } from '../ui/Icon'
 import { OptionsContent, type OptionsContentProps } from './OptionsContent'
+import { AskButton } from '../ask/AskButton'
 
 export interface OptionsSheetProps extends OptionsContentProps {
   timeline: TimelineProps
@@ -33,14 +34,12 @@ export function OptionsSheet({ onAbout, onAsk, onClose, ...content }: OptionsShe
           </button>
         </header>
         <OptionsContent {...content} />
-        <button type="button" className="link-btn" onClick={onAbout}>
-          About PathPro
-        </button>
-        {onAsk && (
-          <button type="button" className="link-btn" onClick={onAsk}>
-            Ask PathPro
+        <div className="sheet-links sheet-footer">
+          {onAsk && <AskButton label="Ask PathPro" onClick={onAsk} variant="entry" />}
+          <button type="button" className="link-btn" onClick={onAbout}>
+            About PathPro
           </button>
-        )}
+        </div>
       </div>
     </div>
   )

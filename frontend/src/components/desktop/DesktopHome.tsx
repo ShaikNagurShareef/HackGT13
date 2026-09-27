@@ -4,6 +4,7 @@ import { SuggestionCard } from '../home/SuggestionCard'
 import { OptionsContent, type OptionsContentProps } from '../options/OptionsContent'
 import { SearchPanel, type SearchPanelProps } from '../search/SearchPanel'
 import { SidebarBrand } from './SidebarBrand'
+import { AskButton } from '../ask/AskButton'
 
 export interface DesktopHomeProps {
   suggestion: RoutineSuggestion | null
@@ -31,14 +32,12 @@ export function DesktopHome({ suggestion, etaMin, onGo, onDismissSuggestion, sea
         <OptionsContent {...options} />
       </div>
       <footer className="desk-footer">
-        <button type="button" className="link-btn" onClick={onAbout}>
-          About PathPro
-        </button>
-        {onAsk && (
-          <button type="button" className="link-btn" onClick={onAsk}>
-            Ask PathPro
+        <div className="sheet-links sheet-footer">
+          {onAsk && <AskButton label="Ask PathPro" onClick={onAsk} variant="entry" />}
+          <button type="button" className="link-btn" onClick={onAbout}>
+            About PathPro
           </button>
-        )}
+        </div>
         <span className="faint">{scopeLine(safetyAvailable)}</span>
       </footer>
     </aside>

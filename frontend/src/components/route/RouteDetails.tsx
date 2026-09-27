@@ -10,6 +10,7 @@ import { formatClock } from '../../lib/time'
 import { TrustNote } from '../Controls'
 import { Icon } from '../ui/Icon'
 import { RouteSafetyEvidence } from './RouteSafetyEvidence'
+import { AskButton } from '../ask/AskButton'
 
 export interface RouteDetailsProps {
   routes: Routes
@@ -38,9 +39,9 @@ export function RouteDetails(props: RouteDetailsProps) {
         {typed ?? templateSummary(routes)}
       </p>
       {onAsk && (
-        <button type="button" className="link-btn" onClick={onAsk}>
-          Ask about this route
-        </button>
+        <div className="sheet-actions">
+          <AskButton label="Ask about this route" onClick={onAsk} />
+        </div>
       )}
       <p className="faint">
         Leaving {formatClock(new Date(routes.depart_at))} · {routes.condition_used.label}

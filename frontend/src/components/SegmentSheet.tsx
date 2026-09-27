@@ -4,6 +4,8 @@ import { atlantaParts, formatClock } from '../lib/time'
 import { HourlyChart } from './HourlyChart'
 import { ImagineStreet } from './ImagineStreet'
 import { StreetReports } from './StreetReports'
+import { AskButton } from './ask/AskButton'
+import { Icon } from './ui/Icon'
 
 /** Local one-line summary used when the explanation service is unreachable. */
 export function segmentSummary(detail: SegmentDetail): string {
@@ -101,7 +103,7 @@ export function SegmentSheet({ detail, explanation, onClose, onAbout, onListen, 
           </div>
         </div>
         <button type="button" className="icon-btn" aria-label="Close details" onClick={onClose}>
-          ×
+          <Icon name="close" size={18} />
         </button>
       </header>
       <div className="sheet-score">
@@ -111,10 +113,16 @@ export function SegmentSheet({ detail, explanation, onClose, onAbout, onListen, 
       <p className="explanation" data-testid="segment-explanation">
         {explanation ?? 'Loading explanation…'}
       </p>
-      {onListen && explanation && (
-        <button type="button" className="chip" onClick={onListen}>
-          🔊 Listen
-        </button>
+      {((onListen && explanation) || onAsk) && (
+        <div className="sheet-actions">
+          {onListen && explanation && (
+            <button type="button" className="chip" onClick={onListen}>
+              <Icon name="volume" size={16} />
+              Listen
+            </button>
+          )}
+          {onAsk && <AskButton label="Ask about this street" onClick={onAsk} />}
+        </div>
       )}
       <FactorBars detail={detail} />
       <dl className="history">
@@ -147,11 +155,6 @@ export function SegmentSheet({ detail, explanation, onClose, onAbout, onListen, 
         <button type="button" className="link-btn" onClick={onAbout}>
           How is this calculated?
         </button>
-        {onAsk && (
-          <button type="button" className="link-btn" onClick={onAsk}>
-            Ask about this street
-          </button>
-        )}
       </div>
     </section>
   )
