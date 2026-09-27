@@ -4,6 +4,7 @@ Each section below is one field of the Devpost form, in the order Devpost asks f
 
 **Before you paste:**
 - [ ] Grok and Gemini are deployed and verified live on pathpro.tech. If not, delete the "Grok" and "Gemini" lines marked ⚑ first.
+- [ ] Ask PathPro (Backboard) tested live with a real key: `setup_backboard`, then `check_keys`, then one real question on pathpro.tech. If not, delete the "Backboard" lines marked ◇ first.
 - [ ] Demo video uploaded to YouTube (unlisted is fine) with `media/pathpro_demo_v2.srt` attached.
 - Solo build (team name Coding Claws), so there's no one to invite.
 
@@ -86,6 +87,7 @@ The rest of the stack:
 - The domain is pathpro.tech. Say it out loud: "path protect."
 - Tiger Data (TimescaleDB + PostGIS) holds 220,594 crash rows and powers each street's crashes-by-hour chart through a continuous aggregate.
 - MongoDB Atlas stores street reports and shared walks, with TTL indexes so old ones clean themselves up.
+- Backboard powers "Ask PathPro" ◇, a small panel where anyone can ask how PathPro works. I gave a Backboard assistant the model card, metrics, and design docs, plus a few fixed facts in its memory. Public questions use read-only memory, so no visitor can change what it remembers. Every answer goes through a validator (banned words, crime framing, and every number has to appear in those docs); anything that fails is replaced with a pointer to the model card.
 - The frontend is React, TypeScript, MapLibre, and deck.gl. Routing is Dijkstra on a SciPy sparse graph, about 150 ms at the median for both routes.
 
 ![Crashes by hour from Tiger Data](https://raw.githubusercontent.com/ShaikNagurShareef/PathPro/main/docs/images/gallery/tiger-hourly.png)
@@ -155,9 +157,9 @@ The YouTube URL of `media/pathpro_demo_v2.mp4`, or v3 once it's recorded with Gr
 - **General track (one):** Oracle of the Deep - ML/AI
 - **Sponsor track 1:** Aramco - A Marina's Mission
 - **Sponsor track 2:** SpaceXAI - Make it Legendary ⚑ (the form allows only two sponsor tracks; Notability's prize is "Best Use of Notability", which we don't use)
-- **MLH prizes:** Best use of ElevenLabs, Gemini API ⚑ (Gemini project number 1091754630519), TigerData, Vultr, MongoDB Atlas. The .tech prize is entered through the domain question.
+- **MLH prizes:** Best use of ElevenLabs, Gemini API ⚑ (Gemini project number 1091754630519), TigerData, Vultr, MongoDB Atlas, Backboard ◇ (Ask PathPro). The .tech prize is entered through the domain question.
 - **AI tools this weekend (shown in the gallery):** OpenAI (gpt-oss via Groq), Anthropic, Gemini, ElevenLabs, Other (xAI Grok, Cursor)
-- **AI tools used:** AI coding assistants (Claude Code, Cursor) during development; Grok models, Grok Imagine, Grok Voice and Gemini in the product. We followed a test-first workflow with independent review; scope, product decisions (including the safety layer and its safeguards), and review were ours.
+- **AI tools used:** AI coding assistants (Claude Code, Cursor) during development; Grok models, Grok Imagine, Grok Voice, Gemini and Backboard ◇ in the product. I followed a test-first workflow with independent review; scope, product decisions (including the safety layer and its safeguards), and review were mine.
 - **Domain (.tech):** pathpro.tech
 - **Data credits:** crash data from ARC, the City of Atlanta, Central Atlanta Progress, and Georgia Tech open data; Atlanta Police open data; OpenStreetMap contributors. The full list is in the README and `docs/safety_sources.md`.
 

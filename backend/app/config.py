@@ -43,6 +43,12 @@ class Settings(BaseSettings):
     imagine_per_client_daily: int = Field(default=10, ge=0)
     imagine_cache_dir: Path = BACKEND_DIR / "cache" / "imagine"  # git-ignored (cache/)
     geoapify_api_key: SecretStr | None = None
+    # Backboard (Ask PathPro): an assistant that answers from PathPro's own docs; optional.
+    backboard_api_key: SecretStr | None = None
+    backboard_assistant_id: str | None = None
+    backboard_llm_provider: str = "google"
+    backboard_model: str = "gemini-3.1-flash-lite"  # empty: Backboard's default model
+    ask_daily_budget: int = Field(default=300, ge=0)
     database_url: SecretStr | None = None
     mongodb_uri: SecretStr | None = None
     mongodb_db: str = "pathpulse"

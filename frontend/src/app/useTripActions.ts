@@ -12,7 +12,7 @@ import { shareLink, shareableUrl } from '../lib/share'
 import type { Routines } from '../hooks/useRoutines'
 import type { Place, ViewState } from '../state/urlState'
 
-export type Panel = { kind: 'search'; field: SearchField } | { kind: 'options' } | { kind: 'about' } | null
+export type Panel = { kind: 'search'; field: SearchField } | { kind: 'options' } | { kind: 'about' } | { kind: 'ask' } | null
 
 const LOCATING_NOTE = 'Finding you so routes start where you are. Your location stays on this phone.'
 const SHARE_FAILED = "Couldn't share. Copy the link from the address bar instead."

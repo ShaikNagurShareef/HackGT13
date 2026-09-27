@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 
+from app.services.ask_corpus import NUMBER_RE, parse_number
 from app.services.explain.evidence import Evidence
 
 MAX_SENTENCES = 3
@@ -86,3 +87,63 @@ def validation_errors(text: str, evidence: Evidence) -> list[str]:
 
 def is_valid(text: str, evidence: Evidence) -> bool:
     return not validation_errors(text, evidence)
+
+
+# --- Ask PathPro (Backboard) answers ----------------------------------------------------------
+# Answers about PathPro itself may name crime data to say how it is (not) used, and may name the
+# personal-safety layer; every other explanation rule still applies, plus crime-framing checks.
+ASK_MAX_WORDS = 140  # the assistant is told 120; a little slack for formatting
+ASK_MAX_CHARS = 1000
+ASK_ALLOWED = frozenset({"crime", "safety"})
+ASK_EXTRA_BANNED = ("dangerous", "high-risk neighborhood", "crime-ridden", "ghetto")
+ASK_BANNED = tuple(b for b in BANNED if b not in ASK_ALLOWED) + ASK_EXTRA_BANNED
+_ASK_BANNED_RE = re.compile(
+    r"\b(" + "|".join(re.escape(b) for b in ASK_BANNED) + r")\b", re.IGNORECASE
+)
+_CRIME_FRAMING_RE = re.compile(
+    r"\bhigh[- ]crime\b"
+    r"|\bcrime[- ]?(?:ridden|infested|hot ?spots?|zones?|areas?|neighbou?rhoods?)\b"
+    r"|\b(?:rough|sketchy|bad|shady)\s+(?:areas?|neighbou?rhoods?|parts? of town|side of town)\b"
+    r"|\bavoid(?:s|ing)?\s+(?:the\s+|this\s+|that\s+|these\s+|those\s+)?"
+    r"(?:areas?|neighbou?rhoods?)\b",
+    re.IGNORECASE,
+)
+_CRIME_RE = re.compile(r"\bcrim(?:e|es|inal)\b", re.IGNORECASE)
+# Crime may be mentioned next to routing or scoring only to say it is NOT used there.
+_ROUTING_OR_SCORE_RE = re.compile(r"\b(?:rout\w*|scor\w*|cost\w*|model\w*)\b", re.IGNORECASE)
+_NEGATION_RE = re.compile(
+    r"\b(?:never|not|no|without|excluded?|informational)\b|n't\b", re.IGNORECASE
+)
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+|\n+")
+
+
+def _crime_framing(text: str) -> bool:
+    if _CRIME_FRAMING_RE.search(text):
+        return True
+    for sentence in _SENTENCE_SPLIT_RE.split(text):
+        if (
+            _CRIME_RE.search(sentence)
+            and _ROUTING_OR_SCORE_RE.search(sentence)
+            and not _NEGATION_RE.search(sentence)
+        ):
+            return True
+    return False
+
+
+def ask_validation_errors(text: str, allowed: frozenset[float]) -> list[str]:
+    """Why an Ask PathPro answer may not be shown; every number must come from the corpus."""
+    stripped = text.strip()
+    if not stripped:
+        return ["empty"]
+    errors: list[str] = []
+    if len(stripped) > ASK_MAX_CHARS or len(stripped.split()) > ASK_MAX_WORDS:
+        errors.append("too_long")
+    if _ASK_BANNED_RE.search(stripped):
+        errors.append("banned_phrase")
+    if _crime_framing(stripped):
+        errors.append("crime_framing")
+    for raw in NUMBER_RE.findall(stripped):
+        value = parse_number(raw)
+        if value not in allowed:
+            errors.append(f"unknown_number:{int(value) if value.is_integer() else value}")
+    return errors

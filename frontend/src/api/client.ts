@@ -1,5 +1,6 @@
 import type { z } from 'zod'
 import {
+  askSchema,
   conditionUsedSchema,
   envelope,
   explainSchema,
@@ -19,6 +20,7 @@ import {
   type Hourly,
   type Imagined,
   type Area,
+  type AskAnswer,
   type Meta,
   type Report,
   type ReportCategory,
@@ -39,6 +41,8 @@ export function apiBase(): string {
 const TIMEOUT_MS = 8000
 /** Image generation takes tens of seconds; the server itself gives up after 60 s. */
 const IMAGINE_TIMEOUT_MS = 75_000
+/** The server gives Backboard 12 s, then answers with its fallback. */
+const ASK_TIMEOUT_MS = 15_000
 
 export class ApiError extends Error {
   readonly code: string
@@ -150,6 +154,18 @@ export const api = {
       imagineSchema,
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seg_id: id }) },
       IMAGINE_TIMEOUT_MS,
+    ),
+  /** Ask PathPro: the thread id is opaque and sent only when this tab already has one. */
+  ask: (question: string, threadId: string | null): Promise<AskAnswer> =>
+    request(
+      '/ask',
+      askSchema,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(threadId ? { question, thread_id: threadId } : { question }),
+      },
+      ASK_TIMEOUT_MS,
     ),
   areaAt: (lat: number, lon: number, t: string, cond: Condition): Promise<Area> =>
     request(`/areas/lookup?lat=${lat}&lon=${lon}&t=${encodeURIComponent(t)}&cond=${cond}`, areaSchema),

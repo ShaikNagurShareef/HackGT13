@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import SecretStr
 
 from app.api.areas import areas
+from app.api.ask import ask as ask_routes
 from app.api.core import api
 from app.api.envelope import (
     AppError,
@@ -28,7 +29,7 @@ from app.api.reports import reports
 from app.api.safety import safety as safety_routes
 from app.api.transit import transit
 from app.api.walks import walks
-from app.config import Settings, get_settings
+from app.config import BACKEND_DIR, Settings, get_settings
 from app.domain.router import Router
 from app.middleware import RateLimitMiddleware
 from app.repositories.artifacts import load_bundle, load_ride_bundle
@@ -37,6 +38,9 @@ from app.repositories.history import HistoryRepository
 from app.repositories.reports import ReportsRepository
 from app.repositories.safety import load_safety
 from app.repositories.walks import WalksRepository
+from app.services.ask import AskService
+from app.services.ask_corpus import load_allowed_numbers
+from app.services.backboard import Backboard
 from app.services.explain.providers import (
     GeminiProvider,
     GrokProvider,
@@ -89,6 +93,19 @@ def build_voices(cfg: Settings, client: httpx.AsyncClient) -> VoiceChain:
     return VoiceChain((grok, eleven))
 
 
+def build_ask(cfg: Settings, client: httpx.AsyncClient) -> AskService:
+    """Ask PathPro (Backboard); disabled (503) without both a key and an assistant id."""
+    key = secret(cfg.backboard_api_key)
+    return AskService(
+        Backboard(client, key) if key else None,
+        cfg.backboard_assistant_id or None,
+        load_allowed_numbers(BACKEND_DIR.parent),
+        llm_provider=cfg.backboard_llm_provider,
+        model_name=cfg.backboard_model,
+        daily_budget=cfg.ask_daily_budget,
+    )
+
+
 log = logging.getLogger(__name__)
 # httpx logs full URLs at INFO; Geoapify requires its key in the query string.
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -112,6 +129,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             geo_key = cfg.geoapify_api_key.get_secret_value() if cfg.geoapify_api_key else None
             app.state.geocoder = GeocodeService(client, geo_key, cfg.geocode_daily_budget)
             app.state.tts = build_voices(cfg, client)
+            app.state.ask = build_ask(cfg, client)
             app.state.imagine = ImagineService(
                 client,
                 secret(cfg.xai_api_key),
@@ -173,6 +191,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(safety_routes)
     app.include_router(transit)
     app.include_router(imagine_routes)
+    app.include_router(ask_routes)
     app.mount(
         f"/static/{bundle.model_version}",
         StaticFiles(directory=bundle.root),

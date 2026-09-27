@@ -465,3 +465,70 @@ a.btn {
   text-decoration: none;
   color: var(--text);
 }
+
+/* Ask PathPro (Backboard): questions about how PathPro works. */
+.ask {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ask-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ask-suggestions .chip {
+  white-space: normal;
+  text-align: left;
+}
+.ask-log {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ask-log:empty {
+  display: none;
+}
+.ask-turn p {
+  margin: 0;
+  line-height: 1.5;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.ask .ask-q {
+  color: var(--text);
+  font-weight: 600;
+}
+.ask .ask-a {
+  margin-top: 4px;
+}
+.ask-status:empty {
+  display: none;
+}
+.ask-status {
+  margin: 0;
+  color: var(--text-muted);
+}
+.ask-note {
+  margin: 0;
+  font-size: 12px;
+}
+.ask-form {
+  display: flex;
+  gap: 8px;
+}
+.ask-form input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--tap);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-sunk);
+  color: var(--text);
+  font: inherit;
+}
+.ask-form input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}

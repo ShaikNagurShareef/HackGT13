@@ -41,6 +41,18 @@ Status as of Sat Sep 26, 2026, 7:00 AM ET. Submit on Devpost by **Sun 07:30** (h
 - [x] "Grok draws, Gemini checks": Gemini (multimodal, structured JSON output) reviews every Grok Imagine illustration before it is cached or shown. It confirms which planned fixes appear ("Checked by Gemini: shows N of M planned fixes") and rejects images with readable text, logos, or identifiable faces (one retry, then a friendly error). Tests mock all Gemini and xAI calls
 - [ ] Confirm at the MLH table that this prize is offered at HackGT 13 (it's on the MLH page but not on Devpost)
 
+### Backboard: Best Use of Backboard ("Ask PathPro")
+Job: answer questions about how PathPro works, only from its own docs. It never scores a street and never touches routing.
+- [x] `POST /api/ask` on Backboard's `/threads/messages` with `memory: "Readonly"`, so public users can never write the assistant's shared memory; thread ids are opaque UUIDs kept in the browser tab's sessionStorage only
+- [x] Every answer validated before it's shown (banned words, crime framing, every number must appear in the uploaded docs); failures, timeouts, and the daily budget (`ASK_DAILY_BUDGET`, 300) return a fixed pointer to the model card, never raw LLM text
+- [x] Setup tool `python -m app.tools.setup_backboard`: strict system prompt, curated corpus (model card, metrics, safety sources, decisions, data and models, judge Q&A), index polling, five read-only facts in memory; prints only the assistant id and document statuses
+- [x] "Ask PathPro" next to About (phone options sheet and desktop sidebar) with three suggested questions; hidden in `?demo=1`
+- [x] `check_keys` Backboard line; `BACKBOARD_API_KEY` recognized in `deploy/capture_keys.py` when copied as `BACKBOARD_API_KEY=...`; tests mock every Backboard call
+- [ ] Get a Backboard key; set `BACKBOARD_API_KEY` in `backend/.env`
+- [ ] Run `setup_backboard`, confirm every document shows `indexed`, set `BACKBOARD_ASSISTANT_ID`
+- [ ] `check_keys` shows Backboard OK; ask the three suggested questions on pathpro.tech and read the answers
+- [ ] Only then call it live on Devpost (remove the ◇ lines in `docs/devpost_submission.md` if not)
+
 ## HackGT tracks and other sponsors
 
 ### SpaceXAI "Make it Legendary" (Grok, Grok Imagine, Grok Voice; built with Cursor)

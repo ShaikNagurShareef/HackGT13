@@ -1,4 +1,5 @@
 import { About } from '../components/About'
+import { AskPanel } from '../components/ask/AskPanel'
 import { OptionsSheet, type OptionsSheetProps } from '../components/options/OptionsSheet'
 import { SearchSheet } from '../components/search/SearchSheet'
 import type { ModeTabsProps } from '../components/route/ModeTabs'
@@ -9,7 +10,7 @@ import type { Panel } from './useTripActions'
 import type { useTripActions } from './useTripActions'
 
 type Actions = ReturnType<typeof useTripActions>
-type OptionValues = Omit<OptionsSheetProps, 'onAbout' | 'onClearHistory' | 'onClose'>
+type OptionValues = Omit<OptionsSheetProps, 'onAbout' | 'onAsk' | 'onClearHistory' | 'onClose'>
 
 export interface PanelsProps {
   panel: Panel
@@ -24,18 +25,22 @@ export interface PanelsProps {
   safetyMeta?: SafetyMeta | null
   /** Travel-mode chip in the search sheet. */
   modes?: ModeTabsProps | null
+  /** Ask PathPro entry; omitted in demo mode (it needs the live API). */
+  askAvailable?: boolean
 }
 
 /** The one modal sheet that can be open at a time: search, options, or About. */
 export function Panels(props: PanelsProps) {
-  const { panel, meta, actions, routines, canUseLocation, welcome, onDismissWelcome, options, safetyMeta = null, modes = null } = props
+  const { panel, meta, actions, routines, canUseLocation, welcome, onDismissWelcome, options, safetyMeta = null, modes = null, askAvailable = false } = props
   if (!panel) return null
   if (panel.kind === 'about') return <About meta={meta} safetyMeta={safetyMeta} onClose={actions.closePanel} />
+  if (panel.kind === 'ask') return askAvailable ? <AskPanel onClose={actions.closePanel} /> : null
   if (panel.kind === 'options') {
     return (
       <OptionsSheet
         {...options}
         onAbout={() => actions.setPanel({ kind: 'about' })}
+        onAsk={askAvailable ? () => actions.setPanel({ kind: 'ask' }) : undefined}
         onClearHistory={routines.clear}
         onClose={actions.closePanel}
       />

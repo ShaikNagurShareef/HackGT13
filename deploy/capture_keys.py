@@ -26,9 +26,11 @@ PATTERNS: dict[str, re.Pattern[str]] = {
     "ELEVENLABS_VOICE_ID": re.compile(r"^[A-Za-z0-9]{20}$"),
     "GEOAPIFY_API_KEY": re.compile(r"^[a-f0-9]{32}$"),
     "XAI_API_KEY": re.compile(r"^xai-[A-Za-z0-9]{20,}$"),
+    # Backboard publishes no key format: recognized only when copied as BACKBOARD_API_KEY=...
+    "BACKBOARD_API_KEY": re.compile(r"(?!)"),
 }
 # Recognized when copied, but the watcher does not wait for them.
-OPTIONAL: frozenset[str] = frozenset({"XAI_API_KEY"})
+OPTIONAL: frozenset[str] = frozenset({"XAI_API_KEY", "BACKBOARD_API_KEY"})
 REQUIRED = [k for k in PATTERNS if k not in OPTIONAL]
 POLL_S = 0.5
 

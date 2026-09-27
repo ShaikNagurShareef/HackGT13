@@ -13,6 +13,7 @@ import psycopg
 
 from app.config import get_settings
 from app.repositories.reports import ReportsRepository
+from app.services.backboard import BACKBOARD_API
 
 OK, MISSING, FAIL = "OK     ", "MISSING", "FAIL   "
 
@@ -74,6 +75,24 @@ async def check_elevenlabs(
     return (OK, "voice found") if code == 200 else (FAIL, f"HTTP {code} for voice id")
 
 
+async def check_backboard(
+    client: httpx.AsyncClient, key: str | None, assistant_id: str | None
+) -> tuple[str, str]:
+    """Backboard (Ask PathPro): read the assistant (or list assistants), never send a message."""
+    if not key:
+        return MISSING, "BACKBOARD_API_KEY (Ask PathPro hidden)"
+    headers = {"X-API-Key": key}
+    if not assistant_id:
+        code = await _get(
+            client, f"{BACKBOARD_API}/assistants", params={"limit": 1}, headers=headers
+        )
+        if code != 200:
+            return FAIL, f"HTTP {code}"
+        return OK, "key works; set BACKBOARD_ASSISTANT_ID (run app.tools.setup_backboard)"
+    code = await _get(client, f"{BACKBOARD_API}/assistants/{assistant_id}", headers=headers)
+    return (OK, "assistant found") if code == 200 else (FAIL, f"HTTP {code} for assistant")
+
+
 def check_tiger(url: str | None) -> tuple[str, str]:
     if not url:
         return MISSING, "DATABASE_URL (history chart hidden)"
@@ -114,6 +133,9 @@ async def main() -> int:
             "Geoapify": await check_geoapify(client, secret(cfg.geoapify_api_key)),
             "ElevenLabs": await check_elevenlabs(
                 client, secret(cfg.elevenlabs_api_key), cfg.elevenlabs_voice_id
+            ),
+            "Backboard": await check_backboard(
+                client, secret(cfg.backboard_api_key), cfg.backboard_assistant_id
             ),
         }
     results["Tiger Data"] = check_tiger(secret(cfg.database_url))

@@ -212,6 +212,14 @@ export const imagineSchema = z.object({
     .nullish(),
 })
 export type Imagined = z.infer<typeof imagineSchema>
+/** Ask PathPro (Backboard): a validated answer, or the fixed fallback that points to the model card. */
+export const askSchema = z.object({
+  answer: z.string(),
+  thread_id: z.guid().nullable(),
+  source: z.enum(['backboard', 'fallback']),
+  note: z.string(),
+})
+export type AskAnswer = z.infer<typeof askSchema>
 export const areaSchema = z.object({
   cell: z.string(),
   lat: z.number(),

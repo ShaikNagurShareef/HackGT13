@@ -13,11 +13,13 @@ export interface DesktopHomeProps {
   search: Omit<SearchPanelProps, 'autoFocus'>
   options: Omit<OptionsContentProps, 'timeline'>
   onAbout: () => void
+  /** Ask PathPro (Backboard); absent in demo mode. */
+  onAsk?: () => void
   safetyAvailable?: boolean
 }
 
 /** Desktop (≥1024 px) home sidebar: brand, inline search, and the map options in plain view. */
-export function DesktopHome({ suggestion, etaMin, onGo, onDismissSuggestion, search, options, onAbout, safetyAvailable = false }: DesktopHomeProps) {
+export function DesktopHome({ suggestion, etaMin, onGo, onDismissSuggestion, search, options, onAbout, onAsk, safetyAvailable = false }: DesktopHomeProps) {
   return (
     <aside className="desk-sidebar" aria-label="PathPro">
       <SidebarBrand />
@@ -32,6 +34,11 @@ export function DesktopHome({ suggestion, etaMin, onGo, onDismissSuggestion, sea
         <button type="button" className="link-btn" onClick={onAbout}>
           About PathPro
         </button>
+        {onAsk && (
+          <button type="button" className="link-btn" onClick={onAsk}>
+            Ask PathPro
+          </button>
+        )}
         <span className="faint">{scopeLine(safetyAvailable)}</span>
       </footer>
     </aside>

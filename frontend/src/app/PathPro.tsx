@@ -352,6 +352,7 @@ export function PathPro({ data, loadError }: PathProProps) {
             },
             options: { ...optionValues, onClearHistory: routines.clear },
             onAbout: () => actions.setPanel({ kind: 'about' }),
+            onAsk: demo ? undefined : () => actions.setPanel({ kind: 'ask' }),
             safetyAvailable: safety.available,
           }}
           route={routeScreen}
@@ -464,6 +465,7 @@ export function PathPro({ data, loadError }: PathProProps) {
         options={{ ...optionValues, timeline }}
         safetyMeta={safety.meta}
         modes={{ ...modeTabs, durations: undefined }}
+        askAvailable={!demo}
       />
     </main>
   )
