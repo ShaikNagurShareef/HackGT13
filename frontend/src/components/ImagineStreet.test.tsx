@@ -90,6 +90,35 @@ describe('ImagineStreet (Grok Imagine)', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
+  it('shows how many planned fixes Gemini confirmed in the picture', async () => {
+    const check = { by: 'gemini', fixes_shown: ['curb extensions'], fixes_total: 2 }
+    vi.stubGlobal('fetch', jsonFetch({ ...imagined, data: { ...imagined.data, check } }))
+    render(<ImagineStreet segId={4} streetName="Row 1 St" />)
+
+    await userEvent.click(screen.getByRole('button', { name: IMAGINE_BUTTON }))
+
+    const line = await screen.findByText('Checked by Gemini: shows 1 of 2 planned fixes')
+    expect(line).toBeVisible()
+    expect(line.textContent).not.toMatch(BANNED)
+  })
+
+  it('adds no check line when the picture was not checked', async () => {
+    vi.stubGlobal('fetch', jsonFetch({ ...imagined, data: { ...imagined.data, check: null } }))
+    render(<ImagineStreet segId={4} streetName="Row 1 St" />)
+
+    await userEvent.click(screen.getByRole('button', { name: IMAGINE_BUTTON }))
+
+    expect(await screen.findByText(IMAGINE_LABEL)).toBeInTheDocument()
+    expect(screen.queryByText(/Checked by Gemini/)).not.toBeInTheDocument()
+  })
+
+  it('rejects a check from anyone but Gemini', async () => {
+    const check = { by: 'someone', fixes_shown: [], fixes_total: 2 }
+    vi.stubGlobal('fetch', jsonFetch({ ...imagined, data: { ...imagined.data, check } }))
+
+    await expect(api.imagineSegment(4)).rejects.toMatchObject({ code: 'BAD_RESPONSE' })
+  })
+
   it('the api client validates the response with zod', async () => {
     vi.stubGlobal('fetch', jsonFetch({ success: true, data: { ...imagined.data, image_url: 42 } }))
 
