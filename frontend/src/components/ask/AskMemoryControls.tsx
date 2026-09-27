@@ -92,7 +92,7 @@ export function AskMemoryControls({ memory, onMessage }: AskMemoryControlsProps)
           <Icon name="info" size={18} />
         </button>
         {memory && (
-          <button type="button" className="text-btn ask-forget" disabled={busy} onClick={() => void forget()}>
+          <button type="button" className="link-btn ask-forget" disabled={busy} onClick={() => void forget()}>
             Forget me
           </button>
         )}

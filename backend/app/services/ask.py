@@ -70,7 +70,8 @@ CONTEXT_HEADER = "Context from PathPro's model (for this question only):"
 MEMORY_NOTE = (
     "Memory is on for this person (they opted in). Remember only travel preferences they state "
     "(usual times, travel mode, well-lit or busier streets, accessibility needs), never places. "
-    "When they share one, confirm briefly that you'll remember it until they tap Forget me."
+    "When they share one, confirm briefly that you'll remember it until they tap Forget me. "
+    "Never say you don't store or remember their preferences."
 )
 
 

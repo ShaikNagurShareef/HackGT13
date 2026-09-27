@@ -31,7 +31,9 @@ BANNED = (
     "race",
     "demographic",
 )
-_BANNED_RE = re.compile(r"\b(" + "|".join(re.escape(b) for b in BANNED) + r")\b", re.IGNORECASE)
+_BANNED_RE = re.compile(
+    r"\b(" + "|".join(re.escape(b) for b in BANNED) + r")(?:e?s)?\b", re.IGNORECASE
+)
 _NUMBER_RE = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?)(?![\w])")
 _SENTENCE_RE = re.compile(r"[.!?]+(?:\s|$)")
 # Numbers that are clock-time words ("10 PM") are verified against the evidence time label.
@@ -101,8 +103,10 @@ ASK_NEGATABLE = frozenset({"income", "demographic"})
 ASK_BANNED = tuple(b for b in BANNED if b not in ASK_ALLOWED | ASK_NEGATABLE) + ASK_EXTRA_BANNED
 _ASK_NEGATABLE_RE = re.compile(r"\b(" + "|".join(sorted(ASK_NEGATABLE)) + r")s?\b", re.IGNORECASE)
 _ASK_BANNED_RE = re.compile(
-    r"\b(" + "|".join(re.escape(b) for b in ASK_BANNED) + r")\b", re.IGNORECASE
+    r"\b(" + "|".join(re.escape(b) for b in ASK_BANNED) + r")(?:e?s)?\b", re.IGNORECASE
 )
+# Code identifiers such as lit_and_busy are internal names, never user-facing words.
+_INTERNAL_TERM_RE = re.compile(r"\b[a-z]+(?:_[a-z0-9]+)+\b")
 _CRIME_FRAMING_RE = re.compile(
     r"\bhigh[- ]crime\b"
     r"|\bcrime[- ]?(?:ridden|infested|hot ?spots?|zones?|areas?|neighbou?rhoods?)\b"
@@ -248,4 +252,6 @@ def ask_validation_errors(
         errors.append("banned_phrase")
     if _crime_framing(stripped):
         errors.append("crime_framing")
+    if _INTERNAL_TERM_RE.search(_CORPUS_FILE_RE.sub(" ", stripped)):
+        errors.append("internal_term")
     return errors + _ask_number_errors(stripped, allowed, evidence, question)
