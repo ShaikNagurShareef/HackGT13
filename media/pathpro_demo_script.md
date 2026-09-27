@@ -70,6 +70,8 @@ The sponsor card on screen lists what each sponsor does:
 
 # v2: full demo with team intro, captions, motivation, risks, ROI and sponsor section (6:30)
 
+> **Outdated team intro, re-cut needed.** The v2 video (and its 30-second cut) opens and closes with a four-person "CodingClaws" team card and a spoken team introduction. That is wrong: PathPro is a solo build by Nagur Shareef Shaik, under the team name Coding Claws (Georgia State University). The rows below record what v2 actually shows, with the other names left out; the video files and captions are unchanged. v3 (below) replaces the intro and end card.
+
 - **Video:** `media/pathpro_demo_v2.mp4`, 1920×1080, 30 fps, H.264 + AAC, mixed to about −16 LUFS.
 - **Captions:** burned into the video, and also available as `media/pathpro_demo_v2.srt` and `media/pathpro_demo_v2.vtt`.
 - **Voice:** ElevenLabs `eleven_multilingual_v2` with the same "Sarah" voice. Lines in *italics* are the app's own spoken output (Listen and walk alerts), filtered slightly so they sound like a phone speaker.
@@ -82,7 +84,7 @@ The sponsor card on screen lists what each sponsor does:
 
 | Time | Scene | On screen | Narration |
 | --- | --- | --- | --- |
-| 0:00 | team | Title card: “CodingClaws at HackGT 13 presents PathPro”, the tagline, and the team: Nagur Shareef Shaik · Sahith Reddy Thummala · Pranav Nagothu · Geethanjali Nagaboina. | We're CodingClaws: Nagur, Sahith, Pranav, and Geethanjali. And this is PathPro. |
+| 0:00 | team (outdated) | Title card: “CodingClaws at HackGT 13 presents PathPro”, the tagline, and a four-person team list (outdated; see the note above). | A spoken team introduction naming four people (outdated), then “And this is PathPro.” |
 | 0:06 | open | Desktop Risk Tides with the title card, then the phone preview walk at night: “Why we built PathPro”. | Pedestrian deaths in Atlanta are a public-health problem. Many of us walk between Klaus, Tech Square, and Midtown MARTA late at night. Our friends, especially women, already plan routes around well-lit, busier streets, and text each other when they get home. Yet every navigation app asks one question: what's fastest? So we built PathPro: one map of the risks on your way, from traffic and darkness to reported crimes and street hazards, with better tools for getting around alone at night. |
 | 0:37 | diff | Comparison card (generic categories, no brands): Map apps: fastest route only · Crime maps: label whole neighborhoods · Location-sharing apps: no route · highlighted PathPro row: lower-risk routes · every risk on one map · explained & fair · walk + ride + MARTA. | Map apps optimize for time. Crime maps label whole neighborhoods. Location-sharing apps don't plan your route. PathPro does it together, honestly: a crash-trained model that beats the City's own High Injury Network, explains every score, and never routes around neighborhoods. |
 | 0:55 | usability | Live phone: Where to? → Midtown MARTA from “Your location” (two taps). Then the desktop sidebar, then the on-device routine card “Heading back to Klaus Building?”. | Open pathpro.tech in any phone browser. There's no app to install and no login. Two taps take you from opening it to a route that starts at your GPS location. It works on desktop too, with keyboard and screen-reader labels and large touch targets, and your walking patterns stay on your phone. |
@@ -102,7 +104,7 @@ The sponsor card on screen lists what each sponsor does:
 | 5:25 | mongo | **MongoDB Atlas:** live “Report a street issue” chips (not submitted), then a card: 2dsphere `$geoWithin` · 14-day TTL · atomic upsert confirmations · `$group` summary · Share my walk TTL 6 h, hashed tokens, optimistic concurrency. | MongoDB Atlas holds what walkers tell us. Street reports use a geo index for map queries, expire after 14 days, and repeats become confirmations in one atomic upsert. Shared walks expire in 6 hours. Geo plus TTL fits short-lived, user-generated data. |
 | 5:45 | eleven | **ElevenLabs:** navigation banner, with the real alert clip replayed. | ElevenLabs gives PathPro its voice, for explanations and for walk alerts like this one. *High traffic risk ahead. Fowler Street Northwest and Ferst Drive Northwest, in 250 m.* |
 | 5:57 | llm | **Groq + Gemini:** live Groq explanation on the street sheet, then the pipeline card: evidence JSON → Groq gpt-oss-120b → Gemini fallback → validator → sentence or template. | Explanations come from Groq's GPT-OSS 120B, for sub-second answers, with Gemini as the fallback. A validator rejects any sentence with a number that isn't in the evidence, so the LLM never produces a risk number. |
-| 6:14 | close | End card: PathPro · “See the risks on your way, before you go.” · Walk · Bike · E-bike · Scooter · pathpro.tech · github.com/ShaikNagurShareef/PathPro · Built by CodingClaws at HackGT 13 · Nagur Shareef Shaik · Sahith Reddy Thummala · Pranav Nagothu · Geethanjali Nagaboina · 911 line (held about 5 s). | That's PathPro: the risks on your way, for every street, every hour, and every way you get around Atlanta. Try it at pathpro.tech. See the risks on your way, before you go. |
+| 6:14 | close | End card: PathPro · “See the risks on your way, before you go.” · Walk · Bike · E-bike · Scooter · pathpro.tech · github.com/ShaikNagurShareef/PathPro · a “Built by CodingClaws at HackGT 13” credit with a four-person list (outdated) · 911 line (held about 5 s). | That's PathPro: the risks on your way, for every street, every hour, and every way you get around Atlanta. Try it at pathpro.tech. See the risks on your way, before you go. |
 
 ## v2 sources for every number
 
@@ -129,7 +131,7 @@ The sponsor card on screen lists what each sponsor does:
 - **Bike lanes in the ride model:** `data/src/pathpulse_data/ride/run.py` and `ride/features.py` use OSM and City bike-infrastructure classes.
 - **"Beats the City’s own High Injury Network":** walk model 74.3% vs HIN 53.8% capture at 10% of street length (2024 holdout, `docs/metrics.json`).
 - **Tagline:** "See the risks on your way, before you go." It matches the app and docs.
-- **Motivation:** the framing the team chose (no specific incident or person is described). The video uses "we"; AI tools are disclosed on Devpost.
+- **Motivation:** the framing I chose (no specific incident or person is described). The v2 narration uses "we" because of the outdated team framing; v3 uses "I". AI tools are disclosed on Devpost.
 
 ## v2 30-second cut (0:35)
 
@@ -137,22 +139,29 @@ The 30-second cut is `media/pathpro_30s.mp4`, with captions burned in and in `me
 
 | Time | On screen | Narration |
 | --- | --- | --- |
-| 0:00 | Team card: CodingClaws at HackGT 13 presents PathPro, with the four names | We're CodingClaws: Nagur, Sahith, Pranav, and Geethanjali. And this is PathPro. |
+| 0:00 | Team card: CodingClaws at HackGT 13 presents PathPro, with a four-person list (outdated) | A spoken team introduction naming four people (outdated), then “And this is PathPro.” |
 | 0:05 | Risk Tides across the whole city, with the title and tagline | One map of the risks on your way: traffic, darkness, reported crimes, and street hazards. For walking, biking, and scooters. |
 | 0:13 | Phone route card: **54% less traffic risk**, +4 min | Klaus to Midtown MARTA on a rainy Friday night: a route four minutes longer, with 54% less traffic risk. |
 | 0:20 | 2024 holdout chart: PathPro 74.3% [70.5–78.3] vs HIN 53.8% | On 2024 crashes it never saw, the 10% of streets it ranks highest held 74% of pedestrian crashes. The City's High Injury Network: 54%. |
-| 0:30 | End card: tagline, pathpro.tech, GitHub, CodingClaws credits | PathPro. See the risks on your way, before you go. |
+| 0:30 | End card: tagline, pathpro.tech, GitHub, team credits (outdated) | PathPro. See the risks on your way, before you go. |
 
-# v3 (planned): Grok Voice narration and a "Make it Legendary" scene
+# v3 (planned): solo re-cut with Grok Voice and the new features
 
-- **Voice:** Grok Voice TTS (`POST /v1/tts`). Audition the `eve`, `ara`, `sal`, `rex` and `leo` voices, and use speech tags (`[pause]`, `[breath]`, `<soft>`) for natural pacing. The team picks the voice. Captions are timed with `with_timestamps`.
+v3 fixes v2's outdated team intro and adds the features built on Saturday evening.
+
+- **Intro and end card (replaces v2's team scenes):** “PathPro, built solo by Nagur Shareef Shaik (Coding Claws, Georgia State University) at HackGT 13.” Narration is in first person singular: “I'm Nagur, and this is PathPro.” The end card credits one person. Re-cut the 30-second version the same way.
+- **Voice:** Grok Voice TTS (`POST /v1/tts`). Audition the `eve`, `ara`, `sal`, `rex` and `leo` voices, and use speech tags (`[pause]`, `[breath]`, `<soft>`) for natural pacing. I pick the voice. Captions are timed with `with_timestamps`.
 - **Framing:** SpaceX engineering culture (first principles, test like you fly, engine-out redundancy, reusability, public-health mission). Show no SpaceX or xAI logos beyond "Grok" as the name of the model, and imply no partnership.
-- **Labels:** every Grok Imagine frame carries "AI illustration by Grok Imagine — not a real photo".
-- **Gate:** record only after Grok is live on pathpro.tech.
+- **Labels:** every Grok Imagine frame carries "AI illustration of evidence-based street fixes by Grok Imagine — not a real photo".
+- **Gate:** record only after Grok, the Gemini image check, and Ask PathPro are deployed and verified on pathpro.tech. As of Sat Sep 26, night, they are built and tested (verified against the real APIs locally) but not deployed.
+- **Wording:** "traffic risk", "lower-risk"; never "safe", "safest", "unsafe", "dangerous area", or "guaranteed". Any number spoken comes from `docs/metrics.json`, the model card, or the app's own output.
 
 | Time | Scene | On screen | Narration |
 | --- | --- | --- | --- |
-| after 0:55 | legendary | "Mission control for every walk home." Risk Tides scrubbing through the night as a launch-window board, then the route card as a go/no-go: +4 min · 54% less traffic risk. | We built PathPro like a launch team: first principles, test like you fly, and a clear go/no-go. Four extra minutes, 54% less traffic risk. |
+| 0:00 | intro (replaces v2 “team”) | Title card: “PathPro · built solo by Nagur Shareef Shaik · Coding Claws · HackGT 13”, and the tagline. | I'm Nagur, and this is PathPro. |
+| after 0:55 | legendary | "Mission control for every walk home." Risk Tides scrubbing through the night as a launch-window board, then the route card as a go/no-go: +4 min · 54% less traffic risk. | I built PathPro like a launch team: first principles, test like you fly, and a clear go/no-go. Four extra minutes, 54% less traffic risk. |
 | after 1:40 | callout | Navigation banner with the Grok Voice callout. | *High traffic risk ahead. Tenth Street Northwest, in 120 m.* Callouts keep your eyes on the street. |
-| before 4:35 | imagine | Street sheet → "Imagine this street redesigned" → the Grok Imagine image (labeled), then a short Grok Imagine video of the redesign. | For city planners: simulate before you build. Grok Imagine renders evidence-based fixes for this exact street, like crosswalks, curb extensions, and lighting, before a dollar is spent on concrete. |
+| before 4:35 | imagine | Street sheet → "Imagine this street redesigned" → the Grok Imagine image with its "not a real photo" label and the "Checked by Gemini: shows N of M planned fixes" line. | For city planners: simulate before you build. Grok Imagine draws evidence-based fixes for this exact street, like crosswalks, curb extensions, and lighting. Gemini checks every picture before it's shown. |
+| before 4:35 | ask | "Ask about this street" → Ask PathPro's answer with its sources line; then the "Remember my preferences" switch and "Forget me". | Ask PathPro answers from PathPro's own model card and this street's evidence, and every answer is checked for invented numbers. Memory is off unless you turn it on, and Forget me deletes it. |
 | 5:57 | llm | Pipeline card: Grok → Groq → Gemini → template, then the validator. | Grok writes each explanation from the street's own evidence, and if any engine fails, the next one takes over. The risk score always comes from the model. |
+| 6:14 | close (replaces v2 end card) | End card: tagline, pathpro.tech, GitHub, “Built solo by Nagur Shareef Shaik · Coding Claws · HackGT 13”, 911 line. | That's PathPro. See the risks on your way, before you go. |
