@@ -52,9 +52,9 @@ PathPro shows five kinds of risk:
 
 That's it. PathPro starts from **Your location** and shows the lower-risk route next to the fastest one. Tap **Start** to walk it.
 
-![First visit on a phone: the map colored by traffic risk, the "Where to?" search pill, and the welcome card.](img/01-phone-home-welcome.png)
+![First visit on a phone: the map colored by traffic risk, the "Where to?" search pill, the welcome card, and the Ask PathPro agent button.](img/01-phone-home-welcome.png)
 
-![Two taps later: "Your location" to Midtown MARTA. The PathPro route takes 3 more minutes and has 54% less traffic risk than the fastest route.](img/02-phone-route-your-location.png)
+![Two taps later: Home Park to Midtown MARTA, Saturday 5:30 PM, dry. The PathPro route takes 4 more minutes and has 51% less traffic risk than the fastest route. This start was picked by hand because location was off; with location on, it reads "Your location".](img/02-phone-route-your-location.png)
 
 ## Getting around the screen
 
@@ -99,9 +99,9 @@ With the search box empty, the **Where to?** sheet lists:
 
 The small icons under the search box choose how you travel (walk, bike, e-bike, scooter) before you pick a place.
 
-![Choose a start: "Your location" is always the first choice when location is on.](img/04-phone-choose-start.png)
+![Choose a start with location off: a note, search, and popular places near Georgia Tech. With location on, "Your location" is the first choice.](img/04-phone-choose-start.png)
 
-![The "Where to?" sheet: a suggestion for now, saved Home and Work, recent places, and popular places.](img/05-phone-where-to.png)
+![The "Where to?" sheet: the travel-mode icons, suggestions for now, saved Home and Work, recent places, and popular places.](img/05-phone-where-to.png)
 
 ### Swap and go back
 
@@ -118,12 +118,12 @@ Under the trip header is a row of four large mode buttons: **Walk · Bike · E-b
 
 **Long walks get faster options.** When the walk is longer than about 25 minutes, the route card adds:
 
-- a **MARTA hand-off** card, for example *Faster with MARTA: walk 17 min to Midtown station …then from Inman Park/Reynoldstown station, 1 min walk*. Tap it to plan the walk to that station.
-- a **Try Bike** chip (for example *Try Bike: ~25 min*). Tap it to switch to the Bike tab.
+- a **MARTA hand-off** card, for example *Faster with MARTA: walk 19 min to North Avenue station …then from Midtown station, 21 min walk*. Tap it to plan the walk to that station.
+- a **Try Bike** chip (for example *Try Bike: ~14 min*). Tap it to switch to the Bike tab.
 
-![A long walk from Georgia Tech to Inman Park: 81 minutes on foot, with the MARTA hand-off card and the "Try Bike" chip.](img/06-phone-walk-marta-handoff.png)
+![A long walk from the Student Center (CULC) to Piedmont Park, Friday 10:30 PM, wet: 50 minutes on foot, with the MARTA hand-off card and the "Try Bike" chip.](img/06-phone-walk-marta-handoff.png)
 
-![The same trip on the Bike tab: "27 min ride · 73% less traffic risk" for 4 extra minutes, over the ride risk map.](img/07-phone-bike-route.png)
+![The same trip on the Bike tab: "15 min ride · 75% less traffic risk" for 3 extra minutes, over the ride risk map.](img/07-phone-bike-route.png)
 
 ## Reading the route card
 
@@ -176,7 +176,7 @@ Tap any street on the map, or any street chip, to open its sheet:
 - **Street redesign ideas** on walking streets, with **Imagine this street redesigned** (see [Imagine this street redesigned](#imagine-this-street-redesigned))
 - **How is this calculated?**, which opens **How PathPro works**, including the model's accuracy and limits
 
-![Why this route: the explanation, the stretches the PathPro route avoids, and the personal-safety summary.](img/09-phone-why-this-route.png)
+![Why this route: the explanation, the "Ask about this route" pill, and the high-risk stretches the PathPro route avoids.](img/09-phone-why-this-route.png)
 
 ![A street sheet on the Klaus Building to Midtown MARTA trip: the score dial, the explanation, Listen and the "Ask about this street" pill, and factor bars that add up to the score.](img/10-phone-street-why.png)
 
@@ -283,7 +283,7 @@ This section appears on walking streets only, and is hidden in the offline demo.
 
 **No GPS? It previews instead.** If location is off, or you're far from the route, **Start** plays a sped-up **Preview walk** (or **Preview ride**) along the route with the same banners. The line under Start explains why, for example *Location is off, so Start previews the walk.* You can also preview any time with **Preview walk** under **Why?**.
 
-![Navigation (preview) warns before a high-risk stretch: "High traffic risk ahead · Fowler Street Northwest and Ferst Drive Northwest in 280 m".](img/11-phone-navigation-alert.png)
+![Navigation (preview) warns before a high-risk stretch: "High traffic risk ahead · Fowler Street Northwest and Ferst Drive Northwest in 290 m".](img/11-phone-navigation-alert.png)
 
 ## Learned routines
 
@@ -416,7 +416,7 @@ Open **Map options** with the layers button on a phone. On a desktop, the same c
 
 ![Map options: conditions, departure time, route preference, and map mode.](img/20-phone-map-options.png)
 
-![Further down: Risk Tides, the legend, Privacy with Clear history, and About PathPro.](img/21-phone-map-options-privacy.png)
+![Further down: the map mode, Risk Tides, the legend, Privacy with Clear history, and Ask PathPro and About PathPro at the bottom.](img/21-phone-map-options-privacy.png)
 
 ## Privacy
 
