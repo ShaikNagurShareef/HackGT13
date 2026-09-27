@@ -2,10 +2,13 @@
 
 Each section below is one field of the Devpost form, in the order Devpost asks for it. `docs/devpost.md` is the long draft this is condensed from; every number here comes from `docs/metrics.json` or the model card.
 
+**Live status (Sat Sep 26, night):** Grok (explanations, Grok Voice, Grok Imagine), the Gemini image check, and Ask PathPro on Backboard are built and tested, and Grok, Gemini, and Backboard were verified against the real APIs locally. None of them is deployed to pathpro.tech yet.
+
 **Before you paste:**
-- [ ] Grok and Gemini are deployed and verified live on pathpro.tech. If not, delete the "Grok" and "Gemini" lines marked ⚑ first.
-- [ ] Ask PathPro (Backboard) tested live with a real key: `setup_backboard`, then `check_keys`, then one real question on pathpro.tech. If not, delete the "Backboard" lines marked ◇ first.
-- [ ] Demo video uploaded to YouTube (unlisted is fine) with `media/pathpro_demo_v2.srt` attached.
+- [ ] Grok and the Gemini image check are deployed and verified live on pathpro.tech. If not, delete the "Grok" and "Gemini" lines marked ⚑ first.
+- [x] Ask PathPro (Backboard) tested against the real API locally: `setup_backboard`, `check_keys`, real questions, and opt-in memory keeping a stated travel preference.
+- [ ] Ask PathPro deployed and one real question answered on pathpro.tech. If not, delete the "Backboard" lines marked ◇ first, and don't tick the Backboard prize.
+- [ ] Demo video uploaded to YouTube (unlisted is fine) with `media/pathpro_demo_v2.srt` attached. The v2 video's team cards are outdated (PathPro is a solo build); prefer the v3 re-cut if it's ready.
 - Solo build (team name Coding Claws), so there's no one to invite.
 
 ---
@@ -59,7 +62,8 @@ A few more things I built because people asked for them:
 - Share my walk, so a friend can follow along, and a check-in if you're running late, with 911 one tap away.
 - Routines that stay on your phone. After a couple of walks it will ask "Heading back to Klaus?"
 - Street reports (blocked sidewalk, signal out, flooding) that stay up for 14 days.
-- For city planners: tap "Imagine this street redesigned" and Grok Imagine draws what that street could look like with crosswalks, curb extensions, or better lighting. Gemini looks at the picture before it's shown, to confirm it shows the planned fixes and nothing it shouldn't.
+- For city planners: tap "Imagine this street redesigned" and Grok Imagine draws what that street could look like with crosswalks, curb extensions, or better lighting. Gemini looks at the picture before it's shown, to confirm it shows the planned fixes and nothing it shouldn't. ⚑
+- Ask PathPro: ask how PathPro works, or tap "Ask about this street" (or route, or area) to ask about what's on screen. It answers from PathPro's own docs, and if you turn memory on, it remembers your stated travel preferences, and only those, until you tap "Forget me". ◇
 
 ![Share my walk](https://raw.githubusercontent.com/ShaikNagurShareef/PathPro/main/docs/images/gallery/08-share-my-walk-follow.png)
 *Share my walk: a friend follows your walk live from a link.*
@@ -79,7 +83,7 @@ I pulled about 250,000 public crash records from eight sources (ARC, the City of
 
 The model predicts crashes per street while accounting for how many people actually walk there. It's a Poisson GLM plus a monotone LightGBM, validated with spatial blocks, then blended with each street's own history using Empirical Bayes. A second model handles hour, day, darkness, and rain. I used no demographic or income data anywhere.
 
-The AI features sit on top of the model; they don't replace it. Grok writes the "Why?" text from the street's own evidence, and a validator throws out any sentence containing a number that isn't in that evidence, so the score always comes from the model. Grok Voice reads the navigation alerts, and Grok Imagine draws the redesigns. If a provider is down, explanations fall back to Groq, then Gemini, then a plain template, and the voice falls back to ElevenLabs and then the phone's built-in voice.
+The AI features sit on top of the model; they don't replace it. Grok writes the "Why?" text from the street's own evidence ⚑, and a validator throws out any sentence containing a number that isn't in that evidence, so the score always comes from the model. Grok Voice reads the navigation alerts, and Grok Imagine draws the redesigns ⚑. If a provider is down, explanations fall back to Groq, then Gemini, then a plain template, and the voice falls back to ElevenLabs and then the phone's built-in voice.
 
 The rest of the stack:
 
@@ -87,13 +91,13 @@ The rest of the stack:
 - The domain is pathpro.tech. Say it out loud: "path protect."
 - Tiger Data (TimescaleDB + PostGIS) holds 220,594 crash rows and powers each street's crashes-by-hour chart through a continuous aggregate.
 - MongoDB Atlas stores street reports and shared walks, with TTL indexes so old ones clean themselves up.
-- Backboard powers "Ask PathPro" ◇, a small panel where anyone can ask how PathPro works. I gave a Backboard assistant the model card, metrics, and design docs, plus a few fixed facts in its memory. Public questions use read-only memory, so no visitor can change what it remembers. Every answer goes through a validator (banned words, crime framing, and every number has to appear in those docs); anything that fails is replaced with a pointer to the model card.
+- Backboard powers "Ask PathPro" ◇. I gave a Backboard assistant the model card, metrics, and design docs, plus a few fixed facts in its memory. Questions can carry the street, route, or area on screen and the live conditions, built on the server with no coordinates. Public questions use read-only memory, so no visitor can change what it knows. Memory is opt-in: it gives that browser its own private copy of the assistant, which keeps only stated travel preferences (never places), is never written by questions about a street, route, or area, and is deleted by "Forget me". Every answer goes through a validator (banned words, crime framing, and every number has to appear in the docs or the on-screen evidence); anything that fails is replaced with a pointer to the model card. Each visitor gets 20 questions a day.
 - The frontend is React, TypeScript, MapLibre, and deck.gl. Routing is Dijkstra on a SciPy sparse graph, about 150 ms at the median for both routes.
 
 ![Crashes by hour from Tiger Data](https://raw.githubusercontent.com/ShaikNagurShareef/PathPro/main/docs/images/gallery/tiger-hourly.png)
 *When crashes happened on a street, served from a Tiger Data continuous aggregate.*
 
-I wrote tests before code the whole way through (about 1,145 of them) and ran separate review passes for the code, the ML, and security.
+I wrote tests before code the whole way through (about 1,506 of them: 237 data, 628 API, 622 web, 19 end-to-end) and ran separate review passes for the code, the ML, and security.
 
 ## Safety data, handled carefully
 
@@ -110,6 +114,7 @@ Lighting data covers only about 4% of streets. Where the data doesn't know, Path
 - A mentor tried my first version on their phone and told me it wasn't intuitive. They were right. I rebuilt the interface that afternoon around GPS, a simple route card, and turn-by-turn walking.
 - My routes looked like zigzags. OSMnx stores many street geometries backwards, so I was drawing every other segment in reverse and overstating distance by 1.6×. It's fixed, and a test guards it now.
 - My first confidence intervals were too narrow. Resampling by spatial block fixed that. I also found that rain matters less than I expected, and I report it.
+- Giving Ask PathPro a memory without turning it into a location log. Only plain questions can write memory, and it keeps stated preferences only.
 
 ## What I'm proud of
 
@@ -128,6 +133,8 @@ Wheelchair and stroller routing, better lighting data through the City or Georgi
 
 (Devpost allows 25) python, fastapi, react, typescript, maplibre, deck.gl, lightgbm, scikit-learn, statsmodels, osmnx, geopandas, grok, grok-imagine, grok-voice, xai, gemini, groq, elevenlabs, timescaledb, postgis, tiger-data, mongodb-atlas, vultr, playwright, cursor
 
+(As entered. If Backboard goes live, swap `cursor` or `statsmodels` for `backboard` to stay within 25.)
+
 ## 6. "Try it out" links
 
 - https://pathpro.tech
@@ -136,34 +143,37 @@ Wheelchair and stroller routing, better lighting data through the City or Georgi
 
 ## 7. Video demo link
 
-The YouTube URL of `media/pathpro_demo_v2.mp4`, or v3 once it's recorded with Grok Voice.
+The YouTube URL of the v3 re-cut once it's recorded (solo intro, Grok Voice, the new features). Until then `media/pathpro_demo_v2.mp4`, whose team cards are outdated.
 
 ## 8. Image gallery (upload in this order; the caption is the first line)
 
 1. `docs/images/gallery/02-phone-route-comparison.png`: "Two taps to a lower-risk route: +4 min, 54% less traffic risk"
 2. Grok Imagine redesign, a screenshot of the street sheet with the image and the "Checked by Gemini" line ⚑ (take it after the deploy)
-3. `docs/images/gallery/03-phone-navigation-alert.png`: "Walking navigation with spoken high-traffic-risk callouts"
-4. `docs/images/gallery/04-desktop-risk-tides-home.png`: "Risk Tides: traffic risk hour by hour across Atlanta"
-5. `docs/images/gallery/05-desktop-route-explanation.png`: "Why? Factor bars that add up exactly, plus a grounded explanation"
-6. `docs/images/gallery/06-personal-safety-fairness-help-points.png`: "Safety context with a fairness note, never used to route"
-7. `docs/images/gallery/tiger-hourly.png`: "When crashes happened here, from a Tiger Data continuous aggregate"
-8. `docs/images/gallery/08-share-my-walk-follow.png`: "Share my walk: a friend follows along live"
-9. `docs/images/gallery/01-phone-home-routine-suggestion.png`: "Learns your routine, on your phone only"
-10. `docs/images/gallery/07-city-pulse-area-score-live.png`: "City Pulse: area scores for all 3,537 hexes"
+3. Ask PathPro answering "Ask about this street", with its sources line ◇ (take it after the deploy)
+4. `docs/images/gallery/03-phone-navigation-alert.png`: "Walking navigation with spoken high-traffic-risk callouts"
+5. `docs/images/gallery/04-desktop-risk-tides-home.png`: "Risk Tides: traffic risk hour by hour across Atlanta"
+6. `docs/images/gallery/05-desktop-route-explanation.png`: "Why? Factor bars that add up exactly, plus a grounded explanation"
+7. `docs/images/gallery/06-personal-safety-fairness-help-points.png`: "Safety context with a fairness note, never used to route"
+8. `docs/images/gallery/tiger-hourly.png`: "When crashes happened here, from a Tiger Data continuous aggregate"
+9. `docs/images/gallery/08-share-my-walk-follow.png`: "Share my walk: a friend follows along live"
+10. `docs/images/gallery/01-phone-home-routine-suggestion.png`: "Learns your routine, on your phone only"
+11. `docs/images/gallery/07-city-pulse-area-score-live.png`: "City Pulse: area scores for all 3,537 hexes"
 
-## 9. Submission form questions
+## 9. Submission form questions (as entered)
 
 - **Schools:** Georgia State University
 - **General track (one):** Oracle of the Deep - ML/AI
 - **Sponsor track 1:** Aramco - A Marina's Mission
-- **Sponsor track 2:** SpaceXAI - Make it Legendary ⚑ (the form allows only two sponsor tracks; Notability's prize is "Best Use of Notability", which we don't use)
-- **MLH prizes:** Best use of ElevenLabs, Gemini API ⚑ (Gemini project number 1091754630519), TigerData, Vultr, MongoDB Atlas, Backboard ◇ (Ask PathPro). The .tech prize is entered through the domain question.
+- **Sponsor track 2:** SpaceXAI - Make it Legendary ⚑ (the form allows only two sponsor tracks; Notability's prize is "Best Use of Notability", which PathPro doesn't use)
+- **MLH prizes (ticked):** Best use of ElevenLabs, Gemini API (Gemini project number 1091754630519, submitted on the form), TigerData, Vultr, MongoDB Atlas. The .tech prize is entered through the domain question.
+- **MLH prize to tick after deploy:** Backboard ◇ (Ask PathPro).
 - **AI tools this weekend (shown in the gallery):** OpenAI (gpt-oss via Groq), Anthropic, Gemini, ElevenLabs, Other (xAI Grok, Cursor)
-- **AI tools used:** AI coding assistants (Claude Code, Cursor) during development; Grok models, Grok Imagine, Grok Voice, Gemini and Backboard ◇ in the product. I followed a test-first workflow with independent review; scope, product decisions (including the safety layer and its safeguards), and review were mine.
+- **AI tools used:** AI coding assistants (Claude Code, Cursor) during development; Grok models, Grok Imagine, Grok Voice, Gemini and Backboard in the product. I followed a test-first workflow with independent review; scope, product decisions (including the safety layer and its safeguards), and review were mine.
 - **Domain (.tech):** pathpro.tech
 - **Data credits:** crash data from ARC, the City of Atlanta, Central Atlanta Progress, and Georgia Tech open data; Atlanta Police open data; OpenStreetMap contributors. The full list is in the README and `docs/safety_sources.md`.
 
 ## 10. After submitting
 
+- Deploy, verify Grok, the Gemini check, and Ask PathPro on pathpro.tech, then remove the ⚑ and ◇ markers (or the lines) and tick the Backboard prize.
 - Paste the Devpost link at expo.hexlabs.org.
 - Notability: attach `docs/process/process_notes.pdf` per the sponsor's instructions.

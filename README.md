@@ -10,10 +10,10 @@
 
 | Video | Length | Captions |
 | --- | --- | --- |
-| [**Full demo**: team, motivation, how PathPro differs, the app on phone and desktop, every risk it shows, who it's for, results and ROI, and one scene per sponsor](media/pathpro_demo_v2.mp4) | 6:30 | [SRT](media/pathpro_demo_v2.srt) · [VTT](media/pathpro_demo_v2.vtt) |
+| [**Full demo (v2)**: motivation, how PathPro differs, the app on phone and desktop, every risk it shows, who it's for, results and ROI, and one scene per sponsor](media/pathpro_demo_v2.mp4) | 6:30 | [SRT](media/pathpro_demo_v2.srt) · [VTT](media/pathpro_demo_v2.vtt) |
 | [**30-second cut**](media/pathpro_30s.mp4) | 0:35 | [SRT](media/pathpro_30s.srt) · [VTT](media/pathpro_30s.vtt) |
 
-Both videos have ElevenLabs narration and burned-in captions, and are stored with Git LFS. Clone with `git lfs install` first, or open a file on GitHub and choose "View raw" to play it. The timestamped narration and the source of every number are in [media/pathpro_demo_script.md](media/pathpro_demo_script.md).
+Both videos have ElevenLabs narration and burned-in captions, and are stored with Git LFS. Their opening and closing cards still show an outdated four-person team; PathPro is a solo build, and a v3 re-cut (with Grok Voice and the new features) is planned. Clone with `git lfs install` first, or open a file on GitHub and choose "View raw" to play it. The timestamped narration and the source of every number are in [media/pathpro_demo_script.md](media/pathpro_demo_script.md).
 
 ## Documentation
 
@@ -32,7 +32,7 @@ PathPro is a pedestrian traffic-risk forecaster for Atlanta. It learns from publ
 
 Every score is explainable: a trained model produces it, the score is split exactly into the factors that drive it, and an LLM turns that evidence into one plain-English sentence. The LLM never produces a number.
 
-> Built by team **CodingClaws** (Nagur Shareef Shaik, Sahith Reddy Thummala, Pranav Nagothu, and Geethanjali Nagaboina) at **HackGT 13** (Sep 25–27, 2026) for the **Oracle of the Deep** (ML/AI + visualization) track and the **Aramco "A Marina's Mission"** social-good track.
+> A solo build by **Nagur Shareef Shaik** (team name **Coding Claws**, Georgia State University) at **HackGT 13** (Sep 25–27, 2026), entered in the **Oracle of the Deep** (ML/AI + visualization) track and the **Aramco "A Marina's Mission"** and **SpaceXAI "Make it Legendary"** sponsor tracks.
 > Scope: **traffic** risk to pedestrians, plus a **personal-safety layer**: street lighting, foot traffic, help points (GT blue-light phones, police, fire, hospitals, MARTA), and an informational layer of reported crimes against persons. Crime is never used to choose routes or in the traffic model. See [model card](docs/model_card.md) and [safety sources](docs/safety_sources.md).
 
 | Risk Tides (Friday 10 PM, wet) | Fastest vs PathPro route |
@@ -47,7 +47,10 @@ Every score is explainable: a trained model produces it, the score is split exac
 - **Fastest vs PathPro route.** *Klaus → Midtown MARTA, Friday 10:30 PM, rain:* **+4.2 min, 54% less traffic-risk exposure**, avoiding Peachtree Place and Williams St. If the fastest route is already the lower-risk one, PathPro says so plainly.
 - **"Why?" on every street.** A score dial, a confidence badge, and factor bars that add up exactly to the score. The sheet also shows the street's crash history and when crashes happened by hour (from Tiger Data).
 - **City Pulse.** Area-level traffic-risk scores for 3,537 hexes covering the whole City of Atlanta. Any address in the city gets a score, even outside street-level routing coverage.
-- **Grounded AI explanations.** The chain is Groq, then Gemini, then a deterministic template. A validator rejects any sentence containing a number that isn't in the evidence, or the words "safe" or "crime".
+- **Grounded AI explanations.** The chain is Grok, then Groq, then Gemini, then a deterministic template. A validator rejects any sentence containing a number that isn't in the evidence, or the words "safe" or "crime".
+- **Spoken alerts.** Navigation callouts and Listen use Grok Voice, with ElevenLabs and then the device's own voice as backups.
+- **"Imagine this street redesigned."** For planners: Grok Imagine draws the street with evidence-based fixes (crosswalks, curb extensions, lighting, a road diet). The server builds the prompt from the street's own risk factors, never from user text or street names, and every image is labeled "not a real photo". Gemini checks each image before it is shown: it confirms which planned fixes appear and rejects images with readable text, logos, or faces.
+- **Ask PathPro (Backboard).** Ask how PathPro works, or about the street, route, or area on screen. Answers come from PathPro's own docs plus server-built context, and each one is validated (no numbers that aren't in the docs or the evidence, no crime framing), with a fixed fallback. Memory is opt-in and private to one browser: it keeps only stated travel preferences, never places, and "Forget me" deletes it. Each visitor gets 20 questions a day.
 - **Honest by design.**
   - An About page and model card state the limitations.
   - "Traffic risk estimate from historical crashes. Always stay alert." appears on every route.
@@ -73,7 +76,7 @@ The data runs 2020–2024 across the whole City of Atlanta (2,228 pedestrian cra
   - The confidence interval comes from 400 resamples of 614 H3 res-8 spatial blocks, so nearby streets are not treated as independent.
   - The gain over past-crash ranking in 2024 is +24.5 points (95% CI +20.4 to +28.8), and it repeats on 2023 (+22.6).
   - Citywide ranking includes many quiet residential streets, which makes it easier than ranking within dense Downtown alone.
-  - We report ranking, not calibrated counts, because 2024 recorded more pedestrian crashes than earlier years.
+  - PathPro claims ranking, not calibrated counts, because 2024 recorded more pedestrian crashes than earlier years.
   - Full details are in the [model card](docs/model_card.md).
 
 ## How it's built
@@ -95,8 +98,10 @@ flowchart LR
   end
   subgraph Serve["backend/ (FastAPI on Vultr)"]
     R[Risk-aware router<br/>Dijkstra, detour budget]
-    E[Explanations: Groq → Gemini → template<br/>validated against evidence]
-    V[ElevenLabs voice]
+    E[Explanations: Grok → Groq → Gemini → template<br/>validated against evidence]
+    V[Voice: Grok Voice → ElevenLabs → device]
+    G[Grok Imagine redesigns<br/>checked by Gemini]
+    K[Ask PathPro on Backboard<br/>docs + on-screen context, validated]
     T[(Tiger Data<br/>Timescale + PostGIS)]
   end
   UI[frontend/ React + MapLibre + deck.gl<br/>pathpro.tech]
@@ -104,6 +109,8 @@ flowchart LR
   R --> UI
   E --> UI
   V --> UI
+  G --> UI
+  K --> UI
   I --> T --> UI
 ```
 
@@ -148,11 +155,15 @@ cd frontend && npm test -- --coverage && npx playwright test
 
 ## Sponsor technology, and the job each one does
 
-These integrations are implemented and tested. Each one switches on when its key is present in `backend/.env`, which `deploy/go.sh` verifies. Without keys, PathPro falls back gracefully: template explanations, the device voice, and in-memory history. Without `MONGODB_URI`, community reports are hidden and everything else works.
+These integrations are implemented and tested. Each one switches on when its key is present in `backend/.env`, which `deploy/go.sh` verifies. Without keys, PathPro falls back gracefully: template explanations, the device voice, and in-memory history. Without `MONGODB_URI`, community reports are hidden and everything else works. Without the xAI key, explanations start at Groq, voice starts at ElevenLabs, and Imagine shows a short "unavailable" message. Without the Backboard keys, Ask PathPro is hidden.
 
-- **Groq** (`openai/gpt-oss-120b`, fallback `gpt-oss-20b`): fast, grounded one-to-three-sentence explanations.
-- **Gemini API:** second provider in the explanation chain.
-- **ElevenLabs:** reads explanations and walk alerts aloud, with browser speech as the fallback.
+**Live status (Sat Sep 26, night):** Grok, Grok Voice, Grok Imagine, the Gemini image check, and Ask PathPro are built and tested, and Grok, Gemini, and Backboard were verified against the real APIs locally. They are **not yet deployed** to pathpro.tech. Everything else below is live.
+
+- **Grok (xAI):** first provider in the explanation chain; **Grok Voice** for navigation callouts and Listen; **Grok Imagine** for "Imagine this street redesigned".
+- **Groq** (`openai/gpt-oss-120b`, fallback `gpt-oss-20b`): fast, grounded one-to-three-sentence explanations when Grok is unavailable.
+- **Gemini API:** third provider in the explanation chain, and the multimodal check on every Grok Imagine illustration.
+- **Backboard:** Ask PathPro. A Backboard assistant answers from PathPro's curated docs (model card, metrics, safety sources, decision log, data and models, judge Q&A). Public questions use read-only memory; opt-in memory lives in a private per-browser assistant clone that "Forget me" deletes.
+- **ElevenLabs:** reads explanations and walk alerts aloud when Grok Voice is unavailable, with the device voice as the last fallback.
 - **Tiger Data:** system of record.
   - The crash hypertable and hourly continuous aggregate power "when crashes happened here".
   - PostGIS stores street geometry, and a versioned risk grid stores the scores.
@@ -161,15 +172,16 @@ These integrations are implemented and tested. Each one switches on when its key
   - A TTL index expires each report 14 days after its last confirmation, with no cleanup job.
   - One atomic `find_one_and_update` upsert per report: a repeat report on the same street and category confirms the existing one instead of duplicating it (unique index on segment + category).
   - An aggregation pipeline (`$match` → `$group` → `$sort`) summarises active reports by category.
-  - Report locations come from our street graph, never from the phone, and there is no free-text field. Reports never feed the model or the explanation evidence.
+  - Report locations come from PathPro's street graph, never from the phone, and there is no free-text field. Reports never feed the model or the explanation evidence.
 - **Vultr:** hosts the API and the site (Caddy + systemd).
 - **.tech:** [pathpro.tech](https://pathpro.tech), read as "path protect": the `.tech` completes the word.
 
 ## Built with AI tools, and credits
 
 - **AI tools, disclosed per HackGT rules:**
-  - AI coding assistants were used during development (see the Devpost AI-tools disclosure). The team followed a test-first workflow: plan, failing test, implementation, independent ML and security review, verification.
-  - Product decisions, scope, and review were done by the team during the event.
+  - AI coding assistants were used during development (see the Devpost AI-tools disclosure). I followed a test-first workflow: plan, failing test, implementation, independent ML and security review, verification.
+  - In the product, Grok models, Grok Imagine, Grok Voice, Gemini, and Backboard are used as described above; none of them produces a risk number.
+  - Product decisions, scope, and review were mine, made during the event.
 - **Data:**
   - Atlanta Regional Commission, City of Atlanta Department of Transportation, Central Atlanta Progress, and Georgia Tech crash and road layers
   - StreetLight Data pedestrian activity (via City of Atlanta)
