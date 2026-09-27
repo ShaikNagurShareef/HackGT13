@@ -62,8 +62,30 @@ A few more things I built because people asked for them:
 - Share my walk, so a friend can follow along, and a check-in if you're running late, with 911 one tap away.
 - Routines that stay on your phone. After a couple of walks it will ask "Heading back to Klaus?"
 - Street reports (blocked sidewalk, signal out, flooding) that stay up for 14 days.
-- Ask PathPro, an agent you can open from the map. Ask anything about the street, route or area you're looking at, and it answers from my model's own documents and that street's evidence, with every answer checked the same way as the explanations. Turn on memory and it remembers how you like to travel (never where you go); tap Forget me and it's gone.
-- For city planners: tap "Imagine this street redesigned" and Grok Imagine draws what that street could look like with crosswalks, curb extensions, or better lighting. Gemini looks at the picture before it's shown, to confirm it shows the planned fixes and nothing it shouldn't.
+
+### Ask PathPro: an agent on the map
+
+A round agent button sits on the map. Tap it and a chat opens: on a phone it slides up from the bottom, and on a desktop it docks beside the map. Ask anything, like "How was the model tested?" or "Why isn't crime used for routing?". Or open a street, route or City Pulse area and tap "Ask about this street", and the agent answers about exactly that, using the same evidence behind the score.
+
+It runs on Backboard. The answers come from my model's own documents (the model card, metrics, data sources and decision log) plus the street, route or area on screen, and every answer goes through the same checks as the explanations: no number that isn't in the evidence, no crime framing, no links, and it has to be about PathPro. If an answer fails, you get a plain pointer to the model card instead.
+
+Memory is opt-in. Flip "Remember my preferences" and it keeps what you tell it about how you travel ("I usually walk home around 11 PM, I prefer well-lit streets"), and uses it next time, even in a new conversation. It never keeps places or routes: questions about a street or route can read memory but never write it. Tap Forget me and your private copy is deleted.
+
+![Ask PathPro agent button](https://raw.githubusercontent.com/ShaikNagurShareef/PathPro/main/docs/images/gallery/13-agent-button.png)
+*The agent button on the map.*
+
+![Ask about this street](https://raw.githubusercontent.com/ShaikNagurShareef/PathPro/main/docs/images/gallery/09-ask-pathpro-street.png)
+*Ask about this street: the answer lists the same factors as the score bars.*
+
+![Ask about this route on desktop](https://raw.githubusercontent.com/ShaikNagurShareef/PathPro/main/docs/images/gallery/12-route-ask.png)
+*On desktop, the chat docks beside the map and explains which high-risk stretches the route avoided.*
+
+### Imagine the fix
+
+For city planners, every walking street has "Imagine this street redesigned". PathPro writes the prompt itself from that street's top risk factors, and Grok Imagine draws the evidence-based fixes: high-visibility crosswalks, curb extensions, a refuge island, a protected bike lane, better lighting. Then Gemini looks at the picture before anyone sees it: it confirms which planned fixes actually appear and rejects any image with readable text, logos or recognizable faces. Every picture is labeled "not a real photo". It's a way to see the change before a dollar is spent on concrete.
+
+![Grok Imagine street redesign, checked by Gemini](https://raw.githubusercontent.com/ShaikNagurShareef/PathPro/main/docs/images/gallery/11-imagine-street-redesign.png)
+*10th Street NW, redesigned by Grok Imagine and checked by Gemini ("shows 3 of 3 planned fixes").*
 
 ![Share my walk](https://raw.githubusercontent.com/ShaikNagurShareef/PathPro/main/docs/images/gallery/08-share-my-walk-follow.png)
 *Share my walk: a friend follows your walk live from a link.*
@@ -84,6 +106,9 @@ I pulled about 250,000 public crash records from eight sources (ARC, the City of
 The model predicts crashes per street while accounting for how many people actually walk there. It's a Poisson GLM plus a monotone LightGBM, validated with spatial blocks, then blended with each street's own history using Empirical Bayes. A second model handles hour, day, darkness, and rain. I used no demographic or income data anywhere.
 
 The AI features sit on top of the model; they don't replace it. Grok writes the "Why?" text from the street's own evidence, and a validator throws out any sentence containing a number that isn't in that evidence, so the score always comes from the model. Grok Voice reads the navigation alerts (the clips are fetched when you start walking, so they play instantly), and Grok Imagine draws the redesigns. If a provider is down, explanations fall back to Groq, then Gemini, then a plain template, and the voice falls back to ElevenLabs and then the phone's built-in voice.
+
+![System architecture](https://raw.githubusercontent.com/ShaikNagurShareef/PathPro/main/docs/technical/img/a2_containers.png)
+*How the pieces fit: the app on one Vultr VM, with Grok, Gemini, Backboard, Tiger Data and MongoDB Atlas around it.*
 
 The rest of the stack:
 
@@ -130,9 +155,9 @@ Wheelchair and stroller routing, better lighting data through the City or Georgi
 
 ## 5. Built with (tags)
 
-(Devpost allows 25) python, fastapi, react, typescript, maplibre, deck.gl, lightgbm, scikit-learn, statsmodels, osmnx, geopandas, grok, grok-imagine, grok-voice, xai, gemini, groq, elevenlabs, timescaledb, postgis, tiger-data, mongodb-atlas, vultr, playwright, cursor
+(Devpost allows 25) python, fastapi, react, typescript, maplibre, deck.gl, lightgbm, scikit-learn, osmnx, backboard, geopandas, grok, grok-imagine, grok-voice, xai, gemini, groq, elevenlabs, timescaledb, postgis, tiger-data, mongodb-atlas, vultr, playwright, cursor
 
-(As entered. If Backboard goes live, swap `cursor` or `statsmodels` for `backboard` to stay within 25.)
+(As entered on Devpost; `backboard` replaced `statsmodels` to stay within the 25-tag limit.)
 
 ## 6. "Try it out" links
 
