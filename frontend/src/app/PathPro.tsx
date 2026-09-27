@@ -150,6 +150,9 @@ export function PathPro({ data, loadError }: PathProProps) {
   )
   const actions = useTripActions({ onNotice: setError, view, update, geo, planner, routines, nav, routes, selectedRoute })
   const openAskTarget = (target: AskTarget) => actions.openAsk(target.context, target.label)
+  const askOpen = actions.panel?.kind === 'ask'
+  // The map's agent button toggles: on desktop the Ask card docks right above it.
+  const toggleAsk = () => (askOpen ? actions.closePanel() : actions.openAsk())
   const shareResume = useShareResume({ demo, destination: view.to, route: selectedRoute, nav, onNotice: setError })
   const resumeSharing = () => {
     if (geo.status === 'prompt') geo.request() // a tap, so the browser may ask for location here
@@ -333,7 +336,13 @@ export function PathPro({ data, loadError }: PathProProps) {
         safety={safety.mapInput}
       />
       {screen !== 'nav' && (
-        <MapControls onLayers={() => actions.setPanel({ kind: 'options' })} onLocate={actions.locate} geoStatus={geo.status} />
+        <MapControls
+          onLayers={() => actions.setPanel({ kind: 'options' })}
+          onLocate={actions.locate}
+          geoStatus={geo.status}
+          onAsk={demo ? undefined : toggleAsk}
+          askOpen={askOpen}
+        />
       )}
       {desktop ? (
         <DesktopLayer

@@ -1,14 +1,19 @@
 import type { GeoStatus } from '../../lib/origin'
+import { AskFab } from '../ask/AskFab'
 import { Icon } from '../ui/Icon'
 
 export interface MapControlsProps {
   onLayers: () => void
   onLocate: () => void
   geoStatus: GeoStatus
+  /** Opens Ask PathPro; absent when Ask is unavailable (demo), which hides the agent button. */
+  onAsk?: () => void
+  /** Ask PathPro is open (the agent button reports it as expanded). */
+  askOpen?: boolean
 }
 
-/** Right-edge map buttons: options (layers) up top, the GPS locate FAB bottom-right. */
-export function MapControls({ onLayers, onLocate, geoStatus }: MapControlsProps) {
+/** Right-edge map buttons: options (layers) up top, the GPS locate FAB, and the Ask PathPro agent. */
+export function MapControls({ onLayers, onLocate, geoStatus, onAsk, askOpen = false }: MapControlsProps) {
   const off = geoStatus === 'denied' || geoStatus === 'unavailable'
   return (
     <>
@@ -24,6 +29,7 @@ export function MapControls({ onLayers, onLocate, geoStatus }: MapControlsProps)
       >
         <Icon name={off ? 'locateOff' : 'locate'} size={24} />
       </button>
+      {onAsk && <AskFab onClick={onAsk} open={askOpen} />}
     </>
   )
 }

@@ -1,6 +1,7 @@
 import { useId, useState } from 'react'
 import { ApiError, api } from '../../api/client'
 import { forgetAskMemory, writeAskMemory, writeAskThread, type AskMemory } from '../../lib/askMemory'
+import { Icon } from '../ui/Icon'
 
 export const ASK_MEMORY_NOTE =
   'When on, what you type here is kept by Backboard for this browser until you tap Forget me. Your location, routes and routines are never sent.'
@@ -18,11 +19,14 @@ export interface AskMemoryControlsProps {
 /**
  * "Remember my preferences": off by default. Turning it on the first time creates this browser's
  * private memory; turning it off pauses it; Forget me deletes it. Any change starts a new thread,
- * since a thread belongs to one assistant.
+ * since a thread belongs to one assistant. The privacy note stays the switch's description and
+ * opens under the info button.
  */
 export function AskMemoryControls({ memory, onMessage }: AskMemoryControlsProps) {
   const noteId = useId()
+  const labelId = useId()
   const [busy, setBusy] = useState(false)
+  const [noteOpen, setNoteOpen] = useState(false)
   const on = memory?.on ?? false
 
   const turnOn = async () => {
@@ -59,25 +63,41 @@ export function AskMemoryControls({ memory, onMessage }: AskMemoryControlsProps)
 
   return (
     <div className="ask-memory">
-      <div className="options-row">
+      <div className="ask-memory-row">
         <button
           type="button"
           role="switch"
           aria-checked={on}
+          aria-labelledby={labelId}
           aria-describedby={noteId}
-          className={on ? 'chip active' : 'chip'}
+          className="ask-switch"
           disabled={busy}
           onClick={toggle}
         >
-          Remember my preferences
+          <span className="ask-switch-track" aria-hidden="true">
+            <span className="ask-switch-thumb" />
+          </span>
+          <span id={labelId} className="ask-switch-label">
+            Remember my preferences
+          </span>
+        </button>
+        <button
+          type="button"
+          className="icon-btn ghost ask-memory-info"
+          aria-label="What memory keeps"
+          aria-expanded={noteOpen}
+          aria-controls={noteId}
+          onClick={() => setNoteOpen((open) => !open)}
+        >
+          <Icon name="info" size={18} />
         </button>
         {memory && (
-          <button type="button" className="link-btn" disabled={busy} onClick={() => void forget()}>
+          <button type="button" className="text-btn ask-forget" disabled={busy} onClick={() => void forget()}>
             Forget me
           </button>
         )}
       </div>
-      <p id={noteId} className="faint ask-memory-note">
+      <p id={noteId} className="ask-memory-note" hidden={!noteOpen}>
         {ASK_MEMORY_NOTE}
       </p>
     </div>

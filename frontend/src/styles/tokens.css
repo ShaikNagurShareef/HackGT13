@@ -7,7 +7,7 @@
   --border: rgba(120, 170, 200, 0.18);
   --text: #e7f1f7;
   --text-muted: #9db4c4;
-  --text-faint: #6f8a9c;
+  --text-faint: #7f99ab;
   --teal: #3fd1c6;
   --teal-strong: #1fb4aa;
   --route-fast: #9aa6b2;
@@ -33,6 +33,12 @@
   --amber-tint: rgba(255, 212, 121, 0.14);
   --teal-tint: rgba(63, 209, 198, 0.14);
   --on-teal: #04201d;
+  /* Ask PathPro agent: teal into violet, with dark ink on top (>= 7:1 on both ends). */
+  --violet: #a193ff;
+  --violet-tint: rgba(161, 147, 255, 0.16);
+  --agent-gradient: linear-gradient(135deg, var(--teal) 0%, #6fb8e8 48%, var(--violet) 100%);
+  --on-agent: #071522;
+  --shadow-agent: 0 10px 28px rgba(0, 0, 0, 0.45), 0 0 22px rgba(63, 209, 198, 0.28), 0 0 34px rgba(161, 147, 255, 0.22);
   --radius-lg: 22px;
   --radius-pill: 999px;
   --shadow-lift: 0 18px 48px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
