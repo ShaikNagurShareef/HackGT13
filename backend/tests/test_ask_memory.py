@@ -655,3 +655,12 @@ async def test_context_questions_never_write_memory_even_on_a_clone(
     body = _body(messages)
     assert body["assistant_id"] == CLONE and body["memory"] == expected
     assert answer.memory == "on"
+
+
+@pytest.mark.unit
+def test_memory_per_client_cap_is_configurable(bundle_dir: Path) -> None:
+    # The expo venue shares one address, so the per-address cap must be tunable in production.
+    settings = Settings(artifacts_dir=bundle_dir, ask_memory_per_client_daily=7, _env_file=None)
+
+    assert settings.ask_memory_per_client_daily == 7
+    assert Settings(artifacts_dir=bundle_dir, _env_file=None).ask_memory_per_client_daily == 3
