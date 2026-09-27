@@ -571,3 +571,13 @@ describe('AskPanel chat layout', () => {
     expect((await axe(container)).violations).toEqual([])
   })
 })
+
+describe('Forget me styling', () => {
+  it('uses the shared link button style, not an unstyled box', () => {
+    window.localStorage.setItem(MEMORY_KEY, JSON.stringify({ token: MEMORY_TOKEN, on: true }))
+    routeFetch({})
+    render(<AskPanel onClose={vi.fn()} />)
+
+    expect(screen.getByRole('button', { name: 'Forget me' })).toHaveClass('link-btn', 'ask-forget')
+  })
+})

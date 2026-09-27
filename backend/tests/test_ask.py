@@ -985,3 +985,32 @@ def test_crime_framing_still_rejects_crime_driving_routes() -> None:
     text = "PathPro raises the routing cost on streets with more crime reports at night."
 
     assert "crime_framing" in ask_validation_errors(text, frozenset())
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("word", ["guarantees", "Guarantees"])
+def test_banned_words_catch_plurals(word: str) -> None:
+    text = f"PathPro gives a lower traffic risk route but offers no {word} about any street."
+
+    assert "banned_phrase" in ask_validation_errors(text, frozenset())
+
+
+@pytest.mark.unit
+def test_internal_identifiers_never_reach_users() -> None:
+    text = "PathPro's lit_and_busy routing preference favors well-lit streets after dark."
+
+    assert "internal_term" in ask_validation_errors(text, frozenset())
+
+
+@pytest.mark.unit
+def test_corpus_file_names_are_not_internal_terms() -> None:
+    text = "The PathPro model card (model_card.md) explains the traffic risk score."
+
+    assert "internal_term" not in ask_validation_errors(text, frozenset())
+
+
+@pytest.mark.unit
+def test_memory_note_forbids_denying_memory() -> None:
+    from app.services.ask import MEMORY_NOTE
+
+    assert "Never say you don't store" in MEMORY_NOTE
