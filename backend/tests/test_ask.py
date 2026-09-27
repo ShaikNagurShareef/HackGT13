@@ -931,3 +931,36 @@ def test_validator_still_rejects_other_file_like_domains(name: str) -> None:
     text = f"The PathPro model explains the traffic risk score at {name} today."
 
     assert "link" in ask_validation_errors(text, frozenset())
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "sentence",
+    [
+        "PathPro does not use demographic or income data in its traffic risk model.",
+        "The model uses no demographic features and no income features.",
+    ],
+)
+def test_validator_allows_saying_demographics_are_not_used(sentence: str) -> None:
+    text = f"The PathPro route avoids a crash-heavy street. {sentence}"
+
+    assert "banned_phrase" not in ask_validation_errors(text, frozenset())
+
+
+@pytest.mark.unit
+def test_validator_still_rejects_demographic_claims() -> None:
+    text = "The PathPro traffic risk score reflects income levels and demographic makeup."
+
+    assert "banned_phrase" in ask_validation_errors(text, frozenset())
+
+
+@pytest.mark.unit
+def test_compose_tells_the_assistant_when_memory_is_on() -> None:
+    from app.services.ask import MEMORY_NOTE, compose_content
+
+    on = compose_content("Tips for my walk home?", None, memory_on=True)
+    off = compose_content("Tips for my walk home?", None, memory_on=False)
+
+    assert MEMORY_NOTE in on and "Forget me" in on
+    assert MEMORY_NOTE not in off
+    assert on.endswith("Tips for my walk home?")
