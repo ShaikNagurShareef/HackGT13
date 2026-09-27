@@ -345,7 +345,9 @@ async def test_ask_new_thread_uses_readonly_memory() -> None:
 
     assert answer.source == "backboard"
     assert answer.text == GOOD
-    assert answer.thread_id == TOKENS.issue(THREAD)  # signed token, never the bare Backboard id
+    assert answer.thread_id == TOKENS.issue(
+        THREAD, ASSISTANT
+    )  # signed token, never the bare Backboard id
     assert answer.sources_note == ASK_NOTE
     assert json.loads(threads.calls[0].request.content) == {}
     body = _body(messages)
@@ -368,13 +370,13 @@ async def test_ask_existing_thread_skips_thread_creation() -> None:
         messages = mock.post(MESSAGES_URL).mock(return_value=_reply(thread=OTHER_THREAD))
         async with httpx.AsyncClient() as client:
             answer = await _service(client).ask(
-                "Tell me more", TOKENS.issue(OTHER_THREAD), client=CLIENT
+                "Tell me more", TOKENS.issue(OTHER_THREAD, ASSISTANT), client=CLIENT
             )
 
     assert not threads.called
     assert _body(messages)["thread_id"] == OTHER_THREAD
     assert _body(messages)["memory"] == "Readonly"
-    assert answer.thread_id == TOKENS.issue(OTHER_THREAD)
+    assert answer.thread_id == TOKENS.issue(OTHER_THREAD, ASSISTANT)
 
 
 @pytest.mark.unit
@@ -383,7 +385,7 @@ async def test_empty_model_uses_backboard_default() -> None:
         messages = mock.post(MESSAGES_URL).mock(return_value=_reply())
         async with httpx.AsyncClient() as client:
             await _service(client, model_name="").ask(
-                "How was the model tested?", TOKENS.issue(THREAD), client=CLIENT
+                "How was the model tested?", TOKENS.issue(THREAD, ASSISTANT), client=CLIENT
             )
 
     body = _body(messages)
@@ -407,14 +409,14 @@ async def test_rejected_answers_become_the_fallback(content: str) -> None:
         mock.post(MESSAGES_URL).mock(return_value=_reply(content))
         async with httpx.AsyncClient() as client:
             answer = await _service(client).ask(
-                "How was the model tested?", TOKENS.issue(THREAD), client=CLIENT
+                "How was the model tested?", TOKENS.issue(THREAD, ASSISTANT), client=CLIENT
             )
 
     assert answer.source == "fallback"
     assert answer.text == FALLBACK_TEXT
     assert content not in answer.text
     # The thread still works; only this answer was withheld.
-    assert answer.thread_id == TOKENS.issue(THREAD)
+    assert answer.thread_id == TOKENS.issue(THREAD, ASSISTANT)
 
 
 @pytest.mark.unit
@@ -434,7 +436,7 @@ async def test_upstream_failures_become_the_fallback(response: httpx.Response) -
         mock.post(MESSAGES_URL).mock(return_value=response)
         async with httpx.AsyncClient() as client:
             answer = await _service(client).ask(
-                "How was the model tested?", TOKENS.issue(THREAD), client=CLIENT
+                "How was the model tested?", TOKENS.issue(THREAD, ASSISTANT), client=CLIENT
             )
 
     assert answer.source == "fallback"
@@ -451,7 +453,7 @@ async def test_timeout_becomes_the_fallback_and_logs_only_type_names(
         mock.post(MESSAGES_URL).mock(side_effect=httpx.ReadTimeout(f"secret {KEY}"))
         async with httpx.AsyncClient() as client:
             answer = await _service(client).ask(
-                "How was the model tested?", TOKENS.issue(THREAD), client=CLIENT
+                "How was the model tested?", TOKENS.issue(THREAD, ASSISTANT), client=CLIENT
             )
 
     assert answer.source == "fallback"
@@ -467,7 +469,7 @@ async def test_rejected_answer_text_is_never_logged(caplog: pytest.LogCaptureFix
         mock.post(MESSAGES_URL).mock(return_value=_reply("It is 97.5% guaranteed."))
         async with httpx.AsyncClient() as client:
             await _service(client).ask(
-                "How was the model tested?", TOKENS.issue(THREAD), client=CLIENT
+                "How was the model tested?", TOKENS.issue(THREAD, ASSISTANT), client=CLIENT
             )
 
     assert "97.5% guaranteed" not in caplog.text
@@ -480,10 +482,10 @@ async def test_daily_budget_caps_backboard_calls() -> None:
         async with httpx.AsyncClient() as client:
             service = _service(client, daily_budget=1)
             first = await service.ask(
-                "How was the model tested?", TOKENS.issue(THREAD), client=CLIENT
+                "How was the model tested?", TOKENS.issue(THREAD, ASSISTANT), client=CLIENT
             )
             second = await service.ask(
-                "How was the model tested?", TOKENS.issue(THREAD), client=CLIENT
+                "How was the model tested?", TOKENS.issue(THREAD, ASSISTANT), client=CLIENT
             )
 
     assert first.source == "backboard"
@@ -497,11 +499,11 @@ async def test_budget_fallback_keeps_the_verified_thread_token() -> None:
         async with httpx.AsyncClient() as client:
             service = _service(client, daily_budget=0)
             answer = await service.ask(
-                "How was the model tested?", TOKENS.issue(THREAD), client=CLIENT
+                "How was the model tested?", TOKENS.issue(THREAD, ASSISTANT), client=CLIENT
             )
             forged = await service.ask("How was the model tested?", THREAD, client=CLIENT)
 
-    assert answer.source == "fallback" and answer.thread_id == TOKENS.issue(THREAD)
+    assert answer.source == "fallback" and answer.thread_id == TOKENS.issue(THREAD, ASSISTANT)
     assert forged.source == "fallback" and forged.thread_id is None
 
 
@@ -511,7 +513,9 @@ async def test_budget_fallback_keeps_the_verified_thread_token() -> None:
     [
         OTHER_THREAD,  # bare Backboard id
         OTHER_THREAD + "." + "A" * 43,  # forged signature
-        ThreadTokens(b"z" * 32).issue(OTHER_THREAD),  # issued before a restart / by another secret
+        ThreadTokens(b"z" * 32).issue(
+            OTHER_THREAD, ASSISTANT
+        ),  # issued before a restart / by another secret
         "not-a-token",
     ],
 )
@@ -531,14 +535,14 @@ async def test_unverified_thread_is_never_forwarded_upstream(
     assert _body(messages)["thread_id"] == THREAD
     assert OTHER_THREAD not in messages.calls[0].request.content.decode()
     assert answer.source == "backboard"
-    assert answer.thread_id == TOKENS.issue(THREAD)
+    assert answer.thread_id == TOKENS.issue(THREAD, ASSISTANT)
     assert token not in caplog.text and OTHER_THREAD not in caplog.text
 
 
 @pytest.mark.unit
 async def test_thread_tokens_are_never_logged(caplog: pytest.LogCaptureFixture) -> None:
     caplog.set_level(logging.DEBUG)
-    token = TOKENS.issue(THREAD)
+    token = TOKENS.issue(THREAD, ASSISTANT)
     with respx.mock() as mock:
         mock.post(MESSAGES_URL).mock(return_value=_reply("It is 97.5% guaranteed."))
         async with httpx.AsyncClient() as client:
@@ -557,10 +561,16 @@ async def test_per_client_daily_cap_returns_ask_client_limit() -> None:
         messages = mock.post(MESSAGES_URL).mock(return_value=_reply())
         async with httpx.AsyncClient() as client:
             service = _service(client, per_client_daily=1)
-            first = await service.ask("How was the model tested?", TOKENS.issue(THREAD), client="a")
+            first = await service.ask(
+                "How was the model tested?", TOKENS.issue(THREAD, ASSISTANT), client="a"
+            )
             with pytest.raises(AppError) as err:
-                await service.ask("How was the model tested?", TOKENS.issue(THREAD), client="a")
-            other = await service.ask("How was the model tested?", TOKENS.issue(THREAD), client="b")
+                await service.ask(
+                    "How was the model tested?", TOKENS.issue(THREAD, ASSISTANT), client="a"
+                )
+            other = await service.ask(
+                "How was the model tested?", TOKENS.issue(THREAD, ASSISTANT), client="b"
+            )
 
     assert first.source == "backboard" and other.source == "backboard"
     assert err.value.code == "ASK_CLIENT_LIMIT" and err.value.status == 429
@@ -574,11 +584,17 @@ async def test_per_client_cap_is_checked_before_the_global_budget() -> None:
         messages = mock.post(MESSAGES_URL).mock(return_value=_reply())
         async with httpx.AsyncClient() as client:
             service = _service(client, per_client_daily=1, daily_budget=2)
-            await service.ask("How was the model tested?", TOKENS.issue(THREAD), client="a")
+            await service.ask(
+                "How was the model tested?", TOKENS.issue(THREAD, ASSISTANT), client="a"
+            )
             for _ in range(3):  # over the per-client cap: must not spend the shared budget
                 with pytest.raises(AppError):
-                    await service.ask("How was the model tested?", TOKENS.issue(THREAD), client="a")
-            other = await service.ask("How was the model tested?", TOKENS.issue(THREAD), client="b")
+                    await service.ask(
+                        "How was the model tested?", TOKENS.issue(THREAD, ASSISTANT), client="a"
+                    )
+            other = await service.ask(
+                "How was the model tested?", TOKENS.issue(THREAD, ASSISTANT), client="b"
+            )
 
     assert other.source == "backboard"
     assert messages.call_count == 2
@@ -596,7 +612,7 @@ async def test_citation_markers_are_stripped() -> None:
         mock.post(MESSAGES_URL).mock(return_value=_reply(f"{GOOD}【4:0†model_card.md】 [2]"))
         async with httpx.AsyncClient() as client:
             answer = await _service(client).ask(
-                "How was the model tested?", TOKENS.issue(THREAD), client=CLIENT
+                "How was the model tested?", TOKENS.issue(THREAD, ASSISTANT), client=CLIENT
             )
 
     assert answer.source == "backboard"
@@ -728,7 +744,9 @@ def test_post_ask_tokens_survive_a_restart_only_with_a_configured_secret(bundle_
                 ]
             )
     assert tokens[0] == tokens[1]
-    assert tokens[0] == ThreadTokens(b"a-configured-secret-for-tests-0123456789").issue(THREAD)
+    assert tokens[0] == ThreadTokens(b"a-configured-secret-for-tests-0123456789").issue(
+        THREAD, ASSISTANT
+    )
 
     random_tokens: list[str] = []
     for _ in range(2):
@@ -774,7 +792,10 @@ def test_post_ask_fallback_is_still_success(ask_api: tuple[TestClient, respx.Moc
 
     resp = client.post(
         "/ask",
-        json={"question": "How was the model tested?", "thread_id": TOKENS.issue(THREAD)},
+        json={
+            "question": "How was the model tested?",
+            "thread_id": TOKENS.issue(THREAD, ASSISTANT),
+        },
     )
 
     data = resp.json()["data"]

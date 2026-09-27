@@ -13,6 +13,7 @@ from app.config import Settings
 from app.services.ask_corpus import CORPUS_FILES
 from app.services.backboard import BACKBOARD_API, Backboard
 from app.tools.setup_backboard import (
+    FACT_EXTRACTION_PROMPT,
     MEMORIES,
     SYSTEM_PROMPT,
     TOK_K,
@@ -116,6 +117,7 @@ async def test_run_setup_creates_uploads_polls_and_remembers(tmp_path: Path) -> 
     assert result.assistant_id == ASSISTANT
     created = json.loads(fake.assistant.calls[0].request.content)
     assert created["system_prompt"] == SYSTEM_PROMPT
+    assert created["custom_fact_extraction_prompt"] == FACT_EXTRACTION_PROMPT
     assert created["tok_k"] == TOK_K
     assert "PathPro" in created["name"]
     assert fake.uploads == [Path(name).name for name in present]
@@ -214,3 +216,32 @@ async def test_main_upstream_failure_prints_type_name_only(
     assert code == 1
     assert "HTTPStatusError" in out
     assert KEY not in out
+
+
+@pytest.mark.unit
+def test_system_prompt_explains_the_context_block() -> None:
+    prompt = SYSTEM_PROMPT.lower()
+
+    assert "context from pathpro's model" in prompt
+    for rule in ("this street", "route", "area", "numbers", "score", "never rank"):
+        assert rule in prompt, rule
+
+
+@pytest.mark.unit
+def test_fact_extraction_keeps_only_stated_preferences() -> None:
+    prompt = FACT_EXTRACTION_PROMPT.lower()
+
+    for kept in (
+        "preferences",
+        "travel time",
+        "travel mode",
+        "well-lit",
+        "busier",
+        "accessibility",
+    ):
+        assert kept in prompt, kept
+    for never in ("places", "addresses", "street names", "routes", "coordinates"):
+        assert never in prompt, never
+    assert "never" in prompt and "only" in prompt
+    assert "context from pathpro's model" in prompt
+    assert not BANNED_OUTSIDE_RULES.search(prompt)
