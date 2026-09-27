@@ -1,0 +1,175 @@
+WEBVTT
+
+00:00:00.960 --> 00:00:05.340
+Every map app answers one
+question. What's fastest?
+
+00:00:05.990 --> 00:00:07.910
+But when you're walking home at night,
+
+00:00:07.950 --> 00:00:10.170
+that's not the question
+you're really asking.
+
+00:00:10.954 --> 00:00:15.794
+In Atlanta, pedestrian crashes pile
+up on a small share of streets,
+
+00:00:15.834 --> 00:00:19.344
+and the risk rises and falls
+with the hour and the weather.
+
+00:00:19.454 --> 00:00:22.204
+My friends already plan
+around it by instinct:
+
+00:00:22.244 --> 00:00:26.274
+well-lit streets, busier streets,
+texting when they get home.
+
+00:00:26.984 --> 00:00:29.154
+Nobody had built a map for that.
+
+00:00:29.702 --> 00:00:31.762
+I'm Nagur Shareef Shaik.
+
+00:00:31.802 --> 00:00:34.842
+I built PathPro, solo, this weekend.
+
+00:00:35.350 --> 00:00:39.250
+Open pathpro.tech. No app, no account.
+
+00:00:39.290 --> 00:00:42.540
+Two taps, and you get a route
+that costs four extra minutes
+
+00:00:42.580 --> 00:00:46.370
+and cuts your traffic-risk
+exposure by fifty-four percent.
+
+00:00:46.780 --> 00:00:48.400
+Then it walks with you.
+
+00:00:48.568 --> 00:00:50.328
+<i>High traffic risk ahead.</i>
+
+00:00:50.368 --> 00:00:55.388
+<i>Fowler Street Northwest and Ferst</i>
+<i>Drive Northwest, in 300 meters.</i>
+
+00:00:55.644 --> 00:00:58.144
+Eyes on the street, not the screen.
+
+00:00:58.542 --> 00:01:00.502
+Tap any street to see why.
+
+00:01:00.542 --> 00:01:05.812
+The factors add up exactly to the score,
+and Grok explains it in plain words.
+
+00:01:05.852 --> 00:01:08.272
+But Grok can't invent a single number:
+
+00:01:08.312 --> 00:01:12.742
+if a sentence isn't backed by the
+evidence, it never reaches your screen.
+
+00:01:13.192 --> 00:01:17.672
+Riding? Bike, e-bike and scooter
+get their own crash model:
+
+00:01:17.712 --> 00:01:21.722
+seventy-one percent less traffic
+risk for four extra minutes.
+
+00:01:21.762 --> 00:01:24.612
+Long walk? It hands you off to MARTA.
+
+00:01:25.030 --> 00:01:30.490
+After dark, choose well-lit, busier
+streets, with help points along the way.
+
+00:01:30.570 --> 00:01:35.260
+Share your walk with a friend, and if
+you're running late, PathPro checks in.
+
+00:01:35.300 --> 00:01:39.180
+Reported crimes are shown for
+context, with a fairness note,
+
+00:01:39.220 --> 00:01:41.690
+and they never, ever choose your route.
+
+00:01:42.146 --> 00:01:48.206
+And for the people who fix streets:
+tap "Imagine this street redesigned".
+
+00:01:48.246 --> 00:01:52.316
+Grok Imagine draws the fixes
+this exact street needs,
+
+00:01:52.356 --> 00:01:55.946
+like crosswalks, curb
+extensions and lighting.
+
+00:01:56.016 --> 00:01:59.436
+Then Gemini checks the
+picture before anyone sees it.
+
+00:01:59.476 --> 00:02:02.666
+See the change before a
+dollar is spent on concrete.
+
+00:02:03.162 --> 00:02:05.762
+Still curious? Ask PathPro.
+
+00:02:05.842 --> 00:02:10.892
+Built on Backboard, it answers from my
+model's own documents and whatever street,
+
+00:02:10.932 --> 00:02:13.032
+route or area you're looking at.
+
+00:02:13.072 --> 00:02:16.332
+Turn on memory and it remembers
+how you like to travel.
+
+00:02:16.372 --> 00:02:18.682
+Tap Forget me, and it's gone.
+
+00:02:19.290 --> 00:02:20.410
+Does it work?
+
+00:02:20.450 --> 00:02:27.690
+I trained on 2020 to 2023 and tested
+on 2024, a year the model never saw.
+
+00:02:27.750 --> 00:02:30.520
+The ten percent of
+streets PathPro flags held
+
+00:02:30.560 --> 00:02:33.420
+seventy-four percent
+of pedestrian crashes.
+
+00:02:33.480 --> 00:02:36.890
+The City's own High Injury
+Network? Fifty-four.
+
+00:02:37.700 --> 00:02:41.590
+Same budget, about thirty-eight
+percent more crashes reached.
+
+00:02:42.050 --> 00:02:46.960
+It runs on Vultr in Atlanta,
+keeps working when any service fails,
+
+00:02:47.000 --> 00:02:49.830
+and its demo mode even works offline.
+
+00:02:51.286 --> 00:02:55.526
+Mission control for
+every walk home. PathPro.
+
+00:02:55.656 --> 00:02:59.036
+See the risks on your way, before you go.
