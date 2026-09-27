@@ -156,6 +156,10 @@ def test_no_markers_means_no_sources() -> None:
     assert corpus_sources("PathPro [2] explains itself.") == ()
 
 
+def _threads(mock: respx.MockRouter) -> None:
+    mock.post(THREADS_URL).mock(return_value=httpx.Response(200, json={"thread_id": THREAD}))
+
+
 # --- service -----------------------------------------------------------------------------------
 
 
@@ -172,6 +176,7 @@ def test_compose_content_puts_the_context_before_the_question() -> None:
 @pytest.mark.unit
 async def test_service_sends_the_context_and_validates_against_it() -> None:
     with respx.mock() as mock:
+        _threads(mock)
         messages = mock.post(MESSAGES_URL).mock(return_value=_reply(STREET_ANSWER))
         async with httpx.AsyncClient() as client:
             answer = await _service(client).ask(
@@ -187,6 +192,7 @@ async def test_service_sends_the_context_and_validates_against_it() -> None:
 @pytest.mark.unit
 async def test_service_returns_sources_from_citation_markers() -> None:
     with respx.mock() as mock:
+        _threads(mock)
         mock.post(MESSAGES_URL).mock(
             return_value=_reply(f"{GOOD}【4:0†model_card.md】【1:0†metrics.json】")
         )
@@ -200,6 +206,7 @@ async def test_service_returns_sources_from_citation_markers() -> None:
 @pytest.mark.unit
 async def test_fallback_answers_have_no_sources() -> None:
     with respx.mock() as mock:
+        _threads(mock)
         mock.post(MESSAGES_URL).mock(return_value=_reply("It is 97.5% sure.【4:0†model_card.md】"))
         async with httpx.AsyncClient() as client:
             answer = await _service(client).ask("How was the model tested?", None, client=CLIENT)

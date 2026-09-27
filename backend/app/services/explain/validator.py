@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-from app.services.ask_corpus import NUMBER_RE, parse_number
+from app.services.ask_corpus import NUMBER_RE, allowed_numbers, parse_number
 from app.services.explain.evidence import Evidence
 
 MAX_SENTENCES = 3
@@ -193,8 +193,34 @@ def _on_topic(text: str) -> bool:
     return _TOPIC_RE.search(_ALLOWED_DOMAIN_RE.sub(" ", text)) is not None
 
 
-def ask_validation_errors(text: str, allowed: frozenset[float]) -> list[str]:
-    """Why an Ask PathPro answer may not be shown; every number must come from the corpus."""
+def _ask_number_errors(
+    text: str, allowed: frozenset[float], evidence: Evidence | None, question: str | None
+) -> list[str]:
+    """Numbers must come from the corpus, the context evidence, or the asker's own question.
+
+    Evidence strings (street names such as "I-85") and clock times ("11 PM") are not claims.
+    """
+    permitted = allowed
+    if evidence is not None:
+        text = _strip_evidence_strings(text, evidence)
+        permitted = permitted | evidence.numbers
+    if question:
+        permitted = permitted | allowed_numbers([question])
+    errors: list[str] = []
+    for raw in NUMBER_RE.findall(_CLOCK_RE.sub(" ", text)):
+        value = parse_number(raw)
+        if value not in permitted:
+            errors.append(f"unknown_number:{int(value) if value.is_integer() else value}")
+    return errors
+
+
+def ask_validation_errors(
+    text: str,
+    allowed: frozenset[float],
+    evidence: Evidence | None = None,
+    question: str | None = None,
+) -> list[str]:
+    """Why an Ask PathPro answer may not be shown; every number must have a known source."""
     stripped = text.strip()
     if not stripped:
         return ["empty"]
@@ -209,8 +235,4 @@ def ask_validation_errors(text: str, allowed: frozenset[float]) -> list[str]:
         errors.append("banned_phrase")
     if _crime_framing(stripped):
         errors.append("crime_framing")
-    for raw in NUMBER_RE.findall(stripped):
-        value = parse_number(raw)
-        if value not in allowed:
-            errors.append(f"unknown_number:{int(value) if value.is_integer() else value}")
-    return errors
+    return errors + _ask_number_errors(stripped, allowed, evidence, question)

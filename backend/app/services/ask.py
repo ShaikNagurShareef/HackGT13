@@ -14,6 +14,7 @@ Privacy and trust rules:
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import re
 import uuid
@@ -23,8 +24,10 @@ from typing import Literal
 import httpx
 
 from app.api.envelope import AppError
+from app.services.ask_corpus import CorpusSource, corpus_sources
 from app.services.ask_threads import ThreadTokens
 from app.services.backboard import Backboard, BackboardError
+from app.services.explain.evidence import Evidence
 from app.services.explain.service import DailyBudget
 from app.services.explain.validator import ask_validation_errors
 from app.services.limits import ClientDailyLimit
@@ -53,6 +56,10 @@ _CITATION_RE = re.compile(r"【[^】]*】|\[\d{1,3}\]")
 _BOLD_RE = re.compile(r"\*\*|__")
 ASK_ERRORS = (httpx.HTTPError, BackboardError, TimeoutError)
 Source = Literal["backboard", "fallback"]
+MemoryState = Literal["on", "off"]
+# Server-built evidence rides above the question; the assistant is told to use it only for
+# this question, and the memory prompt forbids keeping anything inside this block.
+CONTEXT_HEADER = "Context from PathPro's model (for this question only):"
 
 
 @dataclass(frozen=True)
@@ -61,6 +68,8 @@ class AskAnswer:
     thread_id: str | None  # a signed thread token, never a bare Backboard thread id
     source: Source
     sources_note: str
+    sources: tuple[CorpusSource, ...] = ()  # allow-listed docs the answer cited
+    memory: MemoryState = "off"
 
 
 def clean_question(raw: str) -> str:
@@ -71,6 +80,14 @@ def clean_question(raw: str) -> str:
     if not MIN_QUESTION_CHARS <= len(question) <= MAX_QUESTION_CHARS:
         raise AppError("BAD_QUESTION", "Questions need 3 to 300 characters.", 422)
     return question
+
+
+def compose_content(question: str, evidence: Evidence | None) -> str:
+    """The message sent upstream: the context block (compact JSON), then the question."""
+    if evidence is None:
+        return question
+    payload = json.dumps(evidence.payload, separators=(",", ":"), ensure_ascii=False)
+    return f"{CONTEXT_HEADER}\n{payload}\n\nQuestion: {question}"
 
 
 def clean_answer(text: str) -> str:
@@ -109,8 +126,22 @@ class AskService:
         token = self._tokens.issue(thread_id) if thread_id else None
         return AskAnswer(FALLBACK_TEXT, token, "fallback", FALLBACK_NOTE)
 
-    async def ask(self, question: str, thread_token: str | None, *, client: str) -> AskAnswer:
-        """Answer from the docs; `thread_token` is the client's signed token, `client` its key."""
+    def ensure_enabled(self) -> None:
+        if not self.enabled:
+            raise AppError("ASK_UNAVAILABLE", UNAVAILABLE_MESSAGE, 503)
+
+    async def ask(
+        self,
+        question: str,
+        thread_token: str | None,
+        *,
+        client: str,
+        evidence: Evidence | None = None,
+    ) -> AskAnswer:
+        """Answer from the docs and the server-built `evidence` (never free text).
+
+        `thread_token` is the client's signed token and `client` its rate-limit key.
+        """
         if self._backboard is None or not self._assistant_id:
             raise AppError("ASK_UNAVAILABLE", UNAVAILABLE_MESSAGE, 503)
         if not self._per_client.take(client):  # before the shared budget is spent
@@ -122,28 +153,37 @@ class AskService:
             log.warning("ask daily budget spent; answering with the fallback")
             return self._fallback(thread_id)
         try:
-            text, thread = await asyncio.wait_for(
-                self._converse(self._backboard, self._assistant_id, question, thread_id),
+            raw, thread = await asyncio.wait_for(
+                self._converse(
+                    self._backboard,
+                    self._assistant_id,
+                    compose_content(question, evidence),
+                    thread_id,
+                ),
                 timeout=self._timeout,
             )
         except ASK_ERRORS as exc:
             log.warning("ask backboard unavailable: %s", type(exc).__name__)
             return self._fallback(None)  # the client starts a fresh thread next time
-        errors = ask_validation_errors(text, self._allowed)
+        text = clean_answer(raw)
+        errors = ask_validation_errors(text, self._allowed, evidence=evidence, question=question)
         if errors:
             kinds = sorted({e.split(":", 1)[0] for e in errors})
             log.warning("ask answer withheld by validator: %s", kinds)
             return self._fallback(thread)
-        return AskAnswer(text, self._tokens.issue(thread), "backboard", ASK_NOTE)
+        return AskAnswer(
+            text, self._tokens.issue(thread), "backboard", ASK_NOTE, corpus_sources(raw)
+        )
 
     async def _converse(
-        self, backboard: Backboard, assistant_id: str, question: str, thread_id: str | None
+        self, backboard: Backboard, assistant_id: str, content: str, thread_id: str | None
     ) -> tuple[str, str]:
+        """The raw reply (citation markers kept, for sources) and the canonical thread id."""
         thread = thread_id or _canonical(await backboard.create_thread(assistant_id, self._timeout))
         reply = await backboard.send_message(
             thread_id=thread,
             assistant_id=assistant_id,
-            content=question,
+            content=content,
             memory="Readonly",  # public users never write shared assistant memory
             llm_provider=self._provider,
             model_name=self._model,
@@ -151,7 +191,7 @@ class AskService:
         )
         if reply.status != COMPLETED:
             raise BackboardError("run not completed")
-        return clean_answer(reply.content), _canonical(reply.thread_id)
+        return reply.content, _canonical(reply.thread_id)
 
 
 def _canonical(raw: str) -> str:
