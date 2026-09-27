@@ -119,7 +119,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 cfg.imagine_cache_dir,
                 cfg.imagine_daily_budget,
                 cfg.imagine_per_client_daily,
-                checker=GeminiImageCheck(client, secret(cfg.gemini_api_key), cfg.gemini_model),
+                checker=GeminiImageCheck(
+                    client, secret(cfg.gemini_api_key), cfg.gemini_check_model
+                ),
             )
             street_reports: ReportsRepository = app.state.reports
             if street_reports.configured and not await street_reports.ensure_indexes():
