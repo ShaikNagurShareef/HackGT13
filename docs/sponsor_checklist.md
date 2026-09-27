@@ -38,6 +38,7 @@ Status as of Sat Sep 26, 2026, 7:00 AM ET. Submit on Devpost by **Sun 07:30** (h
 ### Gemini API: Best Use of Gemini API
 - [x] Key saved (free tier, "HackGT" key in AI Studio) and verified
 - [x] Second provider in the explanation chain (Groq → Gemini → template), under the same validator
+- [x] "Grok draws, Gemini checks": Gemini (multimodal, structured JSON output) reviews every Grok Imagine illustration before it is cached or shown. It confirms which planned fixes appear ("Checked by Gemini: shows N of M planned fixes") and rejects images with readable text, logos, or identifiable faces (one retry, then a friendly error). Tests mock all Gemini and xAI calls
 - [ ] Confirm at the MLH table that this prize is offered at HackGT 13 (it's on the MLH page but not on Devpost)
 
 ## HackGT tracks and other sponsors

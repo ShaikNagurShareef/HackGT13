@@ -7,6 +7,11 @@ export const IMAGINE_BUTTON = 'Imagine this street redesigned'
 export const IMAGINE_LABEL = 'AI illustration of evidence-based street fixes by Grok Imagine — not a real photo'
 const BUSY_TEXT = 'Imagining this street…'
 const FALLBACK_ERROR = 'Could not draw this street right now. Please try again.'
+
+/** "Grok draws, Gemini checks": how many planned fixes Gemini confirmed in the picture. */
+function checkLine(check: NonNullable<Imagined['check']>): string {
+  return `Checked by Gemini: shows ${check.fixes_shown.length} of ${check.fixes_total} planned fixes`
+}
 // Grok Imagine returns 16:9 images; fixed dimensions keep the sheet from jumping when it loads.
 const IMAGE_WIDTH = 1024
 const IMAGE_HEIGHT = 576
@@ -73,6 +78,7 @@ export function ImagineStreet({ segId, streetName }: Props) {
           <figcaption className="imagine-caption">
             <strong className="imagine-label">{IMAGINE_LABEL}</strong>
             <span className="faint">{state.data.prompt_summary}</span>
+            {state.data.check ? <span className="imagine-check faint">{checkLine(state.data.check)}</span> : null}
           </figcaption>
         </figure>
       ) : (

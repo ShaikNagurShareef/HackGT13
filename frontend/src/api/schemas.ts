@@ -202,6 +202,14 @@ export const imagineSchema = z.object({
   fixes: z.array(z.string()),
   label: z.string(),
   cached: z.boolean(),
+  /** Gemini's review of the picture; null or absent when it could not be checked. */
+  check: z
+    .object({
+      by: z.literal('gemini'),
+      fixes_shown: z.array(z.string()),
+      fixes_total: z.number().int().nonnegative(),
+    })
+    .nullish(),
 })
 export type Imagined = z.infer<typeof imagineSchema>
 export const areaSchema = z.object({

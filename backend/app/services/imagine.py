@@ -3,7 +3,9 @@
 The prompt is built only on the server, only from the segment's modeled risk factors and road
 class (never user text, never street names). Images are cached on disk per segment and model,
 and new generations are capped per day. The picture is an illustration, not a risk claim: it
-never changes a score.
+never changes a score. Grok draws, Gemini checks: before an image is cached, Gemini reviews it
+(which planned fixes it shows; no readable text, logos, or identifiable faces). A flagged image is
+never cached; an unavailable check leaves the image unchecked rather than blocking it.
 """
 
 from __future__ import annotations
@@ -26,6 +28,13 @@ from app.api.schemas import SegmentDetail
 from app.domain.timeutil import ATLANTA
 from app.repositories.artifacts import Bundle
 from app.services.explain.service import DailyBudget
+from app.services.imagine_check import (
+    CheckResult,
+    GeminiImageCheck,
+    StoredCheck,
+    read_sidecar,
+    sidecar_json,
+)
 from app.services.segments import segment_detail
 from app.services.weather import Resolved
 
@@ -36,6 +45,8 @@ IMAGINE_LABEL = "AI illustration of evidence-based street fixes by Grok Imagine 
 UNAVAILABLE_MESSAGE = "Street redesign illustrations are unavailable right now."
 BUDGET_MESSAGE = "Today's street illustrations are used up. Please try again tomorrow."
 CLIENT_LIMIT_MESSAGE = "You've reached today's limit for new street illustrations."
+REJECTED_MESSAGE = "Could not draw a clean illustration of this street right now. Please try again."
+MAX_ATTEMPTS = 2  # one retry when the check flags text, logos, or faces (budget permitting)
 MAX_TRACKED_CLIENTS = 50_000
 DAY_S = 86_400
 TIMEOUT_S = 60.0
@@ -95,6 +106,12 @@ class CachedImage:
     media_type: str
 
 
+@dataclass(frozen=True)
+class Ensured:
+    cached: bool
+    check: StoredCheck | None
+
+
 def _unique(items: list[str], limit: int) -> tuple[str, ...]:
     return tuple(dict.fromkeys(items))[:limit]
 
@@ -130,14 +147,22 @@ def media_type_of(content: bytes) -> str | None:
     return next((t for sig, t in IMAGE_SIGNATURES if content.startswith(sig)), None)
 
 
-def _decode_image(payload: Any) -> bytes:
+def _decode_image(payload: Any) -> CachedImage:
     try:
         content = base64.b64decode(payload["data"][0]["b64_json"], validate=True)
     except (KeyError, IndexError, TypeError, ValueError, binascii.Error) as exc:
         raise ValueError("no image in response") from exc
-    if len(content) > MAX_IMAGE_BYTES or media_type_of(content) is None:
+    media_type = media_type_of(content)
+    if len(content) > MAX_IMAGE_BYTES or media_type is None:
         raise ValueError("not an image")
-    return content
+    return CachedImage(content, media_type)
+
+
+def _atomic_write(path: Path, content: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    tmp.write_bytes(content)
+    tmp.replace(path)  # atomic: readers never see a half-written file
 
 
 class ClientDailyLimit:
@@ -167,6 +192,7 @@ class ImagineService:
         cache_dir: Path,
         daily_budget: int,
         per_client_daily: int,
+        checker: GeminiImageCheck | None = None,
     ) -> None:
         self._client = client
         self._key = api_key
@@ -174,16 +200,27 @@ class ImagineService:
         self._cache_dir = cache_dir
         self._budget = DailyBudget(daily_budget)
         self._per_client = ClientDailyLimit(per_client_daily)
+        self._checker = checker
         self._inflight: dict[int, asyncio.Lock] = {}
 
     @property
     def enabled(self) -> bool:
         return bool(self._key)
 
-    def _path(self, seg_id: int) -> Path:
+    def _stem(self, seg_id: int) -> str:
         """Integer ids and a slugged model name only: no caller text reaches the file system."""
         model = re.sub(r"[^a-z0-9]+", "-", self._model.lower()).strip("-")
-        return self._cache_dir / f"seg-{int(seg_id)}-{model}.img"
+        return f"seg-{int(seg_id)}-{model}"
+
+    def _path(self, seg_id: int) -> Path:
+        return self._cache_dir / f"{self._stem(seg_id)}.img"
+
+    def _check_path(self, seg_id: int) -> Path:
+        return self._cache_dir / f"{self._stem(seg_id)}.check.json"
+
+    def _read_check(self, seg_id: int) -> StoredCheck | None:
+        path = self._check_path(seg_id)
+        return read_sidecar(path.read_text(encoding="utf-8")) if path.is_file() else None
 
     def _read(self, seg_id: int) -> CachedImage | None:
         path = self._path(seg_id)
@@ -197,28 +234,59 @@ class ImagineService:
         """The stored illustration, read off the event loop; None when not generated yet."""
         return await asyncio.to_thread(self._read, seg_id)
 
-    async def ensure(self, seg_id: int, prompt: str, client: str) -> bool:
-        """Make sure an image exists for this segment; True when it was already cached."""
+    async def _cached_hit(self, seg_id: int) -> Ensured:
+        return Ensured(cached=True, check=await asyncio.to_thread(self._read_check, seg_id))
+
+    async def ensure(self, seg_id: int, plan: ImaginePlan, client: str) -> Ensured:
+        """Make sure a checked image exists for this segment; cached=True when it already did."""
         if self._path(seg_id).is_file():
-            return True
+            return await self._cached_hit(seg_id)
         if not self.enabled:
             raise AppError("IMAGINE_UNAVAILABLE", UNAVAILABLE_MESSAGE, 503)
         lock = self._inflight.setdefault(seg_id, asyncio.Lock())
         try:
             async with lock:  # single-flight: repeated taps on one street make one paid call
                 if self._path(seg_id).is_file():
-                    return True
+                    return await self._cached_hit(seg_id)
                 if not self._per_client.take(client):
                     raise AppError("IMAGINE_CLIENT_LIMIT", CLIENT_LIMIT_MESSAGE, 429)
                 if not self._budget.take():
                     raise AppError("IMAGINE_BUDGET", BUDGET_MESSAGE, 429)
-                content = await self._generate(prompt)
-                await asyncio.to_thread(self._store, seg_id, content)
-                return False
+                check = await self._generate_checked(seg_id, plan)
+                return Ensured(cached=False, check=check)
         finally:
             self._inflight.pop(seg_id, None)
 
-    async def _generate(self, prompt: str) -> bytes:
+    async def _generate_checked(self, seg_id: int, plan: ImaginePlan) -> StoredCheck | None:
+        """Grok draws, Gemini checks; a flagged image is retried once (budget permitting)."""
+        for attempt in range(MAX_ATTEMPTS):
+            if attempt and not self._budget.take():
+                break
+            image = await self._generate(plan.prompt)
+            verdict = await self._check(image, plan.fixes)
+            if verdict is None or verdict.passed:
+                stored = self._record(verdict, len(plan.fixes))
+                await asyncio.to_thread(self._store, seg_id, image.content, stored)
+                return stored
+            log.warning("imagine illustration flagged by check (attempt %d)", attempt + 1)
+        raise AppError("IMAGINE_REJECTED", REJECTED_MESSAGE, 502)
+
+    async def _check(self, image: CachedImage, fixes: tuple[str, ...]) -> CheckResult | None:
+        if self._checker is None:
+            return None
+        return await self._checker.check(image.content, image.media_type, fixes)
+
+    def _record(self, verdict: CheckResult | None, fixes_total: int) -> StoredCheck | None:
+        if verdict is None or self._checker is None:
+            return None
+        return StoredCheck(
+            model=self._checker.model,
+            fixes_shown=verdict.fixes_shown,
+            fixes_total=fixes_total,
+            passed=verdict.passed,
+        )
+
+    async def _generate(self, prompt: str) -> CachedImage:
         body = {
             "model": self._model,
             "prompt": prompt,
@@ -242,9 +310,7 @@ class ImagineService:
                 "IMAGINE_FAILED", "Could not draw this street right now. Please try again.", 502
             ) from exc
 
-    def _store(self, seg_id: int, content: bytes) -> None:
-        path = self._path(seg_id)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = path.with_suffix(".tmp")
-        tmp.write_bytes(content)
-        tmp.replace(path)  # atomic: readers never see a half-written image
+    def _store(self, seg_id: int, content: bytes, check: StoredCheck | None) -> None:
+        # Sidecar first: once the image exists, its check record is already in place.
+        _atomic_write(self._check_path(seg_id), sidecar_json(check).encode("utf-8"))
+        _atomic_write(self._path(seg_id), content)

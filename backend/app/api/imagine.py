@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Path, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
@@ -12,6 +12,7 @@ from app.api.envelope import AppError, Envelope, ok
 from app.middleware import client_key
 from app.repositories.artifacts import Bundle
 from app.services.imagine import IMAGINE_LABEL, ImagineService, plan_for_segment
+from app.services.imagine_check import StoredCheck
 
 imagine = APIRouter()
 BundleDep = Annotated[Bundle, Depends(get_bundle)]
@@ -25,6 +26,14 @@ class ImagineRequest(BaseModel):
     seg_id: int = Field(ge=0)
 
 
+class ImageCheckOut(BaseModel):
+    """Gemini's review of the illustration: which planned fixes it confirmed in the picture."""
+
+    by: Literal["gemini"]
+    fixes_shown: list[str]
+    fixes_total: int
+
+
 class ImagineData(BaseModel):
     seg_id: int
     image_url: str
@@ -32,6 +41,15 @@ class ImagineData(BaseModel):
     fixes: list[str]
     label: str
     cached: bool
+    check: ImageCheckOut | None  # null when the illustration could not be checked
+
+
+def _check_out(check: StoredCheck | None) -> ImageCheckOut | None:
+    if check is None:
+        return None
+    return ImageCheckOut(
+        by="gemini", fixes_shown=list(check.fixes_shown), fixes_total=check.fixes_total
+    )
 
 
 def _service(request: Request) -> ImagineService:
@@ -48,8 +66,8 @@ async def imagine_segment(
     req: ImagineRequest, request: Request, bundle: BundleDep
 ) -> Envelope[ImagineData]:
     plan = plan_for_segment(bundle, req.seg_id)
-    cached = await _service(request).ensure(
-        req.seg_id, plan.prompt, client_key(request.client.host if request.client else None)
+    ensured = await _service(request).ensure(
+        req.seg_id, plan, client_key(request.client.host if request.client else None)
     )
     data = ImagineData(
         seg_id=req.seg_id,
@@ -57,7 +75,8 @@ async def imagine_segment(
         prompt_summary=plan.summary,
         fixes=list(plan.fixes),
         label=IMAGINE_LABEL,
-        cached=cached,
+        cached=ensured.cached,
+        check=_check_out(ensured.check),
     )
     return ok(data, bundle.model_version)
 

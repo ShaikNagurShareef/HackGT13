@@ -46,6 +46,7 @@ from app.services.explain.providers import (
 from app.services.explain.service import ExplainService
 from app.services.geocode import GeocodeService
 from app.services.imagine import ImagineService
+from app.services.imagine_check import GeminiImageCheck
 from app.services.tts import GrokTtsService, TtsService, VoiceChain
 from app.services.walks import RecentUpdates
 from app.services.weather import WeatherService
@@ -118,6 +119,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 cfg.imagine_cache_dir,
                 cfg.imagine_daily_budget,
                 cfg.imagine_per_client_daily,
+                checker=GeminiImageCheck(client, secret(cfg.gemini_api_key), cfg.gemini_model),
             )
             street_reports: ReportsRepository = app.state.reports
             if street_reports.configured and not await street_reports.ensure_indexes():
