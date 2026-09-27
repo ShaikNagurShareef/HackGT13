@@ -441,7 +441,8 @@
   text-align: center;
   color: var(--text-muted);
 }
-.status-card p {
+.status-card p,
+.status-card h1 {
   margin: 0;
 }
 .status-brand {
@@ -449,6 +450,10 @@
   font-size: 26px;
   font-weight: 700;
   color: var(--text);
+}
+.status-tagline {
+  color: var(--teal);
+  font-weight: 500;
 }
 .status-card .route-loading-bar {
   width: 180px;
