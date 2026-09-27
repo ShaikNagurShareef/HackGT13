@@ -104,7 +104,7 @@ Wheelchair and stroller profiles, citywide lighting data with the City or Georgi
 
 ## 5. Built with (tags)
 
-python, fastapi, react, typescript, vite, maplibre, deck.gl, lightgbm, scikit-learn, statsmodels, scipy, osmnx, geopandas, h3, grok, grok-imagine, grok-voice, xai, gemini, groq, elevenlabs, timescaledb, postgis, tiger-data, mongodb-atlas, vultr, caddy, playwright, cursor
+(Devpost allows 25) python, fastapi, react, typescript, maplibre, deck.gl, lightgbm, scikit-learn, statsmodels, osmnx, geopandas, grok, grok-imagine, grok-voice, xai, gemini, groq, elevenlabs, timescaledb, postgis, tiger-data, mongodb-atlas, vultr, playwright, cursor
 
 ## 6. "Try it out" links
 
@@ -131,19 +131,12 @@ The YouTube URL of `media/pathpro_demo_v2.mp4`, or v3 once it's recorded with Gr
 
 ## 9. Submission form questions
 
-- **Tracks and prizes:**
-  - SpaceXAI "Make it Legendary" ⚑
-  - Oracle of the Deep
-  - Aramco "A Marina's Mission"
-  - Best Overall
-  - MLH Best Use of Gemini API ⚑
-  - MLH Best Use of Tiger Data
-  - MLH Best Use of Vultr
-  - MLH Best Use of MongoDB Atlas
-  - MLH Best Use of ElevenLabs
-  - MLH Best .tech Domain
-  - Notability "Trust the Process"
-  - Create-X interest
+- **Schools:** Georgia State University
+- **General track (one):** Oracle of the Deep - ML/AI
+- **Sponsor track 1:** Aramco - A Marina's Mission
+- **Sponsor track 2:** SpaceXAI - Make it Legendary ⚑ (the form allows only two sponsor tracks; Notability's prize is "Best Use of Notability", which we don't use)
+- **MLH prizes:** Best use of ElevenLabs, Gemini API ⚑ (Gemini project number 1091754630519), TigerData, Vultr, MongoDB Atlas. The .tech prize is entered through the domain question.
+- **AI tools this weekend (shown in the gallery):** OpenAI (gpt-oss via Groq), Anthropic, Gemini, ElevenLabs, Other (xAI Grok, Cursor)
 - **AI tools used:** AI coding assistants (Claude Code, Cursor) during development; Grok models, Grok Imagine, Grok Voice and Gemini in the product. We followed a test-first workflow with independent review; scope, product decisions (including the safety layer and its safeguards), and review were ours.
 - **Domain (.tech):** pathpro.tech
 - **Data credits:** crash data from ARC, the City of Atlanta, Central Atlanta Progress, and Georgia Tech open data; Atlanta Police open data; OpenStreetMap contributors. The full list is in the README and `docs/safety_sources.md`.
