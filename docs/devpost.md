@@ -68,7 +68,7 @@ We built PathPro the way a launch team works: start from first principles, test 
 - **Simulate before you build, with Grok Imagine.** On any street, a city or campus planner taps **"Imagine this street redesigned"**. PathPro builds the prompt on the server from that street's real factors: lanes, speed limit, crossings, lighting, and its top risk drivers. Grok Imagine then renders the evidence-based fixes: high-visibility crosswalks, curb extensions, a refuge island, a protected bike lane, street lighting, or a road diet. Every image is labeled "AI illustration of evidence-based street fixes by Grok Imagine — not a real photo". It's a way to see a Vision Zero fix before spending a dollar on concrete.
 - **Grok draws, Gemini checks.** Before any illustration reaches the screen, Gemini looks at it next to the server's list of planned fixes. The card then says "Checked by Gemini: shows 3 of 4 planned fixes". An image with readable text, logos, or identifiable faces is never shown or cached: Grok gets one more try, and if that one is flagged too, the planner sees a friendly retry message. Gemini's answer is parsed strictly, so it can only confirm fixes that were actually planned. If Gemini can't be reached, the picture is shown without the check line instead of being blocked.
 - **Engine-out capability.** Explanations fail over from Grok to Groq to Gemini to a deterministic template. Voice fails over from Grok Voice to ElevenLabs to the device. The offline demo (`?demo=1`) keeps flying with no network at all.
-- **Test like you fly.** We trained on 2020–23, tested on 2024, and report 95% spatial-block confidence intervals. About 1,060 automated tests run, including end-to-end GPS navigation.
+- **Test like you fly.** We trained on 2020–23, tested on 2024, and report 95% spatial-block confidence intervals. About 1,145 automated tests run, including end-to-end GPS navigation.
 - **Reusable by design.** A new city needs one coverage polygon plus its public crash layers. The pipeline, models, and app fly again unchanged.
 - **The mission is public health.** Traffic crashes kill more than 7,000 people walking in the U.S. each year. PathPro gives walkers a lower-risk way home tonight, and gives cities a ranked, visual plan for where fixes reach the most future crashes.
 
@@ -102,7 +102,7 @@ We built PathPro the way a launch team works: start from first principles, test 
   - **Groq** (gpt-oss-120b/20b) with **Gemini** as fallback: grounded explanations. A validator rejects any sentence with a number not in the evidence, and any crime framing. **Gemini** (multimodal) also reviews every Grok Imagine illustration before it is shown: it confirms which planned fixes appear and rejects images with readable text, logos, or identifiable faces.
 - **App:** React + MapLibre + deck.gl, FastAPI, and scipy Dijkstra routing. Both route plans take about 150 ms at the median.
 - **Engineering:** test-first throughout (RED and GREEN commits), with independent code, ML, and security review passes.
-  - About 1,060 automated tests: 222 data, 277 API, 541 web, and 19 end-to-end, including an offline demo and a GPS navigation flow.
+  - About 1,145 automated tests: 237 data, 337 API, 552 web, and 19 end-to-end, including an offline demo and a GPS navigation flow.
   - 90%+ coverage per package.
 - **AI tools (disclosed):**
   - AI tools used: AI coding assistants (Claude Code, Cursor) during development; Grok models, Grok Imagine and Grok Voice in the product. We followed a test-first workflow with independent review.

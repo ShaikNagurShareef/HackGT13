@@ -13,7 +13,7 @@
 | Check the model's claims | [Model card](model_card.md) and [metrics.json](metrics.json) (walk and ride models, with confidence intervals and limits) |
 | Check the safety-layer data | [Safety sources](safety_sources.md): crime, help points, lighting, foot traffic, and the fairness safeguards |
 | See how we worked | [Process notes](process/process_notes.md) ([PDF](process/process_notes.pdf)): plan, iterations, pivots, and timeline |
-| Judge the submission | [Devpost write-up](devpost.md) · [Sponsor checklist](sponsor_checklist.md) · [Judge Q&A](judge_qa.md) · [Demo script](demo_script.md) · [Gallery](images/gallery/README.md) |
+| Judge the submission | [Devpost submission (paste-ready)](devpost_submission.md) · [Devpost long draft](devpost.md) · [Sponsor checklist](sponsor_checklist.md) · [Judge Q&A](judge_qa.md) · [Demo script](demo_script.md) · [Gallery](images/gallery/README.md) |
 
 ## At a glance
 
