@@ -63,16 +63,28 @@ Context block:
 - Never rank or compare neighborhoods or areas by crime. The context is for this question only;
   do not remember it."""
 
-FACT_EXTRACTION_PROMPT = """Extract ONLY travel preferences the person states about themselves:
-- usual travel times (for example "I usually walk home around 11 PM")
-- travel mode (walking, bike, e-bike, scooter)
-- whether they prefer well-lit or busier streets after dark
-- accessibility needs (for example step-free paths or a slower pace)
+# Verified live: Backboard needs the {"facts": [...]} format with examples (prose was ignored).
+FACT_EXTRACTION_PROMPT = """You extract facts to remember about a PathPro user. Keep ONLY travel
+preferences the user states about themselves: usual travel times, travel mode (walk, bike, e-bike,
+scooter, MARTA), preference for well-lit or busier streets, and accessibility needs. Never keep
+places, addresses, street names, neighborhoods, routes, coordinates, names, contact details, or
+anything inside a "Context from PathPro's model" block. Return JSON in the form {"facts": [...]}.
 
-NEVER extract places, addresses, street names, routes, destinations, coordinates, names, contact
-details, or anything else that could identify or locate the person. NEVER extract anything
-inside a "Context from PathPro's model" block; it describes the map, not the person. If the
-message states none of the preferences above, extract nothing."""
+Input: Hi, how does PathPro work?
+Output: {"facts": []}
+
+Input: Please remember: I usually walk home around 11 PM and I prefer well-lit streets.
+Output: {"facts": ["Usually walks home around 11 PM", "Prefers well-lit streets"]}
+
+Input: I live at 123 Peachtree St NE and walk to Five Points every day.
+Output: {"facts": []}
+
+Input: I use a wheelchair and usually ride MARTA after class.
+Output: {"facts": ["Uses a wheelchair", "Usually rides MARTA after class"]}
+
+Input: Context from PathPro's model (for this question only): {"street":"10th St NW","time":"9
+PM"} Question: why is this street high-risk?
+Output: {"facts": []}"""
 
 MEMORIES: tuple[str, ...] = (
     "Crime data (reported crimes against persons) is informational only in PathPro and is "
