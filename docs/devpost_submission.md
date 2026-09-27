@@ -5,7 +5,7 @@ Each section below is one field of the Devpost form, in the order Devpost asks f
 **Before you paste:**
 - [ ] Grok and Gemini are deployed and verified live on pathpro.tech. If not, delete the "Grok" and "Gemini" lines marked ⚑ first.
 - [ ] Demo video uploaded to YouTube (unlisted is fine) with `media/pathpro_demo_v2.srt` attached.
-- [ ] All four teammates have accepted the Devpost team invite.
+- Solo build (team name Coding Claws), so there's no one to invite.
 
 ---
 
@@ -15,7 +15,7 @@ PathPro
 
 ## 2. Elevator pitch (≤ 200 characters)
 
-Lower-risk walk & ride routes for Atlanta, from a crash model that beats the City's own High Injury Network (74% vs 54%), plus Grok previews of the street fixes cities could build.
+Find a lower-risk way to walk or ride home in Atlanta. My crash model beats the City's own High Injury Network (74% vs 54%), and Grok shows what a fixed street could look like.
 
 ## 3. Thumbnail
 
@@ -24,82 +24,102 @@ Lower-risk walk & ride routes for Atlanta, from a crash model that beats the Cit
 ## 4. About the project (paste as Markdown)
 
 ```markdown
+**Try it:** https://pathpro.tech (add `?demo=1` for the offline demo) · **Code:** https://github.com/ShaikNagurShareef/PathPro
+
 ## Inspiration
 
-Many of us walk between Klaus, Tech Square, and Midtown MARTA late at night. Our friends, especially women, already plan routes around well-lit, busier streets and text each other when they get home. Yet every map app answers only one question: *what's fastest?*
+I get around Atlanta on foot and on MARTA a lot, often late at night. My friends, especially women, already plan their walks around streets that are well lit and busy, and they text each other when they get home. Every map app I opened only cared about the fastest route.
 
-Atlanta's pedestrian deaths concentrate on a small share of streets, and that risk rises and falls with the hour and the weather. We wanted a map that shows **where and when** traffic risk is highest, a route that trades a few minutes for much less exposure, and a way for cities to see which fixes matter most.
+Then I looked at the data. Pedestrian crashes in Atlanta aren't spread evenly. They pile up on a small share of streets, and the risk changes with the hour and the weather. So I set out to build what I wanted to use: a map that shows where and when traffic risk is highest, and a route that trades a few extra minutes for a lot less exposure.
 
 ## What it does
 
-**Two taps to a lower-risk route.** Open pathpro.tech (no install, no login), tap *Where to?*, pick a place. GPS fills in your start. The route card reads like a map app's:
+You open pathpro.tech on your phone. There's no app to install and no account. Tap "Where to?", pick a place, and PathPro starts from your location. The route card says something like "23 min, 54% less traffic risk, 4 min longer than the fastest route." Tap Start and it walks with you, speaking up before high-risk crossings so you can keep your eyes on the street.
 
-> **23 min · 54% less traffic risk · +4 min vs fastest · arrive 10:52 PM**
+![Route comparison on a phone](https://raw.githubusercontent.com/ShaikNagurShareef/PathPro/main/docs/images/gallery/02-phone-route-comparison.png)
+*The PathPro route (teal) next to the fastest one: 4 more minutes, 54% less traffic risk.*
 
-- **Walk · Bike · E-bike · Scooter.** Georgia Tech → Inman Park by bike at 9 PM: **72% less traffic risk for +4 min**. Long walks get a MARTA hand-off. We deliberately don't route cars, because risk-aware car routing pushes traffic onto the streets people walk.
-- **Walking navigation with voice callouts:** "High traffic risk ahead · 10th St NW in 120 m", so your eyes stay on the street.
-- **"Why?" on every street:** factor bars that add up exactly to the score, crash history by hour, and a plain-language explanation you can listen to.
-- **Risk Tides:** traffic risk hour by hour, dry or wet, weekday or weekend, for ~50,000 streets across the City of Atlanta.
-- **Imagine this street redesigned** ⚑: for planners, Grok Imagine draws evidence-based fixes for that exact street, and Gemini checks the picture before it's shown.
-- **Walking alone at night:** a *Well-lit & busier* route option, help points (100 Georgia Tech blue-light phones, police, fire, hospitals, MARTA), **Share my walk** with a friend, and an "Everything OK?" check-in with 911 one tap away.
-- **Learns your routine on your phone only.** "Heading back to Klaus?" is offered after a couple of walks. History never leaves the device.
-- **Community street reports** (blocked sidewalk, signal out, flooding…) show for 14 days.
-- **Works offline** (`?demo=1`) for the expo Wi-Fi.
+![Walking navigation alert](https://raw.githubusercontent.com/ShaikNagurShareef/PathPro/main/docs/images/gallery/03-phone-navigation-alert.png)
+*During the walk, PathPro calls out high-risk stretches before you reach them.*
 
-## Does it work? We tested on a year the model never saw
+It also handles bikes, e-bikes, and scooters, because walking across Atlanta isn't realistic. Georgia Tech to Inman Park by bike at 9 PM comes out 72% lower-risk for about 4 extra minutes. On long walks it points you to the nearest MARTA station instead. I decided not to route cars: sending drivers down quieter streets just moves traffic onto the streets people walk on.
 
-Trained on 2020–23, tested on 543 pedestrian crashes from 2024:
+Tap any street to see why it scores the way it does. The factor bars add up exactly to the score, a chart shows when crashes happened there by hour, and there's a short explanation you can listen to.
 
-- The 10% of street length PathPro ranks highest held **74.3%** of them (95% spatial-block CI 70.5–78.3%).
-- The City's **High Injury Network** got **53.8%**, past crashes 49.8%, and random 11.9%. ROC-AUC is 0.89.
-- **Ride model:** 69.9% of 2024 cyclist crashes (CI 64.0–76.1%) vs 43.6% for the High Injury Network.
+![Risk Tides on desktop](https://raw.githubusercontent.com/ShaikNagurShareef/PathPro/main/docs/images/gallery/04-desktop-risk-tides-home.png)
+*Risk Tides: traffic risk across Atlanta, hour by hour, dry or wet.*
 
-**What that buys:** the same budget spent on 10% of street length reaches **~38% more** of next year's pedestrian crashes than the High Injury Network, and ~60% more bike crashes. For a person: **+4 minutes, 54% less exposure**.
+![Why this street scores high](https://raw.githubusercontent.com/ShaikNagurShareef/PathPro/main/docs/images/gallery/05-desktop-route-explanation.png)
+*The "Why?" view: factor bars that add up to the score, and a plain-language explanation.*
 
-## How we built it
+A few more things I built because people asked for them:
 
-- **Data:** ~250k public crash records from 8 ArcGIS layers (ARC, City of Atlanta, Central Atlanta Progress, Georgia Tech), deduplicated, stripped of personal fields, and snapped to OpenStreetMap streets. We caught one source storing local time as UTC by checking it against its light condition (agreement went from 60% to 94%).
-- **Model:** an exposure-aware safety performance function (Poisson GLM + monotone LightGBM, spatial-block CV) blended with each street's history by Empirical Bayes, plus a temporal GLM for hour, day, darkness, and rain. Features: pedestrian activity, traffic volume, speed, lanes, transit, sidewalks, signals, crossings. **No demographic or income features.**
-- **Grok (xAI)** ⚑: Grok writes each "Why?" explanation from the street's own evidence; a validator rejects any sentence with a number that isn't in the evidence, so the score always comes from the model. **Grok Voice** speaks navigation callouts. **Grok Imagine** renders street redesigns from a prompt the server builds from the street's real risk factors, labeled "AI illustration … not a real photo".
-- **Gemini** ⚑: multimodal review of every Grok Imagine picture. It confirms which planned fixes appear ("Checked by Gemini: shows 3 of 4 planned fixes") and rejects images with readable text, logos, or identifiable faces. Gemini is also in the explanation fallback chain.
-- **Engine-out design:** explanations fall back Grok → Groq → Gemini → template; voice falls back Grok Voice → ElevenLabs → device. The offline demo needs no network at all.
-- **Vultr:** the whole app runs on one Vultr VM in Atlanta (Caddy auto-HTTPS, hardened systemd, firewall), deployed with one command.
-- **.tech:** **pathpro.tech**. Say it out loud: *path protect*.
-- **Tiger Data** (TimescaleDB + PostGIS): 220,594 crash rows in a hypertable, a continuous aggregate behind each street's "when crashes happened here" chart, PostGIS geometry, and a 9.6M-row risk grid.
-- **MongoDB Atlas:** community reports (2dsphere viewport query, 14-day TTL, atomic upserts that turn repeats into confirmations) and Share my walk (6-hour TTL, hashed owner tokens).
-- **ElevenLabs:** the "Sarah" voice for spoken explanations and alerts, and the automatic fallback when Grok Voice is unavailable.
-- **App:** React + TypeScript + MapLibre + deck.gl, FastAPI, SciPy Dijkstra routing (~150 ms median for both route plans).
-- **Engineering:** test-first throughout, with independent code, ML, and security reviews. About 1,145 automated tests (237 data, 337 API, 552 web, 19 end-to-end).
+- A "well-lit and busier" option for walking after dark, and help points on the map: Georgia Tech's 100 blue-light phones, police, fire, hospitals, and MARTA.
+- Share my walk, so a friend can follow along, and a check-in if you're running late, with 911 one tap away.
+- Routines that stay on your phone. After a couple of walks it will ask "Heading back to Klaus?"
+- Street reports (blocked sidewalk, signal out, flooding) that stay up for 14 days.
+- For city planners: tap "Imagine this street redesigned" and Grok Imagine draws what that street could look like with crosswalks, curb extensions, or better lighting. Gemini looks at the picture before it's shown, to confirm it shows the planned fixes and nothing it shouldn't.
 
-## Safety context, without stigma
+![Share my walk](https://raw.githubusercontent.com/ShaikNagurShareef/PathPro/main/docs/images/gallery/08-share-my-walk-follow.png)
+*Share my walk: a friend follows your walk live from a link.*
 
-Crime maps are known to label whole neighborhoods. So:
-- Atlanta Police **crimes against persons** are shown for context only: grouped into hexes by time of day, with no addresses or victim details, and always beside a fairness note.
-- Bands use an exposure-normalized Empirical-Bayes rate, so an area with no reports is never marked "higher".
-- **Crime is never used to route.** A test multiplies crime counts by 1,000 and the routes don't change.
-- Lighting is known for only ~4% of streets; unknown stays unknown, never "dark".
+## Does it actually work?
 
-## Challenges we ran into
+I trained on 2020–2023 and tested on 2024, a year the model never saw. The 10% of street length PathPro ranks highest had 74.3% of the 2024 pedestrian crashes (95% CI 70.5–78.3%). The City's High Injury Network, the list Atlanta uses to prioritize street fixes, caught 53.8%. Past crash counts alone caught 49.8%, and a random pick caught 11.9%. For cyclists it got 69.9%, against 43.6% for the High Injury Network.
 
-- **A third of crashes wouldn't snap** because Midtown sidewalks are mapped separately from roads. Modeling on road centerlines and letting sidewalks inherit the risk took the snap rate from 66% to 96%.
-- **A mentor told us our first UI "isn't intuitive."** We rebuilt it that afternoon: map-first, GPS by default, a route sheet like Google Maps, walking navigation, and learned routines.
-- **Every other street was drawn backwards** (OSMnx stores many geometries reversed), so routes zigzagged and navigation overstated distance 1.6×. We fixed it and added a regression test.
-- **Honest statistics:** our reviewer caught confidence intervals that were too narrow, so we now resample spatial blocks. It also found that rain adds little, and we report that.
+Put another way: if a city spends the same budget fixing 10% of its street length, PathPro's ranking reaches about 38% more of next year's pedestrian crashes. For someone walking home, 4 extra minutes cuts their traffic-risk exposure by more than half.
 
-## Accomplishments we're proud of
+## How I built it
 
-- The model beats the City of Atlanta's own High Injury Network on future crashes, with confidence intervals.
-- Every number on screen traces to the model. The AI can't invent one.
-- The safety layer is useful and honest about its limits, and it never routes around neighborhoods.
-- It keeps working when the weather API, an LLM, a database, GPS, or the Wi-Fi fails.
+I pulled about 250,000 public crash records from eight sources (ARC, the City of Atlanta, Central Atlanta Progress, and Georgia Tech), merged the duplicates, removed personal fields, and matched each crash to an OpenStreetMap street. One source turned out to store local time as UTC. I only caught it because its daylight/dark field didn't line up with the hour; fixing it took agreement from 60% to 94%.
 
-## What we learned
+![Data pipeline](https://raw.githubusercontent.com/ShaikNagurShareef/PathPro/main/docs/technical/img/d1_pipeline.png)
+*From public crash records to the model bundle the app serves.*
 
-Most of the work is data plumbing and honest evaluation, not model choice. Exposure bias is real in both crash and crime data, and saying so makes the claims stronger. Watching one real person use the app on a phone taught us more than any test.
+The model predicts crashes per street while accounting for how many people actually walk there. It's a Poisson GLM plus a monotone LightGBM, validated with spatial blocks, then blended with each street's own history using Empirical Bayes. A second model handles hour, day, darkness, and rain. I used no demographic or income data anywhere.
+
+The AI features sit on top of the model; they don't replace it. Grok writes the "Why?" text from the street's own evidence, and a validator throws out any sentence containing a number that isn't in that evidence, so the score always comes from the model. Grok Voice reads the navigation alerts, and Grok Imagine draws the redesigns. If a provider is down, explanations fall back to Groq, then Gemini, then a plain template, and the voice falls back to ElevenLabs and then the phone's built-in voice.
+
+The rest of the stack:
+
+- Vultr runs the whole app on one VM in Atlanta, behind Caddy for HTTPS. One script deploys it.
+- The domain is pathpro.tech. Say it out loud: "path protect."
+- Tiger Data (TimescaleDB + PostGIS) holds 220,594 crash rows and powers each street's crashes-by-hour chart through a continuous aggregate.
+- MongoDB Atlas stores street reports and shared walks, with TTL indexes so old ones clean themselves up.
+- The frontend is React, TypeScript, MapLibre, and deck.gl. Routing is Dijkstra on a SciPy sparse graph, about 150 ms at the median for both routes.
+
+![Crashes by hour from Tiger Data](https://raw.githubusercontent.com/ShaikNagurShareef/PathPro/main/docs/images/gallery/tiger-hourly.png)
+*When crashes happened on a street, served from a Tiger Data continuous aggregate.*
+
+I wrote tests before code the whole way through (about 1,145 of them) and ran separate review passes for the code, the ML, and security.
+
+## Safety data, handled carefully
+
+Adding crime data was the hardest call I made. Crime maps have a history of branding whole neighborhoods, and I didn't want to build another one. So PathPro only shows Atlanta Police reports of crimes against persons, grouped into hexagons by time of day, with no addresses or victim details, and always next to a note about what the data can and can't tell you. The bands adjust for how many people walk there, so an area with no reports never shows up as "higher." Crime never affects routing: a test multiplies every crime count by 1,000 and checks that the routes don't change.
+
+![Safety layer with fairness note](https://raw.githubusercontent.com/ShaikNagurShareef/PathPro/main/docs/images/gallery/06-personal-safety-fairness-help-points.png)
+*Reported crimes against persons by area and time of day, help points, and the fairness note that always sits beside them.*
+
+Lighting data covers only about 4% of streets. Where the data doesn't know, PathPro says so.
+
+## Challenges I ran into
+
+- A third of the crashes wouldn't match any street. Midtown's sidewalks are mapped as separate lines from the roads, so I moved the model onto road centerlines and let the sidewalks inherit the risk. Matches went from 66% to 96%.
+- A mentor tried my first version on their phone and told me it wasn't intuitive. They were right. I rebuilt the interface that afternoon around GPS, a simple route card, and turn-by-turn walking.
+- My routes looked like zigzags. OSMnx stores many street geometries backwards, so I was drawing every other segment in reverse and overstating distance by 1.6×. It's fixed, and a test guards it now.
+- My first confidence intervals were too narrow. Resampling by spatial block fixed that. I also found that rain matters less than I expected, and I report it.
+
+## What I'm proud of
+
+The model beats the City's own High Injury Network on a year it never saw. Every number on the screen traces back to the model, and the AI can't make one up. The safety features help without steering anyone away from a neighborhood. And the app keeps working when the weather API, an AI provider, a database, GPS, or the Wi-Fi goes down.
+
+## What I learned
+
+Most of the work was cleaning data and checking my own numbers, not picking a model. Crash data and crime data are both skewed by how many people are around to be counted, and saying that out loud made my claims stronger. Watching one person use the app on a real phone taught me more than any test did.
 
 ## What's next for PathPro
 
-Wheelchair and stroller profiles, citywide lighting data with the City or Georgia Power, a Vision Zero planning dashboard with Grok Imagine redesigns for the top-ranked streets, and new cities by swapping one coverage polygon.
+Wheelchair and stroller routing, better lighting data through the City or Georgia Power, a planning dashboard that pairs the top-ranked streets with Grok Imagine redesigns, and other cities, which mostly means swapping one boundary file.
 ```
 
 ## 5. Built with (tags)
