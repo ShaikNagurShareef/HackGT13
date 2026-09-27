@@ -284,7 +284,7 @@ def test_one_client_cannot_spend_the_whole_daily_budget(per_client_one: Harness)
 def test_client_limit_is_per_client_and_resets_each_day() -> None:
     from datetime import date, timedelta
 
-    from app.services.imagine import ClientDailyLimit
+    from app.services.limits import ClientDailyLimit
 
     limit = ClientDailyLimit(1)
     today = date(2026, 9, 26)

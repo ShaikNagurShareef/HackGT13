@@ -6,7 +6,9 @@ import { ASK_ERROR, ASK_SUGGESTIONS, ASK_THREAD_KEY, AskPanel } from './AskPanel
 
 const JSON_HEADERS = { headers: { 'content-type': 'application/json' } }
 const BANNED = /\b(safe|safer|safest|unsafe|dangerous|bad area|guaranteed)\b/i
-const THREAD = '22222222-2222-4222-8222-222222222222'
+const BARE_UUID = '22222222-2222-4222-8222-222222222222'
+// The server hands out a signed token '<uuid>.<sig>'; a bare Backboard thread id is never sent.
+const THREAD = `${BARE_UUID}.Zm9vYmFyYmF6cXV4MTIzNDU2Nzg5MGFi`
 const NOTE = "Answered from PathPro's model card and docs · powered by Backboard"
 
 function answer(text: string, thread: string | null = THREAD, source = 'backboard') {
@@ -97,6 +99,29 @@ describe('AskPanel (Ask PathPro on Backboard)', () => {
 
     expect(sentBody(fetcher, 0)).toEqual({ question: 'How was the model tested?', thread_id: THREAD })
     expect(window.sessionStorage.getItem(ASK_THREAD_KEY)).toBeNull()
+  })
+
+  it('ignores a bare thread id stored before threads were signed', async () => {
+    window.sessionStorage.setItem(ASK_THREAD_KEY, BARE_UUID)
+    const fetcher = respondWith(answer('Answer.'))
+    render(<AskPanel onClose={vi.fn()} />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'How was the model tested?' }))
+    await screen.findByText('Answer.')
+
+    expect(sentBody(fetcher, 0)).toEqual({ question: 'How was the model tested?' })
+    expect(window.sessionStorage.getItem(ASK_THREAD_KEY)).toBe(THREAD)
+  })
+
+  it('ignores a token with a too-short signature', async () => {
+    window.sessionStorage.setItem(ASK_THREAD_KEY, `${BARE_UUID}.short`)
+    const fetcher = respondWith(answer('Answer.'))
+    render(<AskPanel onClose={vi.fn()} />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'How was the model tested?' }))
+    await screen.findByText('Answer.')
+
+    expect(sentBody(fetcher, 0)).toEqual({ question: 'How was the model tested?' })
   })
 
   it('ignores a corrupt stored thread id', async () => {
