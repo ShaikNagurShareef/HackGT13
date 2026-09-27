@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Condition } from '../../api/client'
 import type { HelpPoint, RoutePreference } from '../../api/safetySchemas'
+import { forgetAskMemory, useAskMemory } from '../../lib/askMemory'
 import { isRideMode, networkLegendTitle, type TravelMode } from '../../lib/modes'
 import type { MapMode } from '../../lib/options'
 import type { SafetyLayers, SafetyPick } from '../../lib/safety'
@@ -10,6 +11,7 @@ import { SafetyHelpList } from '../safety/SafetyHelpList'
 import { SafetyLayerToggles } from '../safety/SafetyLayerToggles'
 import { SafetyLegend, type SafetyLegendProps } from '../safety/SafetyLegend'
 import { Timeline, type TimelineProps } from '../Timeline'
+import { ASK_MEMORY_DELETED, ASK_MEMORY_FORGET_FAILED } from '../ask/AskMemoryControls'
 import { MapModePicker } from './MapModePicker'
 
 /** Personal-safety controls; null when the server has no safety layer (older bundles, offline demo). */
@@ -45,10 +47,18 @@ export interface OptionsContentProps {
 
 /** Conditions, departure, route preference, map mode, (Risk Tides), legend, and privacy: sheet and sidebar. */
 export function OptionsContent(props: OptionsContentProps) {
-  const [cleared, setCleared] = useState(false)
+  const [privacyStatus, setPrivacyStatus] = useState('')
+  const [forgetting, setForgetting] = useState(false)
+  const askMemory = useAskMemory()
   const handleClear = () => {
     props.onClearHistory()
-    setCleared(true)
+    setPrivacyStatus('History cleared')
+  }
+  const handleForgetAsk = async () => {
+    setForgetting(true)
+    const outcome = await forgetAskMemory()
+    setForgetting(false)
+    setPrivacyStatus(outcome === 'deleted' ? ASK_MEMORY_DELETED : ASK_MEMORY_FORGET_FAILED)
   }
   const { safety } = props
   const safetyMode = props.mapMode === 'safety' && safety != null
@@ -101,8 +111,13 @@ export function OptionsContent(props: OptionsContentProps) {
           <button type="button" className="btn small" onClick={handleClear}>
             Clear history
           </button>
+          {askMemory && (
+            <button type="button" className="btn small" disabled={forgetting} onClick={() => void handleForgetAsk()}>
+              Forget Ask PathPro memory
+            </button>
+          )}
           <span className="faint" role="status">
-            {cleared ? 'History cleared' : ''}
+            {privacyStatus}
           </span>
         </div>
       </section>

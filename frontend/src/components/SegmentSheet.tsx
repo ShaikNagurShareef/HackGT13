@@ -82,11 +82,13 @@ export interface SegmentSheetProps {
   onAbout: () => void
   onListen?: () => void
   onReported?: () => void
+  /** Ask PathPro about this street; absent when Ask is unavailable (demo). */
+  onAsk?: () => void
   /** Ride-network street: the pedestrian crash count, hourly chart, and reports are walk-network data. */
   rideNetwork?: boolean
 }
 
-export function SegmentSheet({ detail, explanation, onClose, onAbout, onListen, onReported, rideNetwork = false }: SegmentSheetProps) {
+export function SegmentSheet({ detail, explanation, onClose, onAbout, onListen, onReported, onAsk, rideNetwork = false }: SegmentSheetProps) {
   const h = detail.history
   const pct = (x: number) => `${Math.round(x * 100)}%`
   return (
@@ -141,9 +143,16 @@ export function SegmentSheet({ detail, explanation, onClose, onAbout, onListen, 
       {detail.confidence === 'limited' && (
         <p className="faint">Few recorded crashes here — estimate based mostly on street characteristics.</p>
       )}
-      <button type="button" className="link-btn" onClick={onAbout}>
-        How is this calculated?
-      </button>
+      <div className="sheet-links">
+        <button type="button" className="link-btn" onClick={onAbout}>
+          How is this calculated?
+        </button>
+        {onAsk && (
+          <button type="button" className="link-btn" onClick={onAsk}>
+            Ask about this street
+          </button>
+        )}
+      </div>
     </section>
   )
 }

@@ -215,13 +215,50 @@ export type Imagined = z.infer<typeof imagineSchema>
 /** Server-signed Ask thread token "<uuid>.<sig>"; a bare Backboard thread id never validates. */
 export const ASK_THREAD_TOKEN_RE = /^[0-9a-f-]{36}\.[A-Za-z0-9_-]{22,}$/
 /** Ask PathPro (Backboard): a validated answer, or the fixed fallback that points to the model card. */
+/** A document an answer came from; only plain https links are ever rendered. */
+const askSourceSchema = z.object({
+  label: z.string().min(1).max(80),
+  url: z
+    .string()
+    .max(500)
+    .refine((u) => {
+      try {
+        return new URL(u).protocol === 'https:'
+      } catch {
+        return false
+      }
+    }, 'https only'),
+})
+export type AskSource = z.infer<typeof askSourceSchema>
+/** Invalid entries are dropped one by one, so one bad link never hides the answer. */
+const askSourcesSchema = z
+  .array(z.unknown())
+  .catch([])
+  .transform((items) =>
+    items.flatMap((item) => {
+      const parsed = askSourceSchema.safeParse(item)
+      return parsed.success ? [parsed.data] : []
+    }),
+  )
 export const askSchema = z.object({
   answer: z.string(),
   thread_id: z.string().regex(ASK_THREAD_TOKEN_RE).nullable(),
   source: z.enum(['backboard', 'fallback']),
   note: z.string(),
+  // v2 fields: tolerant, so an older server (or an odd value) degrades to "no sources, no memory".
+  sources: askSourcesSchema,
+  memory: z.enum(['on', 'off']).catch('off'),
+  context_used: z.enum(['segment', 'route', 'area', 'conditions']).catch('conditions'),
+  context_dropped: z.boolean().catch(false),
 })
 export type AskAnswer = z.infer<typeof askSchema>
+/** What the question is about; the server resolves the evidence, the browser only names it. */
+export type AskContext =
+  | { kind: 'segment'; seg_id: number; t: string; cond: 'live' | 'dry' | 'wet'; mode: TravelMode }
+  | { kind: 'route'; route_key: string }
+  | { kind: 'area'; cell: string; t: string; cond: 'live' | 'dry' | 'wet' }
+export const askMemoryOnSchema = z.object({ memory_token: z.string().regex(ASK_THREAD_TOKEN_RE) })
+export const askMemoryForgetSchema = z.object({ forgotten: z.literal(true) })
 export const areaSchema = z.object({
   cell: z.string(),
   lat: z.number(),

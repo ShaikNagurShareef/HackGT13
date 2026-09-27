@@ -1,5 +1,7 @@
 import type { z } from 'zod'
 import {
+  askMemoryForgetSchema,
+  askMemoryOnSchema,
   askSchema,
   conditionUsedSchema,
   envelope,
@@ -21,6 +23,7 @@ import {
   type Imagined,
   type Area,
   type AskAnswer,
+  type AskContext,
   type Meta,
   type Report,
   type ReportCategory,
@@ -98,6 +101,10 @@ export function bboxParam(bbox: Bbox): string {
   return bbox.map((v) => v.toFixed(BBOX_DECIMALS)).join(',')
 }
 export type Condition = 'live' | 'dry' | 'wet'
+export interface AskOptions {
+  context?: AskContext | null
+  memoryToken?: string | null
+}
 
 export const api = {
   meta: async (): Promise<Meta> => {
@@ -155,18 +162,46 @@ export const api = {
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seg_id: id }) },
       IMAGINE_TIMEOUT_MS,
     ),
-  /** Ask PathPro: the thread id is opaque and sent only when this tab already has one. */
-  ask: (question: string, threadId: string | null): Promise<AskAnswer> =>
+  /**
+   * Ask PathPro: the thread id is opaque and sent only when this tab already has one; the
+   * context names what is on screen (the server builds the evidence), and the memory token
+   * is sent only while the person has memory switched on.
+   */
+  ask: (question: string, threadId: string | null, opts: AskOptions = {}): Promise<AskAnswer> =>
     request(
       '/ask',
       askSchema,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(threadId ? { question, thread_id: threadId } : { question }),
+        body: JSON.stringify({
+          question,
+          ...(threadId ? { thread_id: threadId } : {}),
+          ...(opts.context ? { context: opts.context } : {}),
+          ...(opts.memoryToken ? { memory_token: opts.memoryToken } : {}),
+        }),
       },
       ASK_TIMEOUT_MS,
     ),
+  /** Opt-in memory: a private Backboard assistant for this browser, named by a signed token. */
+  askMemoryOn: async (): Promise<string> => {
+    const data = await request(
+      '/ask/memory',
+      askMemoryOnSchema,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' },
+      ASK_TIMEOUT_MS,
+    )
+    return data.memory_token
+  },
+  /** Deletes the private assistant and everything it remembered. */
+  askMemoryForget: async (memoryToken: string): Promise<void> => {
+    await request(
+      '/ask/memory/forget',
+      askMemoryForgetSchema,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ memory_token: memoryToken }) },
+      ASK_TIMEOUT_MS,
+    )
+  },
   areaAt: (lat: number, lon: number, t: string, cond: Condition): Promise<Area> =>
     request(`/areas/lookup?lat=${lat}&lon=${lon}&t=${encodeURIComponent(t)}&cond=${cond}`, areaSchema),
   area: (cell: string, t: string, cond: Condition): Promise<Area> =>

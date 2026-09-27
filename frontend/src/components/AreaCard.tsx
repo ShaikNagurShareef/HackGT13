@@ -8,10 +8,12 @@ export interface AreaCardProps {
   area: Area
   onClose: () => void
   onAbout: () => void
+  /** Ask PathPro about this area; absent when Ask is unavailable (demo). */
+  onAsk?: () => void
 }
 
 /** City Pulse: citywide area traffic-risk card (CITY-02/03). */
-export function AreaCard({ area, onClose, onAbout }: AreaCardProps) {
+export function AreaCard({ area, onClose, onAbout, onAsk }: AreaCardProps) {
   return (
     <section className="sheet panel" aria-label="Area traffic risk">
       <header className="sheet-head">
@@ -46,9 +48,16 @@ export function AreaCard({ area, onClose, onAbout }: AreaCardProps) {
           <dd className="num">{area.ped_crashes.toFixed(0)}</dd>
         </div>
       </dl>
-      <button type="button" className="link-btn" onClick={onAbout}>
-        How is this calculated?
-      </button>
+      <div className="sheet-links">
+        <button type="button" className="link-btn" onClick={onAbout}>
+          How is this calculated?
+        </button>
+        {onAsk && (
+          <button type="button" className="link-btn" onClick={onAsk}>
+            Ask about this area
+          </button>
+        )}
+      </div>
     </section>
   )
 }

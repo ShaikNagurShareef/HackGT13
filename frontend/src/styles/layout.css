@@ -466,6 +466,13 @@ a.btn {
   color: var(--text);
 }
 
+/* Sheet footer links: "How is this calculated?" and "Ask about this …". */
+.sheet-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
 /* Ask PathPro (Backboard): questions about how PathPro works. */
 .ask {
   display: flex;
@@ -501,6 +508,48 @@ a.btn {
 }
 .ask .ask-a {
   margin-top: 4px;
+}
+.ask-context {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 2px 4px 2px 12px;
+  border-radius: 999px;
+  background: var(--teal-tint);
+  color: var(--text);
+  font-size: 14px;
+}
+.ask-context span {
+  overflow-wrap: anywhere;
+}
+.ask-tag {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--amber-tint);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.ask .ask-sources {
+  margin-top: 4px;
+  font-size: 13px;
+}
+.ask-sources a {
+  color: var(--teal);
+}
+.ask-memory {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.ask-memory-note {
+  margin: 0;
+  font-size: 12px;
 }
 .ask-status:empty {
   display: none;

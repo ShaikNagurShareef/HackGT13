@@ -19,11 +19,13 @@ export interface RouteDetailsProps {
   onFocusSegment: (id: number) => void
   onSelectSegment: (id: number) => void
   dayParts: ReadonlyArray<DayPart>
+  /** Ask PathPro about this route; absent when Ask is unavailable (demo). */
+  onAsk?: () => void
 }
 
 /** Expanded route sheet: why, the evidence, and the preview walk. */
 export function RouteDetails(props: RouteDetailsProps) {
-  const { routes, explanation, explanationRef, onPreview, onFocusSegment, onSelectSegment, dayParts } = props
+  const { routes, explanation, explanationRef, onPreview, onFocusSegment, onSelectSegment, dayParts, onAsk } = props
   const { fastest, pathpro } = routes
   // Typing lives here, not in the app container, so each tick re-renders only this text.
   const typed = useTypewriter(explanation)
@@ -35,6 +37,11 @@ export function RouteDetails(props: RouteDetailsProps) {
       <p className="explanation" data-testid="route-explanation" ref={explanationRef} tabIndex={-1}>
         {typed ?? templateSummary(routes)}
       </p>
+      {onAsk && (
+        <button type="button" className="link-btn" onClick={onAsk}>
+          Ask about this route
+        </button>
+      )}
       <p className="faint">
         Leaving {formatClock(new Date(routes.depart_at))} · {routes.condition_used.label}
       </p>

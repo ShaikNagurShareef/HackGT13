@@ -34,7 +34,10 @@ export function Panels(props: PanelsProps) {
   const { panel, meta, actions, routines, canUseLocation, welcome, onDismissWelcome, options, safetyMeta = null, modes = null, askAvailable = false } = props
   if (!panel) return null
   if (panel.kind === 'about') return <About meta={meta} safetyMeta={safetyMeta} onClose={actions.closePanel} />
-  if (panel.kind === 'ask') return askAvailable ? <AskPanel onClose={actions.closePanel} /> : null
+  if (panel.kind === 'ask') {
+    if (!askAvailable) return null
+    return <AskPanel onClose={actions.closePanel} context={panel.context ?? null} contextLabel={panel.contextLabel} />
+  }
   if (panel.kind === 'options') {
     return (
       <OptionsSheet

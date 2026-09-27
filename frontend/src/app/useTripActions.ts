@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Route, Routes } from '../api/schemas'
+import type { AskContext, Route, Routes } from '../api/schemas'
 import type { SearchField } from '../components/search/SearchSheet'
 import type { Geolocation } from '../hooks/useGeolocation'
 import type { Navigation } from '../hooks/useNavigation'
@@ -12,7 +12,12 @@ import { shareLink, shareableUrl } from '../lib/share'
 import type { Routines } from '../hooks/useRoutines'
 import type { Place, ViewState } from '../state/urlState'
 
-export type Panel = { kind: 'search'; field: SearchField } | { kind: 'options' } | { kind: 'about' } | { kind: 'ask' } | null
+export type Panel =
+  | { kind: 'search'; field: SearchField }
+  | { kind: 'options' }
+  | { kind: 'about' }
+  | { kind: 'ask'; context?: AskContext; contextLabel?: string }
+  | null
 
 const LOCATING_NOTE = 'Finding you so routes start where you are. Your location stays on this phone.'
 const SHARE_FAILED = "Couldn't share. Copy the link from the address bar instead."
@@ -42,6 +47,9 @@ export function useTripActions({ onNotice, view, update, geo, planner, routines,
     setPanel({ kind: 'search', field })
   }
   const closePanel = () => setPanel(null)
+  /** Ask PathPro, optionally about the street, route, or area on screen. */
+  const openAsk = (context?: AskContext, contextLabel?: string) =>
+    setPanel(context ? { kind: 'ask', context, contextLabel } : { kind: 'ask' })
 
   const pickPlace = (field: SearchField, place: Place) => {
     if (field === 'home' || field === 'work') {
@@ -108,6 +116,7 @@ export function useTripActions({ onNotice, view, update, geo, planner, routines,
     setPanel,
     openSearch,
     closePanel,
+    openAsk,
     pickPlace,
     planSuggestion,
     startFromMyLocation,

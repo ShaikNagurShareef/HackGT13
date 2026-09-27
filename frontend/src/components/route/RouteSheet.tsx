@@ -30,6 +30,8 @@ export interface RouteSheetProps {
   dayParts?: ReadonlyArray<DayPart>
   /** Long walks: MARTA hand-off and "Try Bike" suggestions. */
   handoff?: HandoffCardProps | null
+  /** Ask PathPro about this route; absent when Ask is unavailable (demo). */
+  onAsk?: () => void
 }
 
 /** Route sheet: the PathPro route headline, the fastest alternative, and big Start (RTE-04). */
@@ -93,6 +95,7 @@ export function RouteSheet(props: RouteSheetProps) {
         onFocusSegment={props.onFocusSegment}
         onSelectSegment={props.onSelectSegment}
         dayParts={props.dayParts ?? NO_DAY_PARTS}
+        onAsk={props.onAsk}
       />
     </BottomSheet>
   )

@@ -25,6 +25,7 @@ import { useSegmentDetail } from '../hooks/useSegmentDetail'
 import { useTripPlanner } from '../hooks/useTripPlanner'
 import { useViewState } from '../hooks/useViewState'
 import { useViewportReports } from '../hooks/useViewportReports'
+import { routeAskTarget, type AskTarget } from '../lib/askContext'
 import { hotspotsFor } from '../lib/hotspots'
 import { isRideMode, networkLegendTitle, tabDurations } from '../lib/modes'
 import { startMode } from '../lib/navigation'
@@ -146,6 +147,7 @@ export function PathPro({ data, loadError }: PathProProps) {
     [reportsViewport, safetyViewport],
   )
   const actions = useTripActions({ onNotice: setError, view, update, geo, planner, routines, nav, routes, selectedRoute })
+  const openAskTarget = (target: AskTarget) => actions.openAsk(target.context, target.label)
   const shareResume = useShareResume({ demo, destination: view.to, route: selectedRoute, nav, onNotice: setError })
   const resumeSharing = () => {
     if (geo.status === 'prompt') geo.request() // a tap, so the browser may ask for location here
@@ -294,6 +296,7 @@ export function PathPro({ data, loadError }: PathProProps) {
             onSelectSegment: onSegment,
             dayParts: safety.meta?.day_parts,
             handoff,
+            onAsk: demo ? undefined : () => openAskTarget(routeAskTarget(routes.route_key)),
           }
         : null,
     modes: modeTabs,
@@ -352,7 +355,7 @@ export function PathPro({ data, loadError }: PathProProps) {
             },
             options: { ...optionValues, onClearHistory: routines.clear },
             onAbout: () => actions.setPanel({ kind: 'about' }),
-            onAsk: demo ? undefined : () => actions.setPanel({ kind: 'ask' }),
+            onAsk: demo ? undefined : () => actions.openAsk(),
             safetyAvailable: safety.available,
           }}
           route={routeScreen}
@@ -441,6 +444,8 @@ export function PathPro({ data, loadError }: PathProProps) {
           onAbout={() => actions.setPanel({ kind: 'about' })}
           onReported={reports.refresh}
           rideNetwork={networkMode !== 'walk'}
+          mode={networkMode}
+          onAsk={demo ? undefined : actions.openAsk}
         />
       )}
       {screen !== 'nav' && safety.pick && (
