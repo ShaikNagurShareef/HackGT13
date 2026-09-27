@@ -62,8 +62,8 @@ A few more things I built because people asked for them:
 - Share my walk, so a friend can follow along, and a check-in if you're running late, with 911 one tap away.
 - Routines that stay on your phone. After a couple of walks it will ask "Heading back to Klaus?"
 - Street reports (blocked sidewalk, signal out, flooding) that stay up for 14 days.
-- For city planners: tap "Imagine this street redesigned" and Grok Imagine draws what that street could look like with crosswalks, curb extensions, or better lighting. Gemini looks at the picture before it's shown, to confirm it shows the planned fixes and nothing it shouldn't. ⚑
-- Ask PathPro: ask how PathPro works, or tap "Ask about this street" (or route, or area) to ask about what's on screen. It answers from PathPro's own docs, and if you turn memory on, it remembers your stated travel preferences, and only those, until you tap "Forget me". ◇
+- Ask PathPro, an agent you can open from the map. Ask anything about the street, route or area you're looking at, and it answers from my model's own documents and that street's evidence, with every answer checked the same way as the explanations. Turn on memory and it remembers how you like to travel (never where you go); tap Forget me and it's gone.
+- For city planners: tap "Imagine this street redesigned" and Grok Imagine draws what that street could look like with crosswalks, curb extensions, or better lighting. Gemini looks at the picture before it's shown, to confirm it shows the planned fixes and nothing it shouldn't.
 
 ![Share my walk](https://raw.githubusercontent.com/ShaikNagurShareef/PathPro/main/docs/images/gallery/08-share-my-walk-follow.png)
 *Share my walk: a friend follows your walk live from a link.*
@@ -83,21 +83,21 @@ I pulled about 250,000 public crash records from eight sources (ARC, the City of
 
 The model predicts crashes per street while accounting for how many people actually walk there. It's a Poisson GLM plus a monotone LightGBM, validated with spatial blocks, then blended with each street's own history using Empirical Bayes. A second model handles hour, day, darkness, and rain. I used no demographic or income data anywhere.
 
-The AI features sit on top of the model; they don't replace it. Grok writes the "Why?" text from the street's own evidence ⚑, and a validator throws out any sentence containing a number that isn't in that evidence, so the score always comes from the model. Grok Voice reads the navigation alerts, and Grok Imagine draws the redesigns ⚑. If a provider is down, explanations fall back to Groq, then Gemini, then a plain template, and the voice falls back to ElevenLabs and then the phone's built-in voice.
+The AI features sit on top of the model; they don't replace it. Grok writes the "Why?" text from the street's own evidence, and a validator throws out any sentence containing a number that isn't in that evidence, so the score always comes from the model. Grok Voice reads the navigation alerts (the clips are fetched when you start walking, so they play instantly), and Grok Imagine draws the redesigns. If a provider is down, explanations fall back to Groq, then Gemini, then a plain template, and the voice falls back to ElevenLabs and then the phone's built-in voice.
 
 The rest of the stack:
 
 - Vultr runs the whole app on one VM in Atlanta, behind Caddy for HTTPS. One script deploys it.
+- Backboard runs Ask PathPro: retrieval over the model card and docs, the on-screen context, and opt-in memory, with one private assistant per browser that Forget me deletes.
 - The domain is pathpro.tech. Say it out loud: "path protect."
 - Tiger Data (TimescaleDB + PostGIS) holds 220,594 crash rows and powers each street's crashes-by-hour chart through a continuous aggregate.
 - MongoDB Atlas stores street reports and shared walks, with TTL indexes so old ones clean themselves up.
-- Backboard powers "Ask PathPro" ◇. I gave a Backboard assistant the model card, metrics, and design docs, plus a few fixed facts in its memory. Questions can carry the street, route, or area on screen and the live conditions, built on the server with no coordinates. Public questions use read-only memory, so no visitor can change what it knows. Memory is opt-in: it gives that browser its own private copy of the assistant, which keeps only stated travel preferences (never places), is never written by questions about a street, route, or area, and is deleted by "Forget me". Every answer goes through a validator (banned words, crime framing, and every number has to appear in the docs or the on-screen evidence); anything that fails is replaced with a pointer to the model card. Each visitor gets 20 questions a day.
 - The frontend is React, TypeScript, MapLibre, and deck.gl. Routing is Dijkstra on a SciPy sparse graph, about 150 ms at the median for both routes.
 
 ![Crashes by hour from Tiger Data](https://raw.githubusercontent.com/ShaikNagurShareef/PathPro/main/docs/images/gallery/tiger-hourly.png)
 *When crashes happened on a street, served from a Tiger Data continuous aggregate.*
 
-I wrote tests before code the whole way through (about 1,506 of them: 237 data, 628 API, 622 web, 19 end-to-end) and ran separate review passes for the code, the ML, and security.
+I wrote tests before code the whole way through (about 1,145 of them) and ran separate review passes for the code, the ML, and security.
 
 ## Safety data, handled carefully
 
@@ -114,7 +114,6 @@ Lighting data covers only about 4% of streets. Where the data doesn't know, Path
 - A mentor tried my first version on their phone and told me it wasn't intuitive. They were right. I rebuilt the interface that afternoon around GPS, a simple route card, and turn-by-turn walking.
 - My routes looked like zigzags. OSMnx stores many street geometries backwards, so I was drawing every other segment in reverse and overstating distance by 1.6×. It's fixed, and a test guards it now.
 - My first confidence intervals were too narrow. Resampling by spatial block fixed that. I also found that rain matters less than I expected, and I report it.
-- Giving Ask PathPro a memory without turning it into a location log. Only plain questions can write memory, and it keeps stated preferences only.
 
 ## What I'm proud of
 
