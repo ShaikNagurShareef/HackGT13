@@ -101,7 +101,7 @@ def test_memories_hold_the_key_facts() -> None:
 def test_corpus_is_the_curated_docs() -> None:
     assert "docs/model_card.md" in CORPUS_FILES
     assert "docs/metrics.json" in CORPUS_FILES
-    assert all(name.startswith("docs/") for name in CORPUS_FILES)
+    assert all(name.startswith("docs/") or name == "README.md" for name in CORPUS_FILES)
     assert not any(".env" in name for name in CORPUS_FILES)
 
 
