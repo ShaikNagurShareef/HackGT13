@@ -887,3 +887,22 @@ async def test_check_backboard_rejected_key() -> None:
             status, note = await check_backboard(client, KEY, ASSISTANT)
 
     assert status == FAIL and "401" in note and KEY not in note
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "name",
+    ["model_card.md", "docs/model_card.md", "metrics.json", "safety_sources.md", "decisions.md"],
+)
+def test_validator_allows_naming_pathpro_corpus_files(name: str) -> None:
+    text = f"The PathPro model card explains how the traffic risk score is built (see {name})."
+
+    assert "link" not in ask_validation_errors(text, frozenset())
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("name", ["evil.md", "model_card.md.evil.com", "notes.json.io"])
+def test_validator_still_rejects_other_file_like_domains(name: str) -> None:
+    text = f"The PathPro model explains the traffic risk score at {name} today."
+
+    assert "link" in ask_validation_errors(text, frozenset())
