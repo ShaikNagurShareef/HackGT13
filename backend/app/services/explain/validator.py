@@ -96,7 +96,10 @@ ASK_MAX_WORDS = 140  # the assistant is told 120; a little slack for formatting
 ASK_MAX_CHARS = 1000
 ASK_ALLOWED = frozenset({"crime", "safety"})
 ASK_EXTRA_BANNED = ("dangerous", "high-risk neighborhood", "crime-ridden", "ghetto")
-ASK_BANNED = tuple(b for b in BANNED if b not in ASK_ALLOWED) + ASK_EXTRA_BANNED
+# "income" and "demographic" may appear only to say PathPro does not use them.
+ASK_NEGATABLE = frozenset({"income", "demographic"})
+ASK_BANNED = tuple(b for b in BANNED if b not in ASK_ALLOWED | ASK_NEGATABLE) + ASK_EXTRA_BANNED
+_ASK_NEGATABLE_RE = re.compile(r"\b(" + "|".join(sorted(ASK_NEGATABLE)) + r")s?\b", re.IGNORECASE)
 _ASK_BANNED_RE = re.compile(
     r"\b(" + "|".join(re.escape(b) for b in ASK_BANNED) + r")\b", re.IGNORECASE
 )
@@ -115,6 +118,14 @@ _NEGATION_RE = re.compile(
     r"\b(?:never|not|no|without|excluded?|informational)\b|n't\b", re.IGNORECASE
 )
 _SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+|\n+")
+
+
+def _unnegated_demographics(text: str) -> bool:
+    """Naming income or demographics is fine only in a sentence saying they are not used."""
+    return any(
+        _ASK_NEGATABLE_RE.search(sentence) and not _NEGATION_RE.search(sentence)
+        for sentence in _SENTENCE_SPLIT_RE.split(text)
+    )
 
 
 def _crime_framing(text: str) -> bool:
@@ -231,7 +242,7 @@ def ask_validation_errors(
         errors.append("off_topic")
     if len(stripped) > ASK_MAX_CHARS or len(stripped.split()) > ASK_MAX_WORDS:
         errors.append("too_long")
-    if _ASK_BANNED_RE.search(stripped):
+    if _ASK_BANNED_RE.search(stripped) or _unnegated_demographics(stripped):
         errors.append("banned_phrase")
     if _crime_framing(stripped):
         errors.append("crime_framing")

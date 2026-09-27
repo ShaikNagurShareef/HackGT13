@@ -39,10 +39,29 @@ def _collect_numbers(value: Any, out: set[float]) -> None:
             _collect_numbers(v, out)
 
 
+# Street names come from OpenStreetMap (anyone can edit it), so every string that reaches an
+# LLM is flattened to one short line: no control characters, newlines, or long instructions.
+MAX_LABEL_CHARS = 80
+_CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]+")
+_SPACE_RE = re.compile(r"\s+")
+
+
+def _clean(value: Any) -> Any:
+    if isinstance(value, str):
+        flat = _SPACE_RE.sub(" ", _CONTROL_RE.sub(" ", value)).strip()
+        return flat[:MAX_LABEL_CHARS].rstrip()
+    if isinstance(value, dict):
+        return {k: _clean(v) for k, v in value.items()}
+    if isinstance(value, list | tuple):
+        return [_clean(v) for v in value]
+    return value
+
+
 def _with_numbers(kind: str, payload: dict[str, Any]) -> Evidence:
+    clean = _clean(payload)
     nums: set[float] = set()
-    _collect_numbers(payload, nums)
-    return Evidence(kind=kind, payload=payload, numbers=frozenset(nums))
+    _collect_numbers(clean, nums)
+    return Evidence(kind=kind, payload=clean, numbers=frozenset(nums))
 
 
 def _time_label(iso: str) -> str:

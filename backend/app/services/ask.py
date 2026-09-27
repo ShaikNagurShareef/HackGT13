@@ -66,6 +66,12 @@ MemoryState = Literal["on", "off"]
 # Server-built evidence rides above the question; the assistant is told to use it only for
 # this question, and the memory prompt forbids keeping anything inside this block.
 CONTEXT_HEADER = "Context from PathPro's model (for this question only):"
+# Sent only to a visitor's private clone: the assistant may keep stated travel preferences.
+MEMORY_NOTE = (
+    "Memory is on for this person (they opted in). Remember only travel preferences they state "
+    "(usual times, travel mode, well-lit or busier streets, accessibility needs), never places. "
+    "When they share one, confirm briefly that you'll remember it until they tap Forget me."
+)
 
 
 @dataclass(frozen=True)
@@ -88,12 +94,15 @@ def clean_question(raw: str) -> str:
     return question
 
 
-def compose_content(question: str, evidence: Evidence | None) -> str:
-    """The message sent upstream: the context block (compact JSON), then the question."""
-    if evidence is None:
+def compose_content(question: str, evidence: Evidence | None, *, memory_on: bool = False) -> str:
+    """The message sent upstream: memory note, context block (compact JSON), then the question."""
+    parts = [MEMORY_NOTE] if memory_on else []
+    if evidence is not None:
+        payload = json.dumps(evidence.payload, separators=(",", ":"), ensure_ascii=False)
+        parts.append(f"{CONTEXT_HEADER}\n{payload}")
+    if not parts:
         return question
-    payload = json.dumps(evidence.payload, separators=(",", ":"), ensure_ascii=False)
-    return f"{CONTEXT_HEADER}\n{payload}\n\nQuestion: {question}"
+    return "\n\n".join([*parts, f"Question: {question}"])
 
 
 def clean_answer(text: str) -> str:
@@ -159,14 +168,17 @@ class AskService:
         clone = verified_clone(self._memory_tokens, memory_token, self._assistant_id)
         assistant = clone or self._assistant_id
         state: MemoryState = "on" if clone else "off"
-        mode: MemoryMode = "Auto" if clone else "Readonly"
+        # Memory is written only from plain questions (where people state preferences): a turn
+        # carrying street, route or area context reads memory but never writes it.
+        writes = clone is not None and (evidence is None or evidence.kind == "conditions")
+        mode: MemoryMode = "Auto" if writes else "Readonly"
         thread_id = self._tokens.verify(thread_token, assistant)  # unverified: a new thread
         if thread_token and thread_id is None:
             log.info("ask thread token did not verify; starting a new thread")
         if not self._budget.take():
             log.warning("ask daily budget spent; answering with the fallback")
             return self._fallback(thread_id, assistant, state)
-        content = compose_content(question, evidence)
+        content = compose_content(question, evidence, memory_on=writes)
         try:
             raw, thread = await asyncio.wait_for(
                 self._converse(self._backboard, assistant, content, thread_id, mode),
