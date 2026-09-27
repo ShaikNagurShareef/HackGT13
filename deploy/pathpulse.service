@@ -14,7 +14,8 @@ Environment=ARTIFACTS_DIR=/srv/pathpulse/artifacts/current
 # libpq probes ~/.postgresql for client certs; with ProtectHome=true /home is unreadable and the
 # probe fails the connection. A HOME outside /home keeps the hardening and lets Tiger connect.
 Environment=HOME=/srv/pathpulse
-ExecStart=/srv/pathpulse/app/.venv/bin/uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --workers 1 --proxy-headers --forwarded-allow-ips 127.0.0.1
+# No uvicorn access log: it would record query strings (lat/lon, bbox, search text); Caddy keeps a filtered log (NFR-09).
+ExecStart=/srv/pathpulse/app/.venv/bin/uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000 --workers 1 --proxy-headers --forwarded-allow-ips 127.0.0.1 --no-access-log
 Restart=always
 RestartSec=2
 
