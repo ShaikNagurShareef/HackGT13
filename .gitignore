@@ -57,6 +57,5 @@ deploy/.ghpages/
 # Demo video renders and review stills (script and thumbnail are committed)
 media/*.mp4
 # Final demo videos are committed through Git LFS (see .gitattributes).
-!media/pathpro_demo_v2.mp4
-!media/pathpro_30s.mp4
+!media/pathpro_demo_v3.mp4
 media/raw/

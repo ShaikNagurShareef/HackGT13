@@ -69,7 +69,7 @@ Pitch: *mission control for every walk home*. PathPro aligns with SpaceX's engin
 - [x] Built and tested: Grok explanations first in the chain (Grok → Groq → Gemini → template), Grok Voice alerts (ElevenLabs, then the device voice, as backups), and "Imagine this street redesigned" (Grok Imagine, server-built prompt, "not a real photo" label, checked by Gemini, per-visitor daily cap)
 - [ ] Deploy to pathpro.tech and verify live: explanation source "grok", Grok Voice audio, one Imagine image with the "Checked by Gemini" line
 - [x] Track selected on Devpost (sponsor track 2)
-- [ ] Video v3: solo intro, Grok Voice narration, and the "Make it Legendary" scenes (script in `media/pathpro_demo_script.md`)
+- [x] Video v3 (3:02): solo intro, Grok Voice narration (orion), Ask PathPro agent, Grok Imagine + Gemini check (`media/pathpro_demo_v3.mp4`, script in `media/pathpro_v3_script.md`)
 - [ ] Publish the "Make it Legendary" section in `docs/devpost.md` (gated on the live check)
 
 ### Oracle of the Deep (ML/AI + visualization)
@@ -116,7 +116,7 @@ Job: community street reports. Tiger Data stays the system of record for crashes
 ## Submission
 - [x] Devpost form answers entered: general track Oracle of the Deep; sponsor tracks Aramco (1st) and SpaceXAI (2nd); MLH ElevenLabs, Gemini API, TigerData, Vultr, MongoDB Atlas; school Georgia State University; domain pathpro.tech; the AI-tool disclosure and data credits
 - [ ] Tick Backboard after the deploy; remove the ⚑/◇ gates in `docs/devpost_submission.md` once each feature is live
-- [x] Demo video v2 (6:12): media/pathpro_demo_v2.mp4 + captions media/pathpro_demo_v2.srt/.vtt + thumbnail media/thumbnail_v2.png — team intro (outdated: it shows four people; PathPro is a solo build), motivation, risks (traffic, reported crimes, lighting, weather, hazards), who it's for, usability, ROI, one scene per sponsor
+- [x] Demo video v3 (3:02): media/pathpro_demo_v3.mp4 + captions .srt/.vtt + thumbnail media/thumbnail_v3.png; a compact copy plays in the README. Older v1/v2/30-second videos were removed.
 - [ ] Re-cut as v3 with a solo intro and the new features, then upload to YouTube (attach the .srt) and paste the link into Devpost
 - [ ] (old) Demo video (2–3 min): live route, Risk Tides, "Why?" sheet with Tiger history, Listen (ElevenLabs), pathpro.tech in the address bar
 - [ ] Submit the Devpost link at expo.hexlabs.org

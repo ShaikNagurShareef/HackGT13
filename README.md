@@ -4,17 +4,11 @@
 
 **Live app: [pathpro.tech](https://pathpro.tech)**, hosted on Vultr (Atlanta) behind Caddy with automatic HTTPS.
 
-## Demo videos
+## Demo video (3 min)
 
-[![PathPro demo video (3 min): see the risks on your way, before you go](media/thumbnail_v3.png)](media/pathpro_demo_v3.mp4)
+https://github.com/user-attachments/assets/163059e1-e646-46fa-bf56-3240464d03b6
 
-| Video | Length | Captions |
-| --- | --- | --- |
-| [**Demo (v3, 3 min)**: the story, the app with the Ask PathPro agent, Grok Voice alerts, Grok Imagine with Gemini's check, and the 2024 holdout result. Narrated with Grok Voice](media/pathpro_demo_v3.mp4) | 3:02 | [SRT](media/pathpro_demo_v3.srt) · [VTT](media/pathpro_demo_v3.vtt) |
-| [**Earlier full demo (v2)**: motivation, how PathPro differs, the app on phone and desktop, every risk it shows, who it's for, results and ROI, and one scene per sponsor](media/pathpro_demo_v2.mp4) | 6:30 | [SRT](media/pathpro_demo_v2.srt) · [VTT](media/pathpro_demo_v2.vtt) |
-| [**30-second cut**](media/pathpro_30s.mp4) | 0:35 | [SRT](media/pathpro_30s.srt) · [VTT](media/pathpro_30s.vtt) |
-
-All videos have burned-in captions and are stored with Git LFS. v3 is narrated with Grok Voice (AI; the on-screen note says so) and shows the current app. v2 and the 30-second cut use ElevenLabs narration and predate the Grok, Gemini and Ask PathPro features; their opening and closing cards show an outdated four-person team (PathPro is a solo build). Clone with `git lfs install` first, or open a file on GitHub and choose "View raw" to play it. The v3 script, production notes and number sources are in [media/pathpro_v3_script.md](media/pathpro_v3_script.md); earlier cuts are in [media/pathpro_demo_script.md](media/pathpro_demo_script.md).
+The story, the app with the Ask PathPro agent, Grok Voice alerts, Grok Imagine with Gemini's check, and the 2024 holdout result, built solo by Nagur Shareef Shaik. The player above is a compact 720p copy; the full 1080p file is [media/pathpro_demo_v3.mp4](media/pathpro_demo_v3.mp4) (Git LFS), with captions as [SRT](media/pathpro_demo_v3.srt) and [VTT](media/pathpro_demo_v3.vtt). Narration is Grok Voice (AI), and the video says so on screen. The script, production notes and the source of every number are in [media/pathpro_v3_script.md](media/pathpro_v3_script.md).
 
 ## Documentation
 

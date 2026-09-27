@@ -6,7 +6,7 @@
 
 | If you want to… | Read |
 | --- | --- |
-| Watch it | [Full demo video v2 (6:30; its team card is outdated, v3 re-cut planned)](../media/pathpro_demo_v2.mp4) · [30-second cut](../media/pathpro_30s.mp4) · captions: [SRT](../media/pathpro_demo_v2.srt) / [VTT](../media/pathpro_demo_v2.vtt) |
+| Watch it | [Demo video (3 min, Grok Voice narration)](../media/pathpro_demo_v3.mp4) · captions: [SRT](../media/pathpro_demo_v3.srt) · [VTT](../media/pathpro_demo_v3.vtt) · [script and number sources](../media/pathpro_v3_script.md) |
 | Use the app | [User guide](guide/user_guide.md) ([PDF](guide/user_guide.pdf)): trips, modes, navigation, Ask PathPro (agent button and chat), personal safety, Share my walk, privacy, accessibility, FAQ |
 | Understand how it's built | [Technical documentation](technical/README.md): architecture diagrams, data and models, API reference, deployment, security and privacy, testing |
 | Know why it's built this way | [Decision log](decisions.md): every major decision, when it was made, and why |

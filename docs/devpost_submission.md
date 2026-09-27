@@ -8,7 +8,7 @@ Each section below is one field of the Devpost form, in the order Devpost asks f
 - [ ] Grok and the Gemini image check are deployed and verified live on pathpro.tech. If not, delete the "Grok" and "Gemini" lines marked ⚑ first.
 - [x] Ask PathPro (Backboard) tested against the real API locally: `setup_backboard`, `check_keys`, real questions, and opt-in memory keeping a stated travel preference.
 - [ ] Ask PathPro deployed and one real question answered on pathpro.tech. If not, delete the "Backboard" lines marked ◇ first, and don't tick the Backboard prize.
-- [ ] Demo video uploaded to YouTube (unlisted is fine) with `media/pathpro_demo_v2.srt` attached. The v2 video's team cards are outdated (PathPro is a solo build); prefer the v3 re-cut if it's ready.
+- [ ] Demo video uploaded to YouTube (unlisted is fine) with `media/pathpro_demo_v3.srt` attached.
 - Solo build (team name Coding Claws), so there's no one to invite.
 
 ---
@@ -23,7 +23,7 @@ Find a lower-risk way to walk or ride home in Atlanta. My crash model beats the 
 
 ## 3. Thumbnail
 
-`media/thumbnail_v2.png` (1280×720; Devpost crops thumbnails to 3:2, so check that the title stays visible in the preview).
+`media/thumbnail_v3.png` (1280×720; Devpost crops thumbnails to 3:2, so check that the title stays visible in the preview).
 
 ## 4. About the project (paste as Markdown)
 
@@ -142,7 +142,7 @@ Wheelchair and stroller routing, better lighting data through the City or Georgi
 
 ## 7. Video demo link
 
-The YouTube URL of the v3 re-cut once it's recorded (solo intro, Grok Voice, the new features). Until then `media/pathpro_demo_v2.mp4`, whose team cards are outdated.
+The YouTube URL of `media/pathpro_demo_v3.mp4` (3:02, Grok Voice narration). A compact copy also plays in the GitHub README.
 
 ## 8. Image gallery (upload in this order; the caption is the first line)
 
