@@ -50,7 +50,10 @@ class Settings(BaseSettings):
     backboard_model: str = "gemini-3.1-flash-lite"  # empty: Backboard's default model
     ask_daily_budget: int = Field(default=300, ge=0)
     ask_per_client_daily: int = Field(default=20, ge=0)  # per client address per day
-    # Signs Ask thread tokens; unset: a random per-process secret (threads reset on restart).
+    # Opt-in private memory: Backboard assistant clones created per day across all visitors
+    # (each client address may create ASK_MEMORY_PER_CLIENT_DAILY = 3 per day).
+    ask_memory_daily: int = Field(default=100, ge=0)
+    # Signs Ask thread and memory tokens; unset: random per process (both reset on restart).
     ask_thread_secret: SecretStr | None = None
     database_url: SecretStr | None = None
     mongodb_uri: SecretStr | None = None

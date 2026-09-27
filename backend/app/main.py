@@ -40,7 +40,8 @@ from app.repositories.safety import load_safety
 from app.repositories.walks import WalksRepository
 from app.services.ask import AskService
 from app.services.ask_corpus import load_allowed_numbers
-from app.services.ask_threads import ThreadTokens
+from app.services.ask_memory import AskMemory
+from app.services.ask_threads import MemoryTokens, ThreadTokens, random_secret
 from app.services.backboard import Backboard
 from app.services.explain.providers import (
     GeminiProvider,
@@ -94,21 +95,31 @@ def build_voices(cfg: Settings, client: httpx.AsyncClient) -> VoiceChain:
     return VoiceChain((grok, eleven))
 
 
-def build_ask(cfg: Settings, client: httpx.AsyncClient) -> AskService:
-    """Ask PathPro (Backboard); disabled (503) without both a key and an assistant id."""
+def build_ask(cfg: Settings, client: httpx.AsyncClient) -> tuple[AskService, AskMemory]:
+    """Ask PathPro (Backboard) and its opt-in memory; 503 without a key and an assistant id.
+
+    Thread and memory tokens share one secret under separate purposes; without a configured
+    secret it is random per process (conversations and memory tokens reset on restart).
+    """
     key = secret(cfg.backboard_api_key)
-    thread_secret = secret(cfg.ask_thread_secret)
-    tokens = ThreadTokens(thread_secret.encode()) if thread_secret else ThreadTokens.random()
-    return AskService(
-        Backboard(client, key) if key else None,
-        cfg.backboard_assistant_id or None,
+    token_secret = secret(cfg.ask_thread_secret)
+    secret_bytes = token_secret.encode() if token_secret else random_secret()
+    backboard = Backboard(client, key) if key else None
+    assistant_id = cfg.backboard_assistant_id or None
+    memory_tokens = MemoryTokens(secret_bytes)
+    service = AskService(
+        backboard,
+        assistant_id,
         load_allowed_numbers(BACKEND_DIR.parent),
         llm_provider=cfg.backboard_llm_provider,
         model_name=cfg.backboard_model,
         daily_budget=cfg.ask_daily_budget,
         per_client_daily=cfg.ask_per_client_daily,
-        thread_tokens=tokens,
+        thread_tokens=ThreadTokens(secret_bytes),
+        memory_tokens=memory_tokens,
     )
+    memory = AskMemory(backboard, assistant_id, memory_tokens, daily_budget=cfg.ask_memory_daily)
+    return service, memory
 
 
 log = logging.getLogger(__name__)
@@ -134,7 +145,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             geo_key = cfg.geoapify_api_key.get_secret_value() if cfg.geoapify_api_key else None
             app.state.geocoder = GeocodeService(client, geo_key, cfg.geocode_daily_budget)
             app.state.tts = build_voices(cfg, client)
-            app.state.ask = build_ask(cfg, client)
+            app.state.ask, app.state.ask_memory = build_ask(cfg, client)
             app.state.imagine = ImagineService(
                 client,
                 secret(cfg.xai_api_key),

@@ -78,7 +78,7 @@ async def test_prune_deletes_only_old_visitor_clones() -> None:
 
 @pytest.mark.unit
 async def test_prune_dry_run_deletes_nothing() -> None:
-    with respx.mock() as mock:
+    with respx.mock(assert_all_called=False) as mock:
         delete = _mock(mock)
         async with httpx.AsyncClient() as client:
             result = await prune(Backboard(client, KEY), timedelta(days=30), now=NOW, dry_run=True)
@@ -116,7 +116,7 @@ async def test_prune_accepts_a_wrapped_listing() -> None:
 @pytest.mark.unit
 async def test_main_prints_counts_only(capsys: pytest.CaptureFixture[str]) -> None:
     cfg = Settings(backboard_api_key=KEY, backboard_assistant_id=BASE, _env_file=None)  # type: ignore[call-arg]
-    with respx.mock() as mock:
+    with respx.mock(assert_all_called=False) as mock:
         _mock(mock)
         code = await main_async(cfg, ["--older-than", "30d", "--dry-run"])
 

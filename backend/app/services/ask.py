@@ -1,9 +1,14 @@
 """Ask PathPro: questions about PathPro itself, answered by a Backboard assistant from its docs.
 
 Privacy and trust rules:
-- Public users can never write the shared assistant's memory: every message uses
-  memory="Readonly". The browser holds only a server-signed thread token (see ask_threads);
-  a bare or forged Backboard thread id is never forwarded upstream, it starts a new thread.
+- Public users can never write the shared assistant's memory: without a valid memory token
+  every message goes to the shared assistant with memory="Readonly". A visitor who turned on
+  private memory (see ask_memory) talks to their own clone with memory="Auto" instead.
+- The browser holds only server-signed tokens (see ask_threads). A thread token is bound to its
+  assistant; a bare, forged, or mismatched one is never forwarded upstream, it starts a new
+  thread. An invalid memory token simply means memory is off.
+- The question may carry server-built context (a street, route, area, or live conditions);
+  it never includes coordinates, and it is validated against as evidence.
 - Each client address gets a small daily cap, checked before the shared daily budget is spent.
 - The answer is shown only if it passes the explanation validator's Ask rules (on topic, no links,
   banned words, crime framing, every number found in the docs corpus). Anything else, and any
@@ -25,8 +30,9 @@ import httpx
 
 from app.api.envelope import AppError
 from app.services.ask_corpus import CorpusSource, corpus_sources
-from app.services.ask_threads import ThreadTokens
-from app.services.backboard import Backboard, BackboardError
+from app.services.ask_memory import verified_clone
+from app.services.ask_threads import MemoryTokens, ThreadTokens
+from app.services.backboard import Backboard, BackboardError, MemoryMode
 from app.services.explain.evidence import Evidence
 from app.services.explain.service import DailyBudget
 from app.services.explain.validator import ask_validation_errors
@@ -106,6 +112,7 @@ class AskService:
         daily_budget: int = 300,
         per_client_daily: int = DEFAULT_PER_CLIENT_DAILY,
         thread_tokens: ThreadTokens | None = None,
+        memory_tokens: MemoryTokens | None = None,
         timeout_s: float = TIMEOUT_S,
     ) -> None:
         self._backboard = backboard
@@ -116,15 +123,16 @@ class AskService:
         self._budget = DailyBudget(daily_budget)
         self._per_client = ClientDailyLimit(per_client_daily)
         self._tokens = thread_tokens or ThreadTokens.random()
+        self._memory_tokens = memory_tokens or MemoryTokens.random()
         self._timeout = timeout_s
 
     @property
     def enabled(self) -> bool:
         return self._backboard is not None and bool(self._assistant_id)
 
-    def _fallback(self, thread_id: str | None) -> AskAnswer:
-        token = self._tokens.issue(thread_id) if thread_id else None
-        return AskAnswer(FALLBACK_TEXT, token, "fallback", FALLBACK_NOTE)
+    def _fallback(self, thread_id: str | None, assistant_id: str, memory: MemoryState) -> AskAnswer:
+        token = self._tokens.issue(thread_id, assistant_id) if thread_id else None
+        return AskAnswer(FALLBACK_TEXT, token, "fallback", FALLBACK_NOTE, memory=memory)
 
     def ensure_enabled(self) -> None:
         if not self.enabled:
@@ -137,46 +145,52 @@ class AskService:
         *,
         client: str,
         evidence: Evidence | None = None,
+        memory_token: str | None = None,
     ) -> AskAnswer:
         """Answer from the docs and the server-built `evidence` (never free text).
 
-        `thread_token` is the client's signed token and `client` its rate-limit key.
+        `thread_token` is the client's signed token and `client` its rate-limit key. A valid
+        `memory_token` routes the question to the visitor's private clone with memory on.
         """
         if self._backboard is None or not self._assistant_id:
             raise AppError("ASK_UNAVAILABLE", UNAVAILABLE_MESSAGE, 503)
         if not self._per_client.take(client):  # before the shared budget is spent
             raise AppError("ASK_CLIENT_LIMIT", CLIENT_LIMIT_MESSAGE, 429)
-        thread_id = self._tokens.verify(thread_token)  # unverified: start a new thread
+        clone = verified_clone(self._memory_tokens, memory_token, self._assistant_id)
+        assistant = clone or self._assistant_id
+        state: MemoryState = "on" if clone else "off"
+        mode: MemoryMode = "Auto" if clone else "Readonly"
+        thread_id = self._tokens.verify(thread_token, assistant)  # unverified: a new thread
         if thread_token and thread_id is None:
             log.info("ask thread token did not verify; starting a new thread")
         if not self._budget.take():
             log.warning("ask daily budget spent; answering with the fallback")
-            return self._fallback(thread_id)
+            return self._fallback(thread_id, assistant, state)
+        content = compose_content(question, evidence)
         try:
             raw, thread = await asyncio.wait_for(
-                self._converse(
-                    self._backboard,
-                    self._assistant_id,
-                    compose_content(question, evidence),
-                    thread_id,
-                ),
+                self._converse(self._backboard, assistant, content, thread_id, mode),
                 timeout=self._timeout,
             )
         except ASK_ERRORS as exc:
             log.warning("ask backboard unavailable: %s", type(exc).__name__)
-            return self._fallback(None)  # the client starts a fresh thread next time
+            return self._fallback(None, assistant, state)  # a fresh thread next time
         text = clean_answer(raw)
         errors = ask_validation_errors(text, self._allowed, evidence=evidence, question=question)
         if errors:
             kinds = sorted({e.split(":", 1)[0] for e in errors})
             log.warning("ask answer withheld by validator: %s", kinds)
-            return self._fallback(thread)
-        return AskAnswer(
-            text, self._tokens.issue(thread), "backboard", ASK_NOTE, corpus_sources(raw)
-        )
+            return self._fallback(thread, assistant, state)
+        token = self._tokens.issue(thread, assistant)
+        return AskAnswer(text, token, "backboard", ASK_NOTE, corpus_sources(raw), state)
 
     async def _converse(
-        self, backboard: Backboard, assistant_id: str, content: str, thread_id: str | None
+        self,
+        backboard: Backboard,
+        assistant_id: str,
+        content: str,
+        thread_id: str | None,
+        memory: MemoryMode,
     ) -> tuple[str, str]:
         """The raw reply (citation markers kept, for sources) and the canonical thread id."""
         thread = thread_id or _canonical(await backboard.create_thread(assistant_id, self._timeout))
@@ -184,7 +198,7 @@ class AskService:
             thread_id=thread,
             assistant_id=assistant_id,
             content=content,
-            memory="Readonly",  # public users never write shared assistant memory
+            memory=memory,  # "Readonly" on the shared assistant; "Auto" only on a clone
             llm_provider=self._provider,
             model_name=self._model,
             timeout=self._timeout,

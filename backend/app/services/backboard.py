@@ -63,9 +63,53 @@ class Backboard:
         )
         return _object(resp)
 
-    async def create_assistant(self, name: str, system_prompt: str, tok_k: int) -> str:
-        body = {"name": name, "system_prompt": system_prompt, "tok_k": tok_k}
+    async def create_assistant(
+        self,
+        name: str,
+        system_prompt: str,
+        tok_k: int,
+        custom_fact_extraction_prompt: str | None = None,
+    ) -> str:
+        body: dict[str, Any] = {"name": name, "system_prompt": system_prompt, "tok_k": tok_k}
+        if custom_fact_extraction_prompt:
+            body = {**body, "custom_fact_extraction_prompt": custom_fact_extraction_prompt}
         return _text(await self._post("/assistants", body, DEFAULT_TIMEOUT_S), "assistant_id")
+
+    async def clone_assistant(
+        self, assistant_id: str, name: str, timeout: float = DEFAULT_TIMEOUT_S
+    ) -> str:
+        """Clone an assistant with its documents and memories; returns the clone's id."""
+        body = {"name": name, "copy_documents": True, "copy_memories": True}
+        data = await self._post(f"/assistants/{assistant_id}/clone", body, timeout)
+        assistant = data.get("assistant")
+        if not isinstance(assistant, dict):
+            raise BackboardError("missing assistant")
+        return _text(assistant, "assistant_id")
+
+    async def delete_assistant(self, assistant_id: str, timeout: float = DEFAULT_TIMEOUT_S) -> None:
+        """Delete an assistant and everything it holds (its memories, documents, threads)."""
+        resp = await self.client.delete(
+            f"{self.base_url}/assistants/{assistant_id}", headers=self._headers, timeout=timeout
+        )
+        resp.raise_for_status()
+
+    async def list_assistants(self, *, skip: int, limit: int) -> list[dict[str, Any]]:
+        """One page of the account's assistants (a bare list or {"assistants": [...]})."""
+        resp = await self.client.get(
+            f"{self.base_url}/assistants",
+            params={"skip": skip, "limit": limit},
+            headers=self._headers,
+            timeout=DEFAULT_TIMEOUT_S,
+        )
+        resp.raise_for_status()
+        try:
+            data = resp.json()
+        except ValueError as exc:
+            raise BackboardError("response is not JSON") from exc
+        rows = data.get("assistants") if isinstance(data, dict) else data
+        if not isinstance(rows, list):
+            raise BackboardError("assistants are not a list")
+        return [row for row in rows if isinstance(row, dict)]
 
     async def upload_document(self, assistant_id: str, filename: str, content: bytes) -> str:
         """Upload one file for the assistant's retrieval index; returns its document id."""
