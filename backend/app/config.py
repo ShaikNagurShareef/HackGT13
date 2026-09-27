@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     gemini_api_key: SecretStr | None = None
     gemini_model: str = "gemini-3.8-flash"
     # Grok Imagine image review: its own model, so per-model free-tier quotas don't collide.
-    gemini_check_model: str = "gemini-3.5-flash"
+    gemini_check_model: str = "gemini-3.1-flash-lite"
     elevenlabs_api_key: SecretStr | None = None
     elevenlabs_voice_id: str | None = None
     elevenlabs_model: str = "eleven_flash_v2_5"
